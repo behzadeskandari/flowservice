@@ -5,21 +5,21 @@
       <header class="modal-header">
         <h3>{{ title }}</h3>
         <div class="actions">
-          <button @click="close">Close</button>
-          <button v-if="isEdit" @click="save">Save</button>
-          <button v-if="isEdit" @click="deleteNode" class="danger">Delete</button>
-          <button v-if="isView" @click="copyJson">Copy JSON</button>
+          <button @click="close">خروج</button>
+          <button v-if="isEdit" @click="save">ذخیره</button>
+          <button v-if="isEdit" @click="deleteNode" class="danger">پاک کردن</button>
+          <button v-if="isView" @click="copyJson">کپی JSON</button>
         </div>
       </header>
 
       <section class="modal-body">
         <div v-if="isCombined">
-          <h4>Combined Schema</h4>
+          <h4>یکی شده Schema</h4>
           <pre>{{ JSON.stringify(nodeData.combinedSchema, null, 2) }}</pre>
           <hr />
-          <h4>Edit Label</h4>
+          <h4>ویرایش نام</h4>
           <input v-model="localLabel" />
-          <button @click="updateLabel">Update Label</button>
+          <button @click="updateLabel">برورز رسانی Label</button>
         </div>
 
         <div v-else>
@@ -28,11 +28,11 @@
             <input v-model="local.label" />
           </label>
           <label>
-            Service Name
+            Service نام
             <input v-model="local.serviceName" />
           </label>
 
-          <h4>Fields</h4>
+          <h4>جزییات</h4>
           <div class="fields">
             <div v-for="(f, idx) in local.fields" :key="f.key" class="field-row">
               <input v-model="f.label" placeholder="label" />
@@ -46,7 +46,7 @@
               <input v-model="f.defaultValue" placeholder="default" />
               <button @click="removeField(idx)">-</button>
             </div>
-            <button @click="addField">+ Add field</button>
+            <button @click="addField">+ اضافه کردن فیلد</button>
           </div>
         </div>
       </section>
@@ -57,7 +57,6 @@
 <script setup>
 import { reactive, computed } from 'vue'
 import { useFlowStore } from '../../stores/flowStore'
-import { uniqueId } from '../../utils/modalUtils' // not required - will define locally
 
 const store = useFlowStore()
 

@@ -1,9 +1,9 @@
 <template>
   <div class="flow-wrapper">
     <div class="toolbar">
-      <button @click="onAddService">Add Service</button>
-      <button @click="viewAllJson">View All JSON</button>
-      <button @click="exportFlowJson">Export Flow</button>
+      <button @click="onAddService">اضافه ردن سرویس</button>
+      <button @click="viewAllJson">فرمت بصورت JSON</button>
+      <button @click="exportFlowJson">Export</button>
     </div>
 
     <div class="canvas">
@@ -20,8 +20,9 @@
         @node-dblclick="onNodeDblClick"
         :node-types="nodeTypes"
         v-bind="vfOptions"
+        class="vue-flow__container"
       >
-        <Background />
+        <Background variant="dots" gap="15" size="1" color="#bbb" />
         <Controls>
           <ControlButton>
             <button
@@ -29,7 +30,7 @@
               class="control-button"
               :title="isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'"
             >
-              <i :class="isDark ? 'fa fa-sun' : 'fa fa-moon'">mode</i>
+              <font-awesome-icon :icon="isDark ? faSun : faMoon" />
             </button>
           </ControlButton>
         </Controls>
@@ -42,10 +43,10 @@
 
 <script setup>
 import { markRaw, reactive, ref, watch, onMounted } from 'vue'
-import { VueFlow } from '@vue-flow/core'
+import { useVueFlow, VueFlow } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
 import { Controls, ControlButton } from '@vue-flow/controls'
-
+import { faSun, faMoon } from '@fortawesome/free-solid-svg-icons'
 // Node components
 import ServiceNode from './nodes/ServiceNode.vue'
 import CombinedServiceNode from './nodes/CombinedServiceNode.vue'
@@ -55,6 +56,10 @@ import ServiceModal from './modals/ServiceModal.vue'
 
 // Store
 import { useFlowStore } from '../stores/flowStore'
+import { useScreenshot } from '@/hooks/useScreenshot'
+
+const { vueFlowRef } = useVueFlow()
+const { capture } = useScreenshot()
 const isDark = ref(false)
 // Register node components
 const nodeTypes = {
@@ -164,18 +169,30 @@ function onEdgesChange(changes) {
 function onNodeDblClick({ id }) {
   store.setSelectedNode(id, 'edit')
 }
+
+function doScreenshot() {
+  if (!vueFlowRef.value) {
+    console.warn('VueFlow element not found')
+    return
+  }
+  capture(vueFlowRef.value, { shouldDownload: true, type: 'png' })
+}
 </script>
 
 <style scoped>
 .flow-wrapper {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 8px;
   padding: 8px;
 }
 .toolbar {
+  position: fixed;
   display: flex;
+  top: 10px;
   gap: 8px;
+  z-index: 999;
 }
 .canvas {
   border: 1px solid #e2e8f0;

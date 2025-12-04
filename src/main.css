@@ -84,5 +84,5 @@ body,
 
 .vue-flow__container.dark-mode {
   background-color: #121212 !important;
-  color: white !important;
+  color: black !important;
 }

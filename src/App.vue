@@ -3,6 +3,6 @@
   <VueFlow></VueFlow>
 </template>
 <script setup>
-import VueFlow from './components/Flow.vue'
+import VueFlow from './components/AppFlow.vue'
 </script>
 <style scoped></style>
