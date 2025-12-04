@@ -1,29 +1,51 @@
 // src/store/flowStore.js
 import { defineStore } from 'pinia'
-import { reactive, ref } from 'vue'
+import { reactive, ref, watch } from 'vue'
 import { mergeFields } from '../utils/schemaUtils'
 
-// Simple unique id generator (keeps things deterministic within a session)
+const LOCAL_STORAGE_KEY = 'flowservice-flow'
+
+// Simple unique id generator
 let idCounter = 1
 function uniqueId(prefix = 'node') {
   return `${prefix}_${Date.now().toString(36)}_${idCounter++}`
 }
 
 export const useFlowStore = defineStore('flow', () => {
-  const nodes = ref([
-    // optional starter node example
-    // {
-    //   id: 'node_example',
-    //   type: 'serviceNode',
-    //   position: { x: 0, y: 0 },
-    //   data: { label: 'Example', serviceName: 'example', fields: [] }
-    // }
-  ])
+  const nodes = ref([])
   const edges = ref([])
-  const selectedNode = ref(null) // store node id or null
+  const selectedNode = ref(null)
   const showModal = ref(false)
   const modalMode = ref('add') // 'add'|'edit'|'view'
   const flowViewport = reactive({ x: 0, y: 0, zoom: 1 })
+
+  function loadFlow() {
+    const flow = localStorage.getItem(LOCAL_STORAGE_KEY)
+    if (flow) {
+      try {
+        const parsed = JSON.parse(flow)
+        importFlow(parsed)
+      } catch (e) {
+        console.warn('Failed to parse flow from localStorage', e)
+      }
+    }
+  }
+
+  // Save flow to localStorage on nodes or edges change
+  watch(
+    nodes,
+    (newNodes) => {
+      newNodes.forEach((node) => {
+        if (!node.position) {
+          console.warn(`Node ${node.id} missing position, fixing.`)
+          node.position = { x: 100, y: 100 }
+        }
+      })
+    },
+    { deep: true, immediate: true },
+  )
+
+  loadFlow()
 
   function addNode({
     position = { x: 100, y: 100 },
@@ -44,6 +66,7 @@ export const useFlowStore = defineStore('flow', () => {
       },
     }
     nodes.value.push(node)
+    nodes.value = [...nodes.value] // trigger reactivity
     return node
   }
 
@@ -58,13 +81,16 @@ export const useFlowStore = defineStore('flow', () => {
         ...patch,
       },
     }
+    nodes.value = [...nodes.value]
     return nodes.value[idx]
   }
 
   function deleteNode(nodeId) {
     nodes.value = nodes.value.filter((n) => n.id !== nodeId)
-    // remove connected edges
     edges.value = edges.value.filter((e) => e.source !== nodeId && e.target !== nodeId)
+    nodes.value = [...nodes.value]
+    edges.value = [...edges.value]
+
     if (selectedNode.value === nodeId) {
       selectedNode.value = null
       showModal.value = false
@@ -72,8 +98,8 @@ export const useFlowStore = defineStore('flow', () => {
   }
 
   function addEdge(edge) {
-    // edge: { id, source, sourceHandle, target, targetHandle, type? }
     edges.value.push(edge)
+    edges.value = [...edges.value]
   }
 
   function setSelectedNode(nodeId, mode = 'view') {
@@ -87,49 +113,7 @@ export const useFlowStore = defineStore('flow', () => {
     showModal.value = false
   }
 
-  //   function handleConnect(params, vueflowApi = null) {
-  //     // params: { source, sourceHandle, target, targetHandle, sourceNode?, targetNode? } (from onConnect)
-  //     const { source, target } = params
-  //     if (!source || !target) return
-
-  //     // create an edge
-  //     const edgeId = `e_${source}-${target}_${Date.now().toString(36)}`
-  //     addEdge({
-  //       id: edgeId,
-  //       source,
-  //       target,
-  //       animated: true,
-  //       type: 'default',
-  //     })
-
-  //     // Generate a combined node from source & target nodes
-  //     const nodeA = nodes.value.find((n) => n.id === source)
-  //     const nodeB = nodes.value.find((n) => n.id === target)
-  //     if (!nodeA || !nodeB) return
-
-  //     const combined = generateCombinedService(nodeA, nodeB)
-
-  //     // Place combined node centered between the two nodes positions (if available)
-  //     const posA = nodeA.position || { x: 0, y: 0 }
-  //     const posB = nodeB.position || { x: 200, y: 200 }
-  //     const position = {
-  //       x: Math.round((posA.x + posB.x) / 2) + 40,
-  //       y: Math.round((posA.y + posB.y) / 2) + 40,
-  //     }
-
-  //     const combinedNode = {
-  //       id: combined.id,
-  //       type: 'combinedServiceNode',
-  //       position,
-  //       data: combined.data,
-  //     }
-
-  //     nodes.value.push(combinedNode)
-  //     nodes.value = [...nodes.value]
-  //     return combinedNode
-  //   }
   function handleConnect(params) {
-    debugger
     const { source, target } = params
     if (!source || !target) return
 
@@ -153,6 +137,7 @@ export const useFlowStore = defineStore('flow', () => {
       animated: true,
       type: 'default',
     })
+
     const combined = generateCombinedService(nodeA, nodeB)
 
     const posA = nodeA.position
@@ -168,23 +153,15 @@ export const useFlowStore = defineStore('flow', () => {
       position,
       data: combined.data,
     })
-    nodes.value = [...nodes.value]
-    // const { id: newId, data } = generateCombinedService(nodeA, nodeB)
-    // const posA = nodeA.position || { x: 0, y: 0 }
-    // const posB = nodeB.position || { x: 0, y: 0 }
-    // const position = {
-    //   x: (posA.x + posB.x) / 2 + 40,
-    //   y: (posA.y + posB.y) / 2 + 40,
-    // }
+    nodes.value = [...nodes.value] // trigger reactivity
 
-    // nodes.value.push({ id: newId, type: 'combinedServiceNode', position, data })
-    // nodes.value = [...nodes.value] // important to ensure reactivity update
+    return combined
   }
 
   function generateCombinedService(nodeA, nodeB) {
     const fieldsA = nodeA.data?.fields || []
     const fieldsB = nodeB.data?.fields || []
-    const mergedFields = mergeFields(fieldsA, fieldsB) // assume this returns an array
+    const mergedFields = mergeFields(fieldsA, fieldsB)
 
     const id = uniqueId('combined')
     return {
@@ -197,24 +174,6 @@ export const useFlowStore = defineStore('flow', () => {
       },
     }
   }
-  //   function generateCombinedService(nodeA, nodeB) {
-  //     // Accept node objects (with data.fields)
-  //     const fieldsA = nodeA.data?.fields || []
-  //     const fieldsB = nodeB.data?.fields || []
-  //     const merged = mergeFields(fieldsA, fieldsB)
-
-  //     const id = uniqueId('combined')
-  //     return {
-  //       id,
-  //       data: {
-  //         id,
-  //         type: 'combinedService',
-  //         label: `${nodeA.data.label} + ${nodeB.data.label}`,
-  //         combinedSchema: merged,
-  //         editable: true,
-  //       },
-  //     }
-  //   }
 
   function exportFlow() {
     return {
@@ -224,8 +183,15 @@ export const useFlowStore = defineStore('flow', () => {
   }
 
   function importFlow(flow) {
-    nodes.value = flow.nodes || []
+    nodes.value = (flow.nodes || []).map((node) => {
+      return {
+        ...node,
+        position: node.position || { x: 100, y: 100 }, // default position if missing
+      }
+    })
     edges.value = flow.edges || []
+    nodes.value = [...nodes.value]
+    edges.value = [...edges.value]
   }
 
   return {
