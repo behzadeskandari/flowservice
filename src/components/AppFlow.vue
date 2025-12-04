@@ -23,15 +23,18 @@
         class="vue-flow__container"
       >
         <Background variant="dots" gap="15" size="1" color="#bbb" />
+        <Panel position="top-center">
+          <button class="screenshot-flow" @click="doScreenshot">📸 Take Screenshot</button>
+        </Panel>
         <Controls>
           <ControlButton>
-            <button
+            <div
               @click="toggleTheme"
               class="control-button"
               :title="isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'"
             >
               <font-awesome-icon :icon="isDark ? faSun : faMoon" />
-            </button>
+            </div>
           </ControlButton>
         </Controls>
       </VueFlow>
@@ -43,7 +46,7 @@
 
 <script setup>
 import { markRaw, reactive, ref, watch, onMounted } from 'vue'
-import { useVueFlow, VueFlow } from '@vue-flow/core'
+import { Panel, useVueFlow, VueFlow } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
 import { Controls, ControlButton } from '@vue-flow/controls'
 import { faSun, faMoon } from '@fortawesome/free-solid-svg-icons'

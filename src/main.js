@@ -10,8 +10,8 @@ import { faPlus, faMoon, faSun } from '@fortawesome/free-solid-svg-icons'
 library.add(faPlus, faMoon, faSun)
 
 const app = createApp(App)
-app.component('font-awesome-icon', FontAwesomeIcon)
 app.use(createPinia())
 app.use(router)
 
+app.component('font-awesome-icon', FontAwesomeIcon)
 app.mount('#app')
