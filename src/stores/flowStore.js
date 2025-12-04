@@ -129,8 +129,22 @@ export const useFlowStore = defineStore('flow', () => {
   //     return combinedNode
   //   }
   function handleConnect(params) {
+    debugger
     const { source, target } = params
     if (!source || !target) return
+
+    const nodeA = nodes.value.find((n) => n.id === source)
+    const nodeB = nodes.value.find((n) => n.id === target)
+    if (!nodeA || !nodeB) return
+
+    if (!nodeA.position) {
+      console.warn(`Node A (${nodeA.id}) position missing. Defaulting.`)
+      nodeA.position = { x: 0, y: 0 }
+    }
+    if (!nodeB.position) {
+      console.warn(`Node B (${nodeB.id}) position missing. Defaulting.`)
+      nodeB.position = { x: 200, y: 200 }
+    }
 
     addEdge({
       id: `e_${source}-${target}_${Date.now()}`,
@@ -139,21 +153,32 @@ export const useFlowStore = defineStore('flow', () => {
       animated: true,
       type: 'default',
     })
+    const combined = generateCombinedService(nodeA, nodeB)
 
-    const nodeA = nodes.value.find((n) => n.id === source)
-    const nodeB = nodes.value.find((n) => n.id === target)
-    if (!nodeA || !nodeB) return
-
-    const { id: newId, data } = generateCombinedService(nodeA, nodeB)
-    const posA = nodeA.position || { x: 0, y: 0 }
-    const posB = nodeB.position || { x: 0, y: 0 }
+    const posA = nodeA.position
+    const posB = nodeB.position
     const position = {
-      x: (posA.x + posB.x) / 2 + 40,
-      y: (posA.y + posB.y) / 2 + 40,
+      x: Math.round((posA.x + posB.x) / 2) + 40,
+      y: Math.round((posA.y + posB.y) / 2) + 40,
     }
 
-    nodes.value.push({ id: newId, type: 'combinedServiceNode', position, data })
-    nodes.value = [...nodes.value] // important to ensure reactivity update
+    nodes.value.push({
+      id: combined.id,
+      type: 'combinedServiceNode',
+      position,
+      data: combined.data,
+    })
+    nodes.value = [...nodes.value]
+    // const { id: newId, data } = generateCombinedService(nodeA, nodeB)
+    // const posA = nodeA.position || { x: 0, y: 0 }
+    // const posB = nodeB.position || { x: 0, y: 0 }
+    // const position = {
+    //   x: (posA.x + posB.x) / 2 + 40,
+    //   y: (posA.y + posB.y) / 2 + 40,
+    // }
+
+    // nodes.value.push({ id: newId, type: 'combinedServiceNode', position, data })
+    // nodes.value = [...nodes.value] // important to ensure reactivity update
   }
 
   function generateCombinedService(nodeA, nodeB) {
