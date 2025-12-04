@@ -1,4 +1,3 @@
-<!-- src/components/Flow.vue -->
 <template>
   <div class="flow-wrapper">
     <div class="toolbar">
@@ -9,6 +8,9 @@
 
     <div class="canvas">
       <VueFlow
+        :default-viewport="{ zoom: 0.5 }"
+        :max-zoom="1"
+        :min-zoom="0.8"
         :nodes="store.nodes"
         :edges="store.edges"
         style="width: 100%; height: 74vh"
@@ -20,7 +22,17 @@
         v-bind="vfOptions"
       >
         <Background />
-        <Controls />
+        <Controls>
+          <ControlButton>
+            <button
+              @click="toggleTheme"
+              class="control-button"
+              :title="isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'"
+            >
+              <i :class="isDark ? 'fa fa-sun' : 'fa fa-moon'">mode</i>
+            </button>
+          </ControlButton>
+        </Controls>
       </VueFlow>
     </div>
 
@@ -29,10 +41,10 @@
 </template>
 
 <script setup>
-import { markRaw, reactive } from 'vue'
+import { markRaw, reactive, ref, watch, onMounted } from 'vue'
 import { VueFlow } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
-import { Controls } from '@vue-flow/controls'
+import { Controls, ControlButton } from '@vue-flow/controls'
 
 // Node components
 import ServiceNode from './nodes/ServiceNode.vue'
@@ -43,7 +55,7 @@ import ServiceModal from './modals/ServiceModal.vue'
 
 // Store
 import { useFlowStore } from '../stores/flowStore'
-
+const isDark = ref(false)
 // Register node components
 const nodeTypes = {
   serviceNode: markRaw(ServiceNode),
@@ -56,6 +68,48 @@ const vfOptions = reactive({
   fitView: true,
 })
 
+onMounted(() => {
+  const saved = localStorage.getItem('theme')
+  if (saved === 'dark') {
+    isDark.value = false
+  } else if (saved === 'light') {
+    isDark.value = false
+  } else {
+    isDark.value = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+  }
+  updateBodyClass()
+})
+watch(isDark, () => {
+  updateBodyClass()
+})
+
+function updateBodyClass() {
+  // if (isDark.value) {
+  //   console.log(isDark.value, 'isDark')
+  //   document.getElementsByClassName('vue-flow__container')[0].classList.add('dark-mode')
+  //   document.getElementsByClassName('vue-flow__container')[0].classList.remove('light-mode')
+  // } else {
+  //   document.getElementsByClassName('vue-flow__container')[0].classList.add('light-mode')
+  //   document.getElementsByClassName('vue-flow__container')[0].classList.remove('dark-mode')
+  // }
+
+  const container = document.querySelector('.vue-flow__container')
+  if (!container) return
+  if (isDark.value) {
+    container.classList.add('dark-mode')
+    container.classList.remove('light-mode')
+  } else {
+    container.classList.add('light-mode')
+    container.classList.remove('dark-mode')
+  }
+}
+
+function toggleTheme() {
+  isDark.value = !isDark.value
+  console.log(isDark.value, 'isDark')
+  localStorage.setItem('theme', isDark.value ? 'dark' : 'light')
+  updateBodyClass()
+}
 function onAddService() {
   const position = { x: 200 + Math.random() * 60, y: 150 + Math.random() * 60 }
   const newNode = store.addNode({
@@ -127,5 +181,17 @@ function onNodeDblClick({ id }) {
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   overflow: hidden;
+}
+
+/* styles.css or in your component style */
+
+/* Optional: style your button */
+.control-button {
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  font-size: 1.5rem;
+  color: inherit;
+  padding: 0.5rem;
 }
 </style>

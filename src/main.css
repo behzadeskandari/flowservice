@@ -77,3 +77,12 @@ body,
 .basic-flow.dark .vue-flow__edge-text {
   fill: #fffffb;
 }
+.vue-flow__container.light-mode {
+  background-color: white !important;
+  color: black !important;
+}
+
+.vue-flow__container.dark-mode {
+  background-color: #121212 !important;
+  color: white !important;
+}
