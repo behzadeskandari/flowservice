@@ -87,65 +87,109 @@ export const useFlowStore = defineStore('flow', () => {
     showModal.value = false
   }
 
-  function handleConnect(params, vueflowApi = null) {
-    // params: { source, sourceHandle, target, targetHandle, sourceNode?, targetNode? } (from onConnect)
+  //   function handleConnect(params, vueflowApi = null) {
+  //     // params: { source, sourceHandle, target, targetHandle, sourceNode?, targetNode? } (from onConnect)
+  //     const { source, target } = params
+  //     if (!source || !target) return
+
+  //     // create an edge
+  //     const edgeId = `e_${source}-${target}_${Date.now().toString(36)}`
+  //     addEdge({
+  //       id: edgeId,
+  //       source,
+  //       target,
+  //       animated: true,
+  //       type: 'default',
+  //     })
+
+  //     // Generate a combined node from source & target nodes
+  //     const nodeA = nodes.value.find((n) => n.id === source)
+  //     const nodeB = nodes.value.find((n) => n.id === target)
+  //     if (!nodeA || !nodeB) return
+
+  //     const combined = generateCombinedService(nodeA, nodeB)
+
+  //     // Place combined node centered between the two nodes positions (if available)
+  //     const posA = nodeA.position || { x: 0, y: 0 }
+  //     const posB = nodeB.position || { x: 200, y: 200 }
+  //     const position = {
+  //       x: Math.round((posA.x + posB.x) / 2) + 40,
+  //       y: Math.round((posA.y + posB.y) / 2) + 40,
+  //     }
+
+  //     const combinedNode = {
+  //       id: combined.id,
+  //       type: 'combinedServiceNode',
+  //       position,
+  //       data: combined.data,
+  //     }
+
+  //     nodes.value.push(combinedNode)
+  //     nodes.value = [...nodes.value]
+  //     return combinedNode
+  //   }
+  function handleConnect(params) {
     const { source, target } = params
     if (!source || !target) return
 
-    // create an edge
-    const edgeId = `e_${source}-${target}_${Date.now().toString(36)}`
     addEdge({
-      id: edgeId,
+      id: `e_${source}-${target}_${Date.now()}`,
       source,
       target,
       animated: true,
       type: 'default',
     })
 
-    // Generate a combined node from source & target nodes
     const nodeA = nodes.value.find((n) => n.id === source)
     const nodeB = nodes.value.find((n) => n.id === target)
     if (!nodeA || !nodeB) return
 
-    const combined = generateCombinedService(nodeA, nodeB)
-
-    // Place combined node centered between the two nodes positions (if available)
+    const { id: newId, data } = generateCombinedService(nodeA, nodeB)
     const posA = nodeA.position || { x: 0, y: 0 }
-    const posB = nodeB.position || { x: 200, y: 200 }
+    const posB = nodeB.position || { x: 0, y: 0 }
     const position = {
-      x: Math.round((posA.x + posB.x) / 2) + 40,
-      y: Math.round((posA.y + posB.y) / 2) + 40,
+      x: (posA.x + posB.x) / 2 + 40,
+      y: (posA.y + posB.y) / 2 + 40,
     }
 
-    const combinedNode = {
-      id: combined.id,
-      type: 'combinedServiceNode',
-      position,
-      data: combined.data,
-    }
-
-    nodes.value.push(combinedNode)
-    return combinedNode
+    nodes.value.push({ id: newId, type: 'combinedServiceNode', position, data })
+    nodes.value = [...nodes.value] // important to ensure reactivity update
   }
 
   function generateCombinedService(nodeA, nodeB) {
-    // Accept node objects (with data.fields)
     const fieldsA = nodeA.data?.fields || []
     const fieldsB = nodeB.data?.fields || []
-    const merged = mergeFields(fieldsA, fieldsB)
+    const mergedFields = mergeFields(fieldsA, fieldsB) // assume this returns an array
 
     const id = uniqueId('combined')
     return {
       id,
       data: {
         id,
-        type: 'combinedService',
         label: `${nodeA.data.label} + ${nodeB.data.label}`,
-        combinedSchema: merged,
+        combinedSchema: mergedFields,
         editable: true,
       },
     }
   }
+  //   function generateCombinedService(nodeA, nodeB) {
+  //     // Accept node objects (with data.fields)
+  //     const fieldsA = nodeA.data?.fields || []
+  //     const fieldsB = nodeB.data?.fields || []
+  //     const merged = mergeFields(fieldsA, fieldsB)
+
+  //     const id = uniqueId('combined')
+  //     return {
+  //       id,
+  //       data: {
+  //         id,
+  //         type: 'combinedService',
+  //         label: `${nodeA.data.label} + ${nodeB.data.label}`,
+  //         combinedSchema: merged,
+  //         editable: true,
+  //       },
+  //     }
+  //   }
 
   function exportFlow() {
     return {

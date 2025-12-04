@@ -7,7 +7,7 @@
 
     <div class="node-body">
       <small>Combined</small>
-      <div class="count">Fields: {{ data.combinedSchema.merged.length }}</div>
+      <div class="count">Fields: {{ data.combinedSchema.length }}</div>
     </div>
 
     <Handle type="target" position="left" id="in" />

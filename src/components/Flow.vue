@@ -29,7 +29,7 @@
 </template>
 
 <script setup>
-import { reactive } from 'vue'
+import { markRaw, reactive } from 'vue'
 import { VueFlow } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
 import { Controls } from '@vue-flow/controls'
@@ -46,8 +46,8 @@ import { useFlowStore } from '../stores/flowStore'
 
 // Register node components
 const nodeTypes = {
-  serviceNode: ServiceNode,
-  combinedServiceNode: CombinedServiceNode,
+  serviceNode: markRaw(ServiceNode),
+  combinedServiceNode: markRaw(CombinedServiceNode),
 }
 
 const store = useFlowStore()
