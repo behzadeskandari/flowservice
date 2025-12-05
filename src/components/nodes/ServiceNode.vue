@@ -23,7 +23,7 @@
 <script setup>
 import { toRefs } from 'vue'
 import { Handle } from '@vue-flow/core'
-import { useFlowStore } from '../../stores/flowStore'
+import { useFlowStore } from '@/stores/flowStore'
 
 const props = defineProps({
   id: { type: String, required: true },
