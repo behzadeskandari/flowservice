@@ -35,7 +35,7 @@
 </template>
 
 <script setup>
-import { onBeforeUnmount, onMounted, toRefs, ref } from 'vue'
+import { onBeforeUnmount, onMounted, toRefs, ref, computed } from 'vue'
 import { Handle } from '@vue-flow/core'
 
 import { useFlowStore } from '@/stores/flowStore'
@@ -57,7 +57,9 @@ const contextMenu = ref({
 const menuRef = ref(null)
 
 var storeNodes = store.getNodes();
-const previewFields = data.value.fields ? data.value.fields.slice(0, 3) : []
+const previewFields = computed(() => {
+  return data.value.fields ? data.value.fields.slice(0, 3) : []
+})
 console.log(storeNodes,'storeNodesstoreNodes')
 console.log(previewFields,'previewFieldspreviewFields')
 console.log(data.value,'data.value.')
