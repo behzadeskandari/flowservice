@@ -52,6 +52,8 @@
             <font-awesome-icon :icon="faSortAmountDown" />
           </ControlButton>
         </Controls>
+        <MiniMap />
+
       </VueFlow>
     </div>
 
@@ -65,7 +67,7 @@ import { Panel, useVueFlow, VueFlow } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
 import { Controls, ControlButton } from '@vue-flow/controls'
 import { faCamera,faSun,faMoon,faSortAmountDown } from '@fortawesome/free-solid-svg-icons'
-// Node components
+import { MiniMap } from '@vue-flow/minimap'
 import ServiceNode from './nodes/ServiceNode.vue'
 import CombinedServiceNode from './nodes/CombinedServiceNode.vue'
 
