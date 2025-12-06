@@ -1,9 +1,9 @@
 <template>
   <div class="flow-wrapper">
     <div class="toolbar">
-      <button @click="onAddService">اضافه ردن سرویس</button>
-      <button @click="viewAllJson">فرمت بصورت JSON</button>
-      <button @click="exportFlowJson">Export</button>
+      <button class="px-5 py-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-xl text-lg hover:opacity-90 transition" @click="onAddService">اضافه کردن سرویس</button>
+      <button class="px-5 py-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-xl text-lg hover:opacity-90 transition" @click="viewAllJson">فرمت بصورت JSON</button>
+      <button class="px-5 py-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-xl text-lg hover:opacity-90 transition" @click="exportFlowJson">Export</button>
     </div>
 
     <div class="canvas">
@@ -24,7 +24,7 @@
       >
         <Background variant="dots" gap="15" size="1" color="#bbb" />
         <Panel position="top-center">
-          <button class="screenshot-flow" @click="doScreenshot">📸 Take Screenshot</button>
+          <button class="px-5 py-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-xl hover:opacity-90 transition screenshot-flow text-lg" @click="doScreenshot">📸 تبدیل به عکس</button>
         </Panel>
         <Controls>
           <ControlButton>

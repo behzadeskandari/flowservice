@@ -1,6 +1,8 @@
 <template>
-  <h1>Service mesh Layout!</h1>
-  <VueFlow></VueFlow>
+  <div>
+    <h1 class="text-lg">فلوچارت  ترکیب سرویس ها</h1>
+    <VueFlow></VueFlow>
+  </div>
 </template>
 <script setup>
 import VueFlow from './components/AppFlow.vue'

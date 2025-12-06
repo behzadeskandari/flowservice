@@ -1,63 +1,113 @@
 <!-- src/components/modals/ServiceModal.vue -->
 <template>
-  <div v-if="store.showModal" class="modal-backdrop" @click.self="close">
-    <div class="modal">
-      <header class="modal-header">
-        <h3>{{ title }}</h3>
-        <div class="actions">
-          <button @click="close">خروج</button>
-          <button v-if="isEdit" @click="save">ذخیره</button>
-          <button v-if="isEdit" @click="deleteNode" class="danger">پاک کردن</button>
-          <button v-if="isView" @click="copyJson">کپی JSON</button>
+  <div
+    v-if="store.showModal"
+    class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 animate-fadeIn"
+    @click.self="close"
+  >
+    <div class="bg-white dark:bg-gray-900 shadow-2xl rounded-2xl w-full max-w-2xl p-6 animate-scaleIn">
+
+      <!-- Header -->
+      <header class="flex items-center justify-between border-b pb-3 mb-4">
+        <h3 class="text-xl font-bold text-gray-800 dark:text-gray-100">{{ title }}</h3>
+
+        <div class="flex gap-2">
+          <button class="px-5 py-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-xl hover:opacity-90 transition" @click="close">خروج</button>
+          <button v-if="isEdit" class="px-5 py-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-xl hover:opacity-90 transition" @click="save">ذخیره</button>
+          <button v-if="isEdit" class="px-5 py-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-xl hover:opacity-90 transition" @click="deleteNode">پاک کردن</button>
+          <button v-if="isView" class="px-5 py-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-xl hover:opacity-90 transition" @click="copyJson">کپی JSON</button>
         </div>
       </header>
 
-      <section class="modal-body">
-        <div v-if="isCombined">
-          <h4>یکی شده Schema</h4>
-          <pre>{{ JSON.stringify(nodeData.combinedSchema, null, 2) }}</pre>
-          <hr />
-          <h4>ویرایش نام</h4>
-          <input v-model="localLabel" />
-          <button @click="updateLabel">برورز رسانی Label</button>
+      <!-- Body -->
+      <section class="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
+
+        <!-- Combined Node -->
+        <div v-if="isCombined" class="space-y-4">
+          <h4 class="text-lg font-semibold text-gray-700 dark:text-gray-200">Schema ترکیب شده</h4>
+
+          <pre class="bg-gray-100 dark:bg-gray-800 p-3 rounded-xl text-sm whitespace-pre-wrap">
+{{ JSON.stringify(nodeData.combinedSchema, null, 2) }}
+          </pre>
+
+          <hr class="border-gray-300 dark:border-gray-700" />
+
+          <h4 class="text-lg font-semibold text-gray-700 dark:text-gray-200">ویرایش نام</h4>
+
+          <input v-model="localLabel" class="w-full px-4 py-2 rounded-lg bg-gray-800 text-gray-200 border border-gray-700
+         focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="Label" />
+
+          <button  class="px-5 py-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-xl hover:opacity-90 transition" @click="updateLabel">بروزرسانی Label</button>
         </div>
 
-        <div v-else>
-          <label>
-            Label
-            <input v-model="local.label" />
-          </label>
-          <label>
-            Service نام
-            <input v-model="local.serviceName" />
-          </label>
+        <!-- Normal Node -->
+        <div v-else class="space-y-4">
 
-          <h4>جزییات</h4>
-          <div class="fields">
-            <div v-for="(f, idx) in local.fields" :key="f.key" class="field-row">
-              <input v-model="f.label" placeholder="label" />
-              <input v-model="f.key" placeholder="key" />
-              <select v-model="f.type">
+          <div>
+            <label class="block text-lg font-medium text-gray-700 mb-1">عنوان</label>
+            <input v-model="local.label" class="w-full px-4 py-2 rounded-xl border border-gray-300
+         focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent
+         bg-white shadow-sm transition" />
+          </div>
+
+          <div>
+            <label class="block text-lg font-medium text-gray-700 mb-1"> نام سرویس</label>
+            <input v-model="local.serviceName" placeholder="سرویس" class="w-full px-4 py-2 rounded-xl border border-gray-300
+         focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent
+         bg-white shadow-sm transition" />
+          </div>
+
+          <h4 class="text-lg font-semibold text-gray-700 dark:text-gray-200">جزییات فیلدها</h4>
+
+          <div class="space-y-3">
+            <div
+              v-for="(f, idx) in local.fields"
+              :key="f.key"
+              class="flex gap-2 items-center bg-gray-50 dark:bg-gray-800 p-2 rounded-xl"
+            >
+              <input v-model="f.label" placeholder="label" class="w-full px-4 py-2 rounded-xl border border-gray-300
+         focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent
+         bg-white shadow-sm transition" />
+              <input v-model="f.key" placeholder="key" class="w-full px-4 py-2 rounded-xl border border-gray-300
+         focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent
+         bg-white shadow-sm transition" />
+
+              <select v-model="f.type" class="input-sm w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500">
                 <option value="string">string</option>
                 <option value="number">number</option>
                 <option value="boolean">boolean</option>
                 <option value="text">text</option>
               </select>
-              <input v-model="f.defaultValue" placeholder="default" />
-              <button @click="removeField(idx)">-</button>
+
+              <input v-model="f.defaultValue" placeholder="default" class="input-sm w-full px-4 py-2 rounded-xl border border-gray-300
+                                                                          focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent
+                                                                          bg-white shadow-sm transition" />
+
+              <button class="btn-red px-5 py-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-xl hover:opacity-90 transition" @click="removeField(idx)">
+                <font-awesome-icon :icon="['fas','trash']"  style="color: var(--color-red-400); margin-top:4px;font-size:larger"/>
+                <!-- پاک کردن -->
+              </button>
             </div>
-            <button @click="addField">+ اضافه کردن فیلد</button>
           </div>
+
+          <button class="btn-purple w-full px-5 py-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-xl hover:opacity-90 transition" @click="addField">
+            <font-awesome-icon :icon="['fas','plus']" style="color: var(--color-green-300); font-size:larger" />
+            <span class="text-green-300">
+             اضافه کردن فیلد
+            </span>
+          </button>
+
         </div>
+
       </section>
     </div>
   </div>
 </template>
 
+
 <script setup>
 import { reactive, computed } from 'vue'
 import { useFlowStore } from '../../stores/flowStore'
-
 const store = useFlowStore()
 
 // derive selected node
@@ -74,8 +124,8 @@ const nodeData = computed(() => {
 })
 
 const title = computed(() => {
-  if (!node.value) return 'Add Service'
-  return isCombined.value ? `Combined: ${nodeData.value.label}` : `Edit: ${nodeData.value.label}`
+  if (!node.value) return 'اضافه کردن سرویس'
+  return isCombined.value ? ` ترکیب سرویس: ${nodeData.value.label}` : ` ویرایش: ${nodeData.value.label}`
 })
 
 // local copy for edits
@@ -135,7 +185,7 @@ function updateLabel() {
 
 function deleteNode() {
   if (!node.value) return
-  if (confirm('Delete node?')) {
+  if (confirm('پا ک کردن گره?')) {
     store.deleteNode(node.value.id)
   }
 }
@@ -148,7 +198,7 @@ function copyJson() {
   if (!node.value) return
   const payload = isCombined.value ? nodeData.value.combinedSchema : nodeValueToExport(node.value)
   window.navigator.clipboard?.writeText(JSON.stringify(payload, null, 2))
-  alert('JSON copied to clipboard.')
+  alert('JSON مورد نظر کپی شد.')
 }
 
 function nodeValueToExport(n) {
@@ -195,4 +245,5 @@ function nodeValueToExport(n) {
 .danger {
   background: #fee2e2;
 }
+
 </style>
