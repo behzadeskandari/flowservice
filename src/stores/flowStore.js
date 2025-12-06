@@ -46,16 +46,7 @@ export const useFlowStore = defineStore('flow', () => {
   [nodes, edges],
   ([newNodes, newEdges]) => {
     if (autoSave.value) {
-      try {
-        const flow = {
-          nodes: newNodes,
-          edges: newEdges,
-        }
-        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(flow))
-        console.log('Flow auto-saved to localStorage')
-      } catch (e) {
-        console.error('Failed to auto-save flow', e)
-      }
+     saveFlow(newNodes, newEdges)
     }
   },
   { deep: true }
@@ -63,43 +54,93 @@ export const useFlowStore = defineStore('flow', () => {
 
   loadFlow()
 
-  function addNode({
-    position = { x: 100, y: 100 },
+  // function addNode({
+  //   position = { x: 100, y: 100 },
+  //   label = 'New Service',
+  //   serviceName = '',
+  //   fields = [],
+  // } = {}) {
+  //   const id = uniqueId('svc')
+  //   const node = {
+  //     id,
+  //     type: 'serviceNode',
+  //     position,
+  //     data: {
+  //       id,
+  //       label,
+  //       serviceName: serviceName || label,
+  //       fields: JSON.parse(JSON.stringify(fields || [])),
+  //     },
+  //   }
+  //   nodes.value.push(node)
+  //   nodes.value = [...nodes.value] // trigger reactivity
+  //   return node
+  // }
+function addNode(options = {}) {
+  const {
+    position = {},
     label = 'New Service',
     serviceName = '',
     fields = [],
-  } = {}) {
-    const id = uniqueId('svc')
-    const node = {
+  } = options
+
+  const x = typeof position.x === 'number' ? position.x : 100
+  const y = typeof position.y === 'number' ? position.y : 100
+  const id = uniqueId('svc')
+  const node = {
+    id: uniqueId('svc'),
+    type: 'serviceNode',
+    position: { x, y },    // 100% guaranteed to exist
+    data: {
       id,
-      type: 'serviceNode',
-      position,
-      data: {
-        id,
-        label,
-        serviceName: serviceName || label,
-        fields: JSON.parse(JSON.stringify(fields || [])),
-      },
-    }
-    nodes.value.push(node)
-    nodes.value = [...nodes.value] // trigger reactivity
-    return node
+      label,
+      serviceName: serviceName || label,
+      fields: structuredClone(fields),
+    },
   }
 
-  function updateNode(nodeId, patch) {
-    const idx = nodes.value.findIndex((n) => n.id === nodeId)
-    if (idx === -1) return null
-    const node = nodes.value[idx]
-    nodes.value[idx] = {
-      ...node,
-      data: {
-        ...node.data,
-        ...patch,
-      },
-    }
-    nodes.value = [...nodes.value]
-    return nodes.value[idx]
+  nodes.value.push(node)
+  nodes.value = [...nodes.value] // force reactivity
+  return node
+}
+
+  // function updateNode(nodeId, patch) {
+  //   const idx = nodes.value.findIndex((n) => n.id === nodeId)
+  //   if (idx === -1) return null
+  //   const node = nodes.value[idx]
+  //   nodes.value[idx] = {
+  //     ...node,
+  //     data: {
+  //       ...node.data,
+  //       ...patch,
+  //     },
+  //   }
+  //   nodes.value = [...nodes.value]
+  //   return nodes.value[idx]
+  // }
+function updateNode(nodeId, patch) {
+  const idx = nodes.value.findIndex((n) => n.id === nodeId)
+  if (idx === -1) return null
+
+  const node = nodes.value[idx]
+
+  // Prevent accidental deletion or invalid overwrite
+  if (patch.position && (
+      patch.position.x == null ||
+      patch.position.y == null
+    )) {
+    delete patch.position
   }
+
+  nodes.value[idx] = {
+    ...node,
+    ...patch,
+    data: { ...node.data, ...patch.data },
+  }
+
+  nodes.value = [...nodes.value]
+  return nodes.value[idx]
+}
 
   function deleteNode(nodeId) {
     nodes.value = nodes.value.filter((n) => n.id !== nodeId)
@@ -233,7 +274,26 @@ export const useFlowStore = defineStore('flow', () => {
   function autoSaveEnabled() {
     return autoSave.value
 }
+function debounce(fn, delay = 300) {
+  let timer = null
+  return (...args) => {
+    clearTimeout(timer)
+    timer = setTimeout(() => fn(...args), delay)
+  }
+}
 
+const saveFlow = debounce((nodes, edges) => {
+  try {
+    const flow = {
+      nodes: JSON.parse(JSON.stringify(nodes)),
+      edges: JSON.parse(JSON.stringify(edges)),
+    }
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(flow))
+    console.log('Flow auto-saved')
+  } catch (e) {
+    console.error('Auto-save failed', e)
+  }
+}, 500)
   return {
     enableAutoSave,
     disableAutoSave,
