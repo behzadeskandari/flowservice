@@ -3,6 +3,7 @@ import { defineStore } from 'pinia'
 import { reactive, ref, watch } from 'vue'
 import { mergeNFields } from '../utils/schemaUtils'
 import { uniqueId } from '@/utils/modalUtils'
+import { MarkerType } from '@vue-flow/core'
 
 const LOCAL_STORAGE_KEY = 'flowservice-flow'
 
@@ -38,6 +39,7 @@ export const useFlowStore = defineStore('flow', () => {
           console.warn(`Fixing node ${node.id} missing or invalid position`)
           node.position = { x: 100, y: 100 }
         }
+
       })
       if (autoSave.value) {
         saveFlow(newNodes, newEdges)
@@ -131,6 +133,12 @@ export const useFlowStore = defineStore('flow', () => {
     //   // Don't add edge to combined node
     //   return
     // }
+    edge.markerEnd = {
+      type: MarkerType.ArrowClosed,
+      width: 20,
+      height: 20,
+      color: '#FF0072',
+    }
     edges.value.push(edge)
     edges.value = [...edges.value]
   }
