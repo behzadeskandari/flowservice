@@ -170,6 +170,11 @@ function updateNode(nodeId, patch) {
   }
 
   function addEdge(edge) {
+    // const targetNode = nodes.value.find(n => n.id === edge.target)
+    // if (targetNode && targetNode.type === 'combinedNode') {
+    //   // Don't add edge to combined node
+    //   return
+    // }
     edges.value.push(edge)
     edges.value = [...edges.value]
   }

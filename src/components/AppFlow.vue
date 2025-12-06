@@ -48,6 +48,9 @@
           <ControlButton  @click.prevent="doScreenshot">
             <font-awesome-icon :icon="faCamera" />
           </ControlButton>
+          <ControlButton @click.prevent="sortByConnectionOrder">
+            <font-awesome-icon :icon="faSortAmountDown" />
+          </ControlButton>
         </Controls>
       </VueFlow>
     </div>
@@ -61,7 +64,7 @@ import { markRaw, reactive, ref, watch, onMounted } from 'vue'
 import { Panel, useVueFlow, VueFlow } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
 import { Controls, ControlButton } from '@vue-flow/controls'
-import { faCamera,faSun,faMoon } from '@fortawesome/free-solid-svg-icons'
+import { faCamera,faSun,faMoon,faSortAmountDown } from '@fortawesome/free-solid-svg-icons'
 // Node components
 import ServiceNode from './nodes/ServiceNode.vue'
 import CombinedServiceNode from './nodes/CombinedServiceNode.vue'
@@ -120,6 +123,53 @@ function toggleAutoSave() {
   } else {
     store.enableAutoSave()
   }
+}
+
+function sortByConnectionOrder() {
+  const nodesMap = new Map(store.nodes.map(n => [n.id, n]));
+  const edges = store.edges;
+
+  // Count incoming edges for each node
+  const incomingEdgesCount = {};
+  store.nodes.forEach(n => (incomingEdgesCount[n.id] = 0));
+  edges.forEach(e => {
+    incomingEdgesCount[e.target] = (incomingEdgesCount[e.target] || 0) + 1;
+  });
+
+  // Find root nodes (no incoming edges)
+  const queue = store.nodes.filter(n => incomingEdgesCount[n.id] === 0).map(n => n.id);
+  const sortedIds = [];
+
+  while (queue.length) {
+    const current = queue.shift();
+    sortedIds.push(current);
+
+    edges.forEach(e => {
+      if (e.source === current) {
+        incomingEdgesCount[e.target]--;
+        if (incomingEdgesCount[e.target] === 0) {
+          queue.push(e.target);
+        }
+      }
+    });
+  }
+
+  // For nodes disconnected from graph, append them as well
+  const disconnected = store.nodes.filter(n => !sortedIds.includes(n.id));
+  const allNodesOrdered = [...sortedIds.map(id => nodesMap.get(id)).filter(Boolean), ...disconnected];
+
+  // Define layout parameters
+  const startX = 100;  // starting X position
+  const startY = 200;  // fixed Y position (for horizontal layout)
+  const gapX = 250;    // horizontal gap between nodes
+
+  // Update node positions according to order
+  allNodesOrdered.forEach((node, index) => {
+    node.position = { x: startX + index * gapX, y: startY };
+  });
+
+  // Update the store nodes with new positions
+  store.nodes = [...allNodesOrdered];
 }
 function toggleTheme() {
   isDark.value = !isDark.value
