@@ -154,14 +154,8 @@ export const useFlowStore = defineStore('flow', () => {
     const nodeB = nodes.value.find((n) => n.id === target)
     if (!nodeA || !nodeB) return
 
-    if (!nodeA.position) {
-      console.warn(`Node A (${nodeA.id}) position missing. Defaulting.`)
-      nodeA.position = { x: 0, y: 0 }
-    }
-    if (!nodeB.position) {
-      console.warn(`Node B (${nodeB.id}) position missing. Defaulting.`)
-      nodeB.position = { x: 200, y: 200 }
-    }
+    if (!nodeA.position) nodeA.position = { x: 0, y: 0 }
+    if (!nodeB.position) nodeB.position = { x: 200, y: 200 }
 
     addEdge({
       id: `e_${source}-${target}_${Date.now()}`,
@@ -171,24 +165,34 @@ export const useFlowStore = defineStore('flow', () => {
       type: 'default',
     })
 
-    const combined = generateCombinedService(nodeA, nodeB)
+    let combinedNode = null
 
-    const posA = nodeA.position
-    const posB = nodeB.position
-    const position = {
-      x: Math.round((posA.x + posB.x) / 2) + 40,
-      y: Math.round((posA.y + posB.y) / 2) + 40,
+    // Check if nodeA or nodeB is combined node
+    if (nodeA.type === 'combinedServiceNode') {
+      // Add nodeB to combined nodeA
+      combinedNode = addToCombinedNode(nodeA, nodeB)
+    } else if (nodeB.type === 'combinedServiceNode') {
+      // Add nodeA to combined nodeB
+      combinedNode = addToCombinedNode(nodeB, nodeA)
+    } else {
+      // Neither is combined - create new combined node from both
+      combinedNode = generateCombinedService(nodeA, nodeB)
+      const posA = nodeA.position
+      const posB = nodeB.position
+      const position = {
+        x: Math.round((posA.x + posB.x) / 2) + 40,
+        y: Math.round((posA.y + posB.y) / 2) + 40,
+      }
+      nodes.value.push({
+        id: combinedNode.id,
+        type: 'combinedServiceNode',
+        position,
+        data: combinedNode.data,
+      })
     }
 
-    nodes.value.push({
-      id: combined.id,
-      type: 'combinedServiceNode',
-      position,
-      data: combined.data,
-    })
     nodes.value = [...nodes.value] // trigger reactivity
-
-    return combined
+    return combinedNode
   }
   function generateCombinedService(...nodes) {
     const fieldsList = nodes.map(node => node.data?.fields || []);
@@ -206,22 +210,40 @@ export const useFlowStore = defineStore('flow', () => {
       },
     };
   }
-  // function generateCombinedService(nodeA, nodeB) {
-  //   const fieldsA = nodeA.data?.fields || []
-  //   const fieldsB = nodeB.data?.fields || []
-  //   const mergedFields = mergeFields(fieldsA, fieldsB)
 
-  //   const id = uniqueId('combined')
-  //   return {
-  //     id,
-  //     data: {
-  //       id,
-  //       label: `${nodeA.data.label} + ${nodeB.data.label}`,
-  //       combinedSchema: mergedFields,
-  //       editable: true,
-  //     },
-  //   }
-  // }
+  function addToCombinedNode(combinedNode, newNode) {
+    // Extract existing combined fields from combinedNode.data.combinedSchema
+    // assuming combinedSchema.services is an array of fields arrays per original node
+    const existingServicesFields = combinedNode.data.combinedSchema.services || []
+    const newFields = newNode.data?.fields || []
+
+    // Add new node's fields to existing services array
+    const updatedServices = [...existingServicesFields, newFields]
+
+    // Merge all fields again
+    const mergedResult = mergeNFields(...updatedServices)
+
+    // Update combined node data
+    combinedNode.data.combinedSchema = mergedResult
+
+    // Update combined label with new node label
+    combinedNode.data.label += ` + ${newNode.data.label}`
+
+    // Optional: update combined node's data.id or keep original?
+
+    // Update node position if you want (optional)
+
+    // Update the nodes array with updated combinedNode
+    const idx = nodes.value.findIndex(n => n.id === combinedNode.id)
+    if (idx !== -1) {
+      nodes.value[idx] = { ...combinedNode }
+    }
+
+    // Optionally, remove newNode from nodes list if you want to "absorb" it
+    nodes.value = nodes.value.filter(n => n.id !== newNode.id)
+
+    return combinedNode
+  }
 
   function exportFlow() {
     return {
