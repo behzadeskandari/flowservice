@@ -2,23 +2,21 @@
 import { defineStore } from 'pinia'
 import { reactive, ref, watch } from 'vue'
 import { mergeFields } from '../utils/schemaUtils'
+import { uniqueId } from '@/utils/modalUtils'
 
 const LOCAL_STORAGE_KEY = 'flowservice-flow'
 
 // Simple unique id generator
-let idCounter = 1
-function uniqueId(prefix = 'node') {
-  return `${prefix}_${Date.now().toString(36)}_${idCounter++}`
-}
+
 
 export const useFlowStore = defineStore('flow', () => {
   const nodes = ref([])
   const edges = ref([])
+  const autoSave = ref(false)
   const selectedNode = ref(null)
   const showModal = ref(false)
   const modalMode = ref('add') // 'add'|'edit'|'view'
   const flowViewport = reactive({ x: 0, y: 0, zoom: 1 })
-
   function loadFlow() {
     const flow = localStorage.getItem(LOCAL_STORAGE_KEY)
     if (flow) {
@@ -32,18 +30,36 @@ export const useFlowStore = defineStore('flow', () => {
   }
 
   // Save flow to localStorage on nodes or edges change
+  // watch(
+  //   nodes,
+  //   (newNodes) => {
+  //     newNodes.forEach((node) => {
+  //       if (!node.position) {
+  //         console.warn(`Node ${node.id} missing position, fixing.`)
+  //         node.position = { x: 100, y: 100 }
+  //       }
+  //     })
+  //   },
+  //   { deep: true, immediate: true },
+  // )
   watch(
-    nodes,
-    (newNodes) => {
-      newNodes.forEach((node) => {
-        if (!node.position) {
-          console.warn(`Node ${node.id} missing position, fixing.`)
-          node.position = { x: 100, y: 100 }
+  [nodes, edges],
+  ([newNodes, newEdges]) => {
+    if (autoSave.value) {
+      try {
+        const flow = {
+          nodes: newNodes,
+          edges: newEdges,
         }
-      })
-    },
-    { deep: true, immediate: true },
-  )
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(flow))
+        console.log('Flow auto-saved to localStorage')
+      } catch (e) {
+        console.error('Failed to auto-save flow', e)
+      }
+    }
+  },
+  { deep: true }
+)
 
   loadFlow()
 
@@ -205,7 +221,23 @@ export const useFlowStore = defineStore('flow', () => {
       }
     })
   }
+
+  function enableAutoSave() {
+  autoSave.value = true
+  }
+
+  function disableAutoSave() {
+    autoSave.value = false
+  }
+
+  function autoSaveEnabled() {
+    return autoSave.value
+}
+
   return {
+    enableAutoSave,
+    disableAutoSave,
+    autoSaveEnabled,
     nodes,
     edges,
     selectedNode,

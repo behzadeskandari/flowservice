@@ -1,9 +1,25 @@
 <template>
   <div class="flow-wrapper">
     <div class="toolbar">
-      <button class="px-6 py-3 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 text-white font-semibold rounded-xl shadow-lg hover:from-orange-500 hover:via-orange-600 hover:to-orange-700 transition duration-300 ease-in-out" @click="onAddService">اضافه کردن سرویس</button>
-      <button class="px-6 py-3 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 text-white font-semibold rounded-xl shadow-lg hover:from-orange-500 hover:via-orange-600 hover:to-orange-700 transition duration-300 ease-in-out" @click="viewAllJson">فرمت بصورت JSON</button>
-      <button class="px-6 py-3 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 text-white font-semibold rounded-xl shadow-lg hover:from-orange-500 hover:via-orange-600 hover:to-orange-700 transition duration-300 ease-in-out" @click="exportFlowJson">Export</button>
+      <button class="px-6 py-3 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 text-white
+      font-semibold rounded-xl shadow-lg hover:from-orange-500 hover:via-orange-600 hover:to-orange-700
+      transition duration-300 ease-in-out" @click="onAddService">اضافه کردن سرویس</button>
+      <button class="px-6 py-3 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 text-white
+      font-semibold rounded-xl shadow-lg hover:from-orange-500 hover:via-orange-600 hover:to-orange-700
+       transition duration-300 ease-in-out" @click="viewAllJson">فرمت بصورت JSON</button>
+      <button class="px-6 py-3 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 text-white
+      font-semibold rounded-xl shadow-lg hover:from-orange-500 hover:via-orange-600 hover:to-orange-700
+       transition duration-300 ease-in-out" @click="exportFlowJson">Export</button>
+      <span class="px-6 py-3 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 text-white
+       font-semibold rounded-xl shadow-lg hover:from-orange-500 hover:via-orange-600 hover:to-orange-700
+        transition duration-300 ease-in-out">
+        ذخیره خودکار: {{ store.autoSaveEnabled() ? 'فعال' : 'غیرفعال' }}
+      </span>
+      <button class="px-6 py-3 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600
+       text-white font-semibold rounded-xl shadow-lg hover:from-orange-500 hover:via-orange-600
+       hover:to-orange-700 transition duration-300 ease-in-out" @click="toggleAutoSave">
+        {{ store.enableAutoSave() ?  'فعال کردن' : 'غیرفعال کردن'}} ذخیره خودکار
+      </button>
     </div>
 
     <div class="canvas">
@@ -98,7 +114,13 @@ function updateBodyClass() {
     container.classList.remove('dark-mode')
   }
 }
-
+function toggleAutoSave() {
+  if (store.autoSaveEnabled()) {
+    store.disableAutoSave()
+  } else {
+    store.enableAutoSave()
+  }
+}
 function toggleTheme() {
   isDark.value = !isDark.value
   console.log(isDark.value, 'isDark')
