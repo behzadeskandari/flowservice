@@ -62,13 +62,13 @@
           <div class="space-y-3">
             <div
               v-for="(f, idx) in local.fields"
-              :key="f.key"
+              :key="f.idx"
               class="flex gap-2 items-center bg-gray-50 dark:bg-gray-800 p-2 rounded-xl"
             >
               <input v-model="f.label" placeholder="label" class="w-full px-4 py-2 rounded-xl border border-gray-300
          focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent
          bg-white shadow-sm transition" />
-              <input v-model="f.key" placeholder="key" class="w-full px-4 py-2 rounded-xl border border-gray-300
+              <input  v-model="f.key" placeholder="key" class="w-full px-4 py-2 rounded-xl border border-gray-300
          focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent
          bg-white shadow-sm transition" />
 
