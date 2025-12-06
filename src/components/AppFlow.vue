@@ -24,17 +24,13 @@
       >
         <Background variant="dots" gap="15" size="1" color="#bbb" />
         <Panel position="top-center">
-          <button class="px-5 py-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-xl hover:opacity-90 transition screenshot-flow text-lg" @click="doScreenshot">📸 تبدیل به عکس</button>
         </Panel>
         <Controls>
-          <ControlButton>
-            <div
-              @click="toggleTheme"
-              class="control-button"
-              :title="isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'"
-            >
-              <font-awesome-icon :icon="isDark ? faSun : faMoon" />
-            </div>
+          <ControlButton  @click.prevent="toggleTheme">
+            <font-awesome-icon :icon="isDark ? faSun : faMoon" />
+          </ControlButton>
+          <ControlButton  @click.prevent="doScreenshot">
+            <font-awesome-icon :icon="faCamera" />
           </ControlButton>
         </Controls>
       </VueFlow>
@@ -49,7 +45,7 @@ import { markRaw, reactive, ref, watch, onMounted } from 'vue'
 import { Panel, useVueFlow, VueFlow } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
 import { Controls, ControlButton } from '@vue-flow/controls'
-import { faSun, faMoon } from '@fortawesome/free-solid-svg-icons'
+import { faCamera,faSun,faMoon } from '@fortawesome/free-solid-svg-icons'
 // Node components
 import ServiceNode from './nodes/ServiceNode.vue'
 import CombinedServiceNode from './nodes/CombinedServiceNode.vue'
@@ -92,15 +88,6 @@ watch(isDark, () => {
 })
 
 function updateBodyClass() {
-  // if (isDark.value) {
-  //   console.log(isDark.value, 'isDark')
-  //   document.getElementsByClassName('vue-flow__container')[0].classList.add('dark-mode')
-  //   document.getElementsByClassName('vue-flow__container')[0].classList.remove('light-mode')
-  // } else {
-  //   document.getElementsByClassName('vue-flow__container')[0].classList.add('light-mode')
-  //   document.getElementsByClassName('vue-flow__container')[0].classList.remove('dark-mode')
-  // }
-
   const container = document.querySelector('.vue-flow__container')
   if (!container) return
   if (isDark.value) {
@@ -122,7 +109,7 @@ function onAddService() {
   const position = { x: 200 + Math.random() * 60, y: 150 + Math.random() * 60 }
   const newNode = store.addNode({
     position,
-    label: 'Service ' + (store.nodes.length + 1),
+    label: 'سرویس ' + (store.nodes.length + 1),
     fields: [],
   })
   store.setSelectedNode(newNode.id, 'edit')
@@ -131,7 +118,7 @@ function onAddService() {
 function viewAllJson() {
   const payload = store.exportFlow()
   window.navigator.clipboard?.writeText(JSON.stringify(payload, null, 2))
-  alert('Flow JSON copied to clipboard.')
+  alert('Flow JSON کپی شد.')
 }
 
 function exportFlowJson() {

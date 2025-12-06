@@ -194,6 +194,17 @@ export const useFlowStore = defineStore('flow', () => {
     edges.value = [...edges.value]
   }
 
+  function getNodes(){
+    return nodes.value.map((node) => {
+      return {
+        ...node,
+        data: {
+          ...node.data,
+          fields: node.data.fields || [],
+        },
+      }
+    })
+  }
   return {
     nodes,
     edges,
@@ -205,6 +216,7 @@ export const useFlowStore = defineStore('flow', () => {
     updateNode,
     deleteNode,
     addEdge,
+    getNodes,
     handleConnect,
     setSelectedNode,
     clearSelected,
