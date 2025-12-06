@@ -1,7 +1,7 @@
 // src/store/flowStore.js
 import { defineStore } from 'pinia'
 import { reactive, ref, watch } from 'vue'
-import { mergeFields } from '../utils/schemaUtils'
+import { mergeNFields } from '../utils/schemaUtils'
 import { uniqueId } from '@/utils/modalUtils'
 
 const LOCAL_STORAGE_KEY = 'flowservice-flow'
@@ -190,23 +190,38 @@ export const useFlowStore = defineStore('flow', () => {
 
     return combined
   }
+  function generateCombinedService(...nodes) {
+    const fieldsList = nodes.map(node => node.data?.fields || []);
+    const mergedResult = mergeNFields(...fieldsList);
 
-  function generateCombinedService(nodeA, nodeB) {
-    const fieldsA = nodeA.data?.fields || []
-    const fieldsB = nodeB.data?.fields || []
-    const mergedFields = mergeFields(fieldsA, fieldsB)
-
-    const id = uniqueId('combined')
+    const id = uniqueId('combined');
+    const labels = nodes.map(node => node.data.label).join(' + ');
     return {
       id,
       data: {
         id,
-        label: `${nodeA.data.label} + ${nodeB.data.label}`,
-        combinedSchema: mergedFields,
+        label: labels,
+        combinedSchema: mergedResult,
         editable: true,
       },
-    }
+    };
   }
+  // function generateCombinedService(nodeA, nodeB) {
+  //   const fieldsA = nodeA.data?.fields || []
+  //   const fieldsB = nodeB.data?.fields || []
+  //   const mergedFields = mergeFields(fieldsA, fieldsB)
+
+  //   const id = uniqueId('combined')
+  //   return {
+  //     id,
+  //     data: {
+  //       id,
+  //       label: `${nodeA.data.label} + ${nodeB.data.label}`,
+  //       combinedSchema: mergedFields,
+  //       editable: true,
+  //     },
+  //   }
+  // }
 
   function exportFlow() {
     return {

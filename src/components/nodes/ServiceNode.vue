@@ -20,15 +20,22 @@
 
       <!-- Context Menu -->
     <div
-      v-if="contextMenu.visible"
-      ref="menuRef"
-      class="context-menu"
-      :style="{ top: contextMenu.y + 'px', left: contextMenu.x + 'px' }"
+       v-if="isContextMenuOpen"
+       ref="menuRef"
+       class="context-menu"
+       :style="contextMenuStyles"
     >
       <ul>
-        <li @click="onContextSelect('edit')">Edit</li>
-        <li @click="onContextSelect('delete')">Delete</li>
-        <li @click="onContextSelect('json')">View JSON</li>
+        <li @click="onContextSelect('edit')">
+              <font-awesome-icon :icon="faEdit" />
+          ویرایش</li>
+        <li @click="onContextSelect('delete')">
+               <font-awesome-icon :icon="faTrash" />
+          پاک کردن</li>
+        <li @click="onContextSelect('json')">
+               <font-awesome-icon :icon="faEye" />
+               نمایش بصورت
+          JSON</li>
       </ul>
     </div>
   </div>
@@ -37,6 +44,7 @@
 <script setup>
 import { onBeforeUnmount, onMounted, toRefs, ref, computed } from 'vue'
 import { Handle } from '@vue-flow/core'
+import { faEdit , faEye , faTrash } from '@fortawesome/free-solid-svg-icons'
 
 import { useFlowStore } from '@/stores/flowStore'
 // import { useEventListener  } from '@vueuse/core'
@@ -47,7 +55,7 @@ const props = defineProps({
 
 const { id, data } = toRefs(props)
 const store = useFlowStore()
-
+const nodeRef = ref(null)
 const contextMenu = ref({
   visible: false,
   x: 0,
@@ -55,27 +63,25 @@ const contextMenu = ref({
 })
 
 const menuRef = ref(null)
+const openContextMenuId = ref(null)
 
-var storeNodes = store.getNodes();
 const previewFields = computed(() => {
   return data.value.fields ? data.value.fields.slice(0, 3) : []
 })
-console.log(storeNodes,'storeNodesstoreNodes')
-console.log(previewFields,'previewFieldspreviewFields')
-console.log(data.value,'data.value.')
-//  function useClickAway(target, handler) {
-//   const onClick = (event) => {
-//     const el = target.value
-//     if (!el) return
-//     if (el !== event.target && !el.contains(event.target)) {
-//       handler(event)
-//     }
-//   }
+const isContextMenuOpen = computed(() => openContextMenuId.value === id.value)
+const contextMenuStyles = computed(() => {
+  if (!nodeRef.value) return {}
 
-//   useEventListener(document, 'click', onClick)
-// }
+  const rect = nodeRef.value.getBoundingClientRect()
+  return {
+    position: 'fixed',
+    top: `${rect.bottom + 4}px`,
+    left: `${rect.left}px`,
+    width: '150px',
+    zIndex: 9999,
+  }
+})
 
-// Close context menu on outside click
 function handleClickOutside(event) {
    if (menuRef.value && !menuRef.value.contains(event.target)) {
     contextMenu.value.visible = false
@@ -98,6 +104,7 @@ function openEdit() {
 function onRightClick(e) {
   e.preventDefault()
   contextMenu.value.visible = true
+   openContextMenuId.value = id.value
   // Position context menu at cursor but keep it inside viewport
   const clickX = e.clientX
   const clickY = e.clientY
@@ -112,6 +119,7 @@ function onRightClick(e) {
 }
 
 function onContextSelect(action) {
+  openContextMenuId.value = null
   contextMenu.value.visible = false
   if (action === 'edit') {
     store.setSelectedNode(id.value, 'edit')

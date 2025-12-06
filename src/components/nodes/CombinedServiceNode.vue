@@ -26,7 +26,6 @@ const props = defineProps({
 })
 const { id, data } = toRefs(props)
 const store = useFlowStore()
-
 function openView() {
   // open modal view for combined node
   store.setSelectedNode(id.value, 'view')
