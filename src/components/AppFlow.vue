@@ -29,7 +29,7 @@
         :min-zoom="0.8"
         :nodes="store.nodes"
         :edges="store.edges"
-        style="width: 100%; height: 74vh"
+        style="width: 100%; height: 95vh"
         @nodes-change="onNodesChange"
         @edges-change="onEdgesChange"
         @connect="onConnect"
