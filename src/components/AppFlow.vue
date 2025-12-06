@@ -126,50 +126,27 @@ function toggleAutoSave() {
 }
 
 function sortByConnectionOrder() {
-  const nodesMap = new Map(store.nodes.map(n => [n.id, n]));
-  const edges = store.edges;
-
-  // Count incoming edges for each node
-  const incomingEdgesCount = {};
-  store.nodes.forEach(n => (incomingEdgesCount[n.id] = 0));
-  edges.forEach(e => {
-    incomingEdgesCount[e.target] = (incomingEdgesCount[e.target] || 0) + 1;
-  });
-
-  // Find root nodes (no incoming edges)
-  const queue = store.nodes.filter(n => incomingEdgesCount[n.id] === 0).map(n => n.id);
-  const sortedIds = [];
-
-  while (queue.length) {
-    const current = queue.shift();
-    sortedIds.push(current);
-
-    edges.forEach(e => {
-      if (e.source === current) {
-        incomingEdgesCount[e.target]--;
-        if (incomingEdgesCount[e.target] === 0) {
-          queue.push(e.target);
-        }
-      }
-    });
+  function getLastNumber(id) {
+    const parts = id.split('-');
+    return Number(parts[parts.length - 1]) || 0;
   }
 
-  // For nodes disconnected from graph, append them as well
-  const disconnected = store.nodes.filter(n => !sortedIds.includes(n.id));
-  const allNodesOrdered = [...sortedIds.map(id => nodesMap.get(id)).filter(Boolean), ...disconnected];
+  // Sort nodes by last number of their ID
+  const sortedNodes = [...store.nodes].sort((a, b) => {
+    return getLastNumber(a.id) - getLastNumber(b.id);
+  });
 
-  // Define layout parameters
-  const startX = 100;  // starting X position
-  const startY = 200;  // fixed Y position (for horizontal layout)
-  const gapX = 250;    // horizontal gap between nodes
+  // Layout parameters for horizontal layout
+  const startX = 100;
+  const startY = 200;
+  const gapX = 250;
 
-  // Update node positions according to order
-  allNodesOrdered.forEach((node, index) => {
+  sortedNodes.forEach((node, index) => {
     node.position = { x: startX + index * gapX, y: startY };
   });
 
-  // Update the store nodes with new positions
-  store.nodes = [...allNodesOrdered];
+  // Update the store nodes reactively with new order & positions
+  store.nodes = [...sortedNodes];
 }
 function toggleTheme() {
   isDark.value = !isDark.value

@@ -170,9 +170,11 @@ function save() {
   if (!node.value) return
   const id = node.value.id
   store.updateNode(id, {
-    label: local.label,
-    serviceName: local.serviceName,
-    fields: local.fields,
+    data: {
+      label: local.label,
+      serviceName: local.serviceName,
+      fields: local.fields,
+    },
   })
   store.clearSelected()
 }
