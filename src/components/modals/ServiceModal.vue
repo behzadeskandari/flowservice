@@ -12,10 +12,10 @@
         <h3 class="text-xl font-bold text-gray-800 dark:text-gray-100">{{ title }}</h3>
 
         <div class="flex gap-2">
-          <button class="px-5 py-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-xl hover:opacity-90 transition" @click="close">خروج</button>
-          <button v-if="isEdit" class="px-5 py-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-xl hover:opacity-90 transition" @click="save">ذخیره</button>
-          <button v-if="isEdit" class="px-5 py-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-xl hover:opacity-90 transition" @click="deleteNode">پاک کردن</button>
-          <button v-if="isView" class="px-5 py-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-xl hover:opacity-90 transition" @click="copyJson">کپی JSON</button>
+          <button class="px-6 py-3 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 text-white font-semibold rounded-xl shadow-lg hover:from-orange-500 hover:via-orange-600 hover:to-orange-700 transition duration-300 ease-in-out" @click="close">خروج</button>
+          <button v-if="isEdit" class="px-6 py-3 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 text-white font-semibold rounded-xl shadow-lg hover:from-orange-500 hover:via-orange-600 hover:to-orange-700 transition duration-300 ease-in-out" @click="save">ذخیره</button>
+          <button v-if="isEdit" class="px-6 py-3 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 text-white font-semibold rounded-xl shadow-lg hover:from-orange-500 hover:via-orange-600 hover:to-orange-700 transition duration-300 ease-in-out" @click="deleteNode">پاک کردن</button>
+          <button v-if="isView" class="px-6 py-3 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 text-white font-semibold rounded-xl shadow-lg hover:from-orange-500 hover:via-orange-600 hover:to-orange-700 transition duration-300 ease-in-out" @click="copyJson">کپی JSON</button>
         </div>
       </header>
 
@@ -37,7 +37,7 @@
           <input v-model="localLabel" class="w-full px-4 py-2 rounded-lg bg-gray-800 text-gray-200 border border-gray-700
          focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="Label" />
 
-          <button  class="px-5 py-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-xl hover:opacity-90 transition" @click="updateLabel">بروزرسانی Label</button>
+          <button  class="px-6 py-3 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 text-white font-semibold rounded-xl shadow-lg hover:from-orange-500 hover:via-orange-600 hover:to-orange-700 transition duration-300 ease-in-out" @click="updateLabel">بروزرسانی Label</button>
         </div>
 
         <!-- Normal Node -->
@@ -83,16 +83,16 @@
                                                                           focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent
                                                                           bg-white shadow-sm transition" />
 
-              <button class="btn-red px-5 py-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-xl hover:opacity-90 transition" @click="removeField(idx)">
-                <font-awesome-icon :icon="['fas','trash']"  style="color: var(--color-red-400); margin-top:4px;font-size:larger"/>
+              <button class="px-6 py-3 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 text-white font-semibold rounded-xl shadow-lg hover:from-orange-500 hover:via-orange-600 hover:to-orange-700 transition duration-300 ease-in-out" @click="removeField(idx)">
+                <font-awesome-icon :icon="['fas','trash']"  style="color: var(--color-white-400); margin-top:4px;font-size:larger"/>
                 <!-- پاک کردن -->
               </button>
             </div>
           </div>
 
-          <button class="btn-purple w-full px-5 py-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-xl hover:opacity-90 transition" @click="addField">
-            <font-awesome-icon :icon="['fas','plus']" style="color: var(--color-green-300); font-size:larger" />
-            <span class="text-green-300">
+          <button class="px-6 py-3 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 text-white font-semibold rounded-xl shadow-lg hover:from-orange-500 hover:via-orange-600 hover:to-orange-700 transition duration-300 ease-in-out" @click="addField">
+            <font-awesome-icon :icon="['fas','plus']" style="color: var(--color-white-300); font-size:larger" />
+            <span class="text-white-300">
              اضافه کردن فیلد
             </span>
           </button>
