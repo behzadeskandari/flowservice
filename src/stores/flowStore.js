@@ -42,16 +42,31 @@ export const useFlowStore = defineStore('flow', () => {
   //   },
   //   { deep: true, immediate: true },
   // )
-  watch(
+//   watch(
+//   [nodes, edges],
+//   ([newNodes, newEdges]) => {
+//     if (autoSave.value) {
+//      saveFlow(newNodes, newEdges)
+//     }
+//   },
+//   { deep: true }
+// )
+
+watch(
   [nodes, edges],
   ([newNodes, newEdges]) => {
+    newNodes.forEach(node => {
+      if (!node.position || typeof node.position.x !== 'number' || typeof node.position.y !== 'number') {
+        console.warn(`Fixing node ${node.id} missing or invalid position`)
+        node.position = { x: 100, y: 100 }
+      }
+    })
     if (autoSave.value) {
-     saveFlow(newNodes, newEdges)
+      saveFlow(newNodes, newEdges)
     }
   },
   { deep: true }
 )
-
   loadFlow()
 
   // function addNode({
