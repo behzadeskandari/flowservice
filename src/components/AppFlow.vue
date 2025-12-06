@@ -18,7 +18,7 @@
       <button class="px-6 py-3 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600
        text-white font-semibold rounded-xl shadow-lg hover:from-orange-500 hover:via-orange-600
        hover:to-orange-700 transition duration-300 ease-in-out" @click="toggleAutoSave">
-        {{ store.enableAutoSave() ?  'فعال کردن' : 'غیرفعال کردن'}} ذخیره خودکار
+        {{ store.autoSaveEnabled() ?  'فعال کردن' : 'غیرفعال کردن'}} ذخیره خودکار
       </button>
     </div>
 

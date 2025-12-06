@@ -147,6 +147,52 @@ export const useFlowStore = defineStore('flow', () => {
   }
 
   function handleConnect(params) {
+    // const { source, target } = params
+    // if (!source || !target) return
+
+    // const nodeA = nodes.value.find((n) => n.id === source)
+    // const nodeB = nodes.value.find((n) => n.id === target)
+    // if (!nodeA || !nodeB) return
+
+    // if (!nodeA.position) nodeA.position = { x: 0, y: 0 }
+    // if (!nodeB.position) nodeB.position = { x: 200, y: 200 }
+
+    // addEdge({
+    //   id: `e_${source}-${target}_${Date.now()}`,
+    //   source,
+    //   target,
+    //   animated: true,
+    //   type: 'default',
+    // })
+
+    // let combinedNode = null
+
+    // // Check if nodeA or nodeB is combined node
+    // if (nodeA.type === 'combinedServiceNode') {
+    //   // Add nodeB to combined nodeA
+    //   combinedNode = addToCombinedNode(nodeA, nodeB)
+    // } else if (nodeB.type === 'combinedServiceNode') {
+    //   // Add nodeA to combined nodeB
+    //   combinedNode = addToCombinedNode(nodeB, nodeA)
+    // } else {
+    //   // Neither is combined - create new combined node from both
+    //   combinedNode = generateCombinedService(nodeA, nodeB)
+    //   const posA = nodeA.position
+    //   const posB = nodeB.position
+    //   const position = {
+    //     x: Math.round((posA.x + posB.x) / 2) + 40,
+    //     y: Math.round((posA.y + posB.y) / 2) + 40,
+    //   }
+    //   nodes.value.push({
+    //     id: combinedNode.id,
+    //     type: 'combinedServiceNode',
+    //     position,
+    //     data: combinedNode.data,
+    //   })
+    // }
+
+    // nodes.value = [...nodes.value] // trigger reactivity
+    // return combinedNode
     const { source, target } = params
     if (!source || !target) return
 
@@ -167,15 +213,17 @@ export const useFlowStore = defineStore('flow', () => {
 
     let combinedNode = null
 
-    // Check if nodeA or nodeB is combined node
-    if (nodeA.type === 'combinedServiceNode') {
-      // Add nodeB to combined nodeA
+    if (nodeA.type === 'combinedServiceNode' && nodeB.type !== 'combinedServiceNode') {
+      // Add single nodeB to combined nodeA
       combinedNode = addToCombinedNode(nodeA, nodeB)
-    } else if (nodeB.type === 'combinedServiceNode') {
-      // Add nodeA to combined nodeB
+    } else if (nodeB.type === 'combinedServiceNode' && nodeA.type !== 'combinedServiceNode') {
+      // Add single nodeA to combined nodeB
       combinedNode = addToCombinedNode(nodeB, nodeA)
+    } else if (nodeA.type === 'combinedServiceNode' && nodeB.type === 'combinedServiceNode') {
+      // Both combined nodes: optionally merge two combined nodes
+      combinedNode = mergeCombinedNodes(nodeA, nodeB)
     } else {
-      // Neither is combined - create new combined node from both
+      // Both are single nodes: create new combined node from both
       combinedNode = generateCombinedService(nodeA, nodeB)
       const posA = nodeA.position
       const posB = nodeB.position
@@ -244,7 +292,27 @@ export const useFlowStore = defineStore('flow', () => {
 
     return combinedNode
   }
+  function mergeCombinedNodes(nodeA, nodeB) {
+    const servicesA = nodeA.data.combinedSchema.services || []
+    const servicesB = nodeB.data.combinedSchema.services || []
 
+    const mergedServices = [...servicesA, ...servicesB]
+    const mergedResult = mergeNFields(...mergedServices)
+
+    nodeA.data.combinedSchema = mergedResult
+    nodeA.data.label += ` + ${nodeB.data.label}`
+
+    // Remove nodeB from nodes list
+    nodes.value = nodes.value.filter(n => n.id !== nodeB.id)
+
+    // Update nodeA in nodes array
+    const idx = nodes.value.findIndex(n => n.id === nodeA.id)
+    if (idx !== -1) {
+      nodes.value[idx] = { ...nodeA }
+    }
+
+    return nodeA
+  }
   function exportFlow() {
     return {
       nodes: nodes.value,
