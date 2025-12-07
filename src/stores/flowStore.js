@@ -167,6 +167,11 @@ export const useFlowStore = defineStore('flow', () => {
   }
 
   function handleConnect(params) {
+    if (!params.sourceHandle === 'out' || !params.targetHandle === 'in') {
+      return;
+    }
+    console.log('Connecting nodes:', params);
+    console.log('handleConnect', params)
     const { source, target } = params
     if (!source || !target) return
 
@@ -185,6 +190,10 @@ export const useFlowStore = defineStore('flow', () => {
       type: 'default',
     })
 
+    const connectedNodes = getConnectedNodes(nodes.value, edges.value)
+    const notConnectedNodes = getNotConnectedNodes(nodes.value, edges.value)
+    console.log('Connected nodes:', connectedNodes)
+    console.log('Not connected nodes:', notConnectedNodes)
     let combinedNode = null
     if (nodeA.type === 'combinedServiceNode' && nodeB.type === 'combinedServiceNode') {
       combinedNode = addToCombinedNode(nodeA, nodeB)
@@ -375,6 +384,27 @@ export const useFlowStore = defineStore('flow', () => {
     }
 
     return false;
+  }
+
+  function getConnectedNodes(nodes, edges) {
+    const connectedNodeIds = new Set()
+
+    edges.forEach(edge => {
+      connectedNodeIds.add(edge.source)
+      connectedNodeIds.add(edge.target)
+    })
+
+    return nodes.filter(node => connectedNodeIds.has(node.id))
+  }
+  function getNotConnectedNodes(nodes, edges) {
+    const connectedNodeIds = new Set()
+
+    edges.forEach(edge => {
+      connectedNodeIds.add(edge.source)
+      connectedNodeIds.add(edge.target)
+    })
+
+    return nodes.filter(node => !connectedNodeIds.has(node.id))
   }
   function enableAutoSave() {
     autoSave.value = true
