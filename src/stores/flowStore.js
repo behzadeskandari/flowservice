@@ -425,56 +425,6 @@ export const useFlowStore = defineStore('flow', () => {
     })
   }
 
-  const adjacency = new Map()
-  function areNodesConnected(nodeIdA, nodeIdB, edges) {
-    if (!edges || !Array.isArray(edges.value)) return false
-    // Build adjacency list
-    edges.value.forEach((edge) => {
-      if (!adjacency.has(edge.source)) adjacency.set(edge.source, [])
-      if (!adjacency.has(edge.target)) adjacency.set(edge.target, [])
-      adjacency.get(edge.source).push(edge.target)
-      adjacency.get(edge.target).push(edge.source)
-    })
-
-    // BFS or DFS from nodeIdA to see if nodeIdB is reachable
-    const visited = new Set()
-    const queue = [nodeIdA]
-
-    while (queue.length > 0) {
-      const current = queue.shift()
-      if (current === nodeIdB) return true
-      if (visited.has(current)) continue
-      visited.add(current)
-
-      const neighbors = adjacency.get(current) || []
-      neighbors.forEach((neighbor) => {
-        if (!visited.has(neighbor)) queue.push(neighbor)
-      })
-    }
-
-    return false
-  }
-
-  function getConnectedNodes(nodes, edges) {
-    const connectedNodeIds = new Set()
-
-    edges.forEach((edge) => {
-      connectedNodeIds.add(edge.source)
-      connectedNodeIds.add(edge.target)
-    })
-
-    return nodes.filter((node) => connectedNodeIds.has(node.id))
-  }
-  function getNotConnectedNodes(nodes, edges) {
-    const connectedNodeIds = new Set()
-
-    edges.forEach((edge) => {
-      connectedNodeIds.add(edge.source)
-      connectedNodeIds.add(edge.target)
-    })
-
-    return nodes.filter((node) => !connectedNodeIds.has(node.id))
-  }
   function enableAutoSave() {
     autoSave.value = true
   }
