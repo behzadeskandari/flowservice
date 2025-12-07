@@ -237,12 +237,20 @@ function doScreenshot() {
   gap: 8px;
   padding: 8px;
 }
-.toolbar {
+/* .toolbar {
   position: fixed;
   display: flex;
   top: 10px;
   gap: 8px;
   z-index: 999;
+} */
+.toolbar {
+  position: fixed;
+  display: flex;
+  gap: 8px;
+  z-index: 999;
+  bottom: 19px;
+  right: 20px;
 }
 .canvas {
   border: 1px solid #e2e8f0;
