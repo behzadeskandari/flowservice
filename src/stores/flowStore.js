@@ -385,6 +385,7 @@ export const useFlowStore = defineStore('flow', () => {
     return false;
   }
 
+
   function getConnectedNodes(nodes, edges) {
     const connectedNodeIds = new Set()
 
