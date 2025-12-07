@@ -456,7 +456,7 @@ export const useFlowStore = defineStore('flow', () => {
     } catch (e) {
       console.error('Auto-save failed', e)
     }
-  }, 500)
+  }, 1000)
   return {
     enableAutoSave,
     disableAutoSave,
