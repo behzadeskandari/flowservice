@@ -35,52 +35,8 @@
             نمایش بصورت
             JSON
           </li>
-          <li @click="openMergeModal">
-            <font-awesome-icon :icon="faCompressArrowsAlt" />
-            ادغام سرویس‌ها
-          </li>
+
         </ul>
-      </div>
-    </div>
-    <div v-if="isMergeModalOpen">
-      <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50" @click.self="cancelMerge">
-        <div class="bg-white rounded-lg shadow-lg p-6 max-w-lg w-full" @click.stop>
-          <h3 class="text-lg font-bold mb-4">ادغام سرویس‌ها</h3>
-
-          <label class="block mb-2 font-medium">سرویس برای ادغام را انتخاب کنید:</label>
-          <select v-model="selectedMergeNodeId" class="w-full p-2 mb-4 border rounded">
-            <option disabled value="">یک سرویس را انتخاب کنید</option>
-            <option v-for="node in mergeCandidates" :key="node.id" :value="node.id">
-              {{ node.data.label }}
-            </option>
-          </select>
-
-          <div v-if="selectedMergeNodeId" class="mb-4 max-h-40 overflow-y-auto border p-2 rounded">
-            <label class="block mb-1 font-semibold">فیلدهایی برای ادغام انتخاب کنید:</label>
-
-            <div class="mb-2">
-              <label>
-                <input type="checkbox" v-model="selectAllFields" @change="toggleSelectAll" />
-                انتخاب همه
-              </label>
-            </div>
-
-            <div v-for="field in fieldsToMerge" :key="field.key" class="ml-4 mb-1">
-              <label>
-                <input type="checkbox" :value="field.key" :checked="selectedFieldsToMerge.has(field.key)"
-                  @change="toggleFieldSelection(field.key, $event.target.checked)" />
-                {{ field.label }} ({{ field.type }})
-              </label>
-            </div>
-          </div>
-
-          <div class="flex justify-end gap-4 mt-6">
-            <button @click="cancelMerge" class="btn-cancel">لغو</button>
-            <button  @click="performMerge" class="btn-confirm">
-              ادغام
-            </button>
-          </div>
-        </div>
       </div>
     </div>
   </div>
@@ -89,7 +45,7 @@
 <script setup>
 import { onBeforeUnmount, onMounted, toRefs, ref, computed } from 'vue'
 import { Handle } from '@vue-flow/core'
-import { faEdit, faEye, faTrash, faCompressArrowsAlt } from '@fortawesome/free-solid-svg-icons'
+import { faEdit, faEye, faTrash  } from '@fortawesome/free-solid-svg-icons'
 
 import { useFlowStore } from '@/stores/flowStore'
 // import { useEventListener  } from '@vueuse/core'
@@ -97,12 +53,9 @@ const props = defineProps({
   id: { type: String, required: true },
   data: { type: Object, required: true },
 })
-const isMergeModalOpen = ref(false)
-const mergeCandidates = ref([])  // Combined services you can merge with
-const selectedMergeNodeId = ref(null)  // Which node to merge with
-const selectedFieldsToMerge = ref(new Set()) // Selected fields
-const selectAllFields = ref(false)
+console.log('ServiceNode props data:', props.data)
 
+const selectedMergeNodeId = ref(null)  // Which node to merge with
 const { id, data } = toRefs(props)
 const store = useFlowStore()
 const nodeRef = ref(null)
@@ -131,23 +84,9 @@ const contextMenuStyles = computed(() => {
     zIndex: 9999,
   }
 })
-function openMergeModal() {
-  debugger
-  // Close context menu
-  openContextMenuId.value = null
-  contextMenu.value.visible = false
 
-  // Load candidate combined service nodes (for example, connected nodes of type combinedServiceNode)
-  mergeCandidates.value = store.nodes.filter(n =>
-    n.type === 'combinedServiceNode' && n.id !== id.value
-  )
 
-  selectedMergeNodeId.value = null
-  selectedFieldsToMerge.value = new Set()
-  selectAllFields.value = false
 
-  isMergeModalOpen.value = true
-}
 function handleClickOutside(event) {
   if (menuRef.value && !menuRef.value.contains(event.target)) {
     contextMenu.value.visible = false
@@ -210,79 +149,7 @@ const fieldsToMerge = computed(() => {
       : []
 })
 
-function toggleFieldSelection(key, checked) {
-  if (checked) {
-    selectedFieldsToMerge.value.add(key)
-  } else {
-    selectedFieldsToMerge.value.delete(key)
-  }
-}
 
-function toggleSelectAll() {
-  if (selectAllFields.value) {
-    fieldsToMerge.value.forEach((f) => selectedFieldsToMerge.value.add(f.key))
-  } else {
-    selectedFieldsToMerge.value.clear()
-  }
-}
-
-const canMerge = computed(() => {
-  return selectedMergeNodeId.value && selectedFieldsToMerge.value.size > 0
-})
-
-function cancelMerge() {
-  isMergeModalOpen.value = false
-  selectedMergeNodeId.value = null
-  selectedFieldsToMerge.value.clear()
-  selectAllFields.value = false
-}
-
-function performMerge() {
-  console.log("Performing merge...");
-  if (!selectedMergeNodeId.value || !store.nodes.find(n => n.id === id.value)) {
-    console.log("Missing selected nodes");
-    return
-  }
-  if (!selectedMergeNodeId.value || !store.nodes.find(n => n.id === id.value)) return
-
-  const currentNode = store.nodes.find(n => n.id === id.value)
-  const mergeNode = store.nodes.find(n => n.id === selectedMergeNodeId.value)
-
-  if (!currentNode || !mergeNode) {
-    console.log("One of the nodes not found");
-    return
-  }
-
-  // Ensure combinedSchema is an array or fallback to []
-  const currentSchema = Array.isArray(currentNode.data.combinedSchema) ? currentNode.data.combinedSchema : []
-  const mergeSchema = Array.isArray(mergeNode.data.combinedSchema) ? mergeNode.data.combinedSchema : []
-
-  // Fields to merge from selected node
-  const fieldsFromOther = mergeSchema.filter(f =>
-    selectedFieldsToMerge.value.has(f.key)
-  )
-
-  console.log("Fields to add:", fieldsFromOther)
-  // Merge schemas, avoid duplicate keys
-  const newCombinedSchema = [...currentSchema]
-  fieldsFromOther.forEach(f => {
-    if (!newCombinedSchema.find(x => x.key === f.key)) {
-      newCombinedSchema.push(f)
-    }
-  })
- console.log("New combined schema:", newCombinedSchema)
-
-  // Update the node with new combined schema and label showing merge
-  store.updateNode(currentNode.id, {
-    data: {
-      ...currentNode.data,
-      combinedSchema: newCombinedSchema,
-      label: `${currentNode.data.label} + ${mergeNode.data.label}`,
-    }
-  })
-
-  cancelMerge()
-}
 
 </script>
 

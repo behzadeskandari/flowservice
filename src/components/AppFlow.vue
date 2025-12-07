@@ -184,6 +184,7 @@ function exportFlowJson() {
 }
 
 function onConnect(evt) {
+  console.log('onConnect', evt)
   store.handleConnect(evt)
 }
 
