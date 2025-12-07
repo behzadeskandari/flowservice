@@ -1,24 +1,34 @@
 <template>
   <div class="flow-wrapper">
     <div class="toolbar">
-      <button class="px-6 py-3 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 text-white
-      font-semibold rounded-xl shadow-lg hover:from-orange-500 hover:via-orange-600 hover:to-orange-700
-      transition duration-300 ease-in-out" @click="onAddService">اضافه کردن سرویس</button>
-      <button class="px-6 py-3 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 text-white
-      font-semibold rounded-xl shadow-lg hover:from-orange-500 hover:via-orange-600 hover:to-orange-700
-       transition duration-300 ease-in-out" @click="viewAllJson">فرمت بصورت JSON</button>
-      <button class="px-6 py-3 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 text-white
-      font-semibold rounded-xl shadow-lg hover:from-orange-500 hover:via-orange-600 hover:to-orange-700
-       transition duration-300 ease-in-out" @click="exportFlowJson">Export</button>
-      <span class="px-6 py-3 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 text-white
-       font-semibold rounded-xl shadow-lg hover:from-orange-500 hover:via-orange-600 hover:to-orange-700
-        transition duration-300 ease-in-out">
+      <button
+        class="px-6 py-3 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 text-white font-semibold rounded-xl shadow-lg hover:from-orange-500 hover:via-orange-600 hover:to-orange-700 transition duration-300 ease-in-out"
+        @click="onAddService"
+      >
+        اضافه کردن سرویس
+      </button>
+      <button
+        class="px-6 py-3 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 text-white font-semibold rounded-xl shadow-lg hover:from-orange-500 hover:via-orange-600 hover:to-orange-700 transition duration-300 ease-in-out"
+        @click="viewAllJson"
+      >
+        فرمت بصورت JSON
+      </button>
+      <button
+        class="px-6 py-3 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 text-white font-semibold rounded-xl shadow-lg hover:from-orange-500 hover:via-orange-600 hover:to-orange-700 transition duration-300 ease-in-out"
+        @click="exportFlowJson"
+      >
+        Export
+      </button>
+      <span
+        class="px-6 py-3 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 text-white font-semibold rounded-xl shadow-lg hover:from-orange-500 hover:via-orange-600 hover:to-orange-700 transition duration-300 ease-in-out"
+      >
         ذخیره خودکار: {{ store.autoSaveEnabled() ? 'فعال' : 'غیرفعال' }}
       </span>
-      <button class="px-6 py-3 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600
-       text-white font-semibold rounded-xl shadow-lg hover:from-orange-500 hover:via-orange-600
-       hover:to-orange-700 transition duration-300 ease-in-out" @click="toggleAutoSave">
-        {{ store.autoSaveEnabled() ? 'غیرفعال کردن': 'فعال کردن'  }} ذخیره خودکار
+      <button
+        class="px-6 py-3 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 text-white font-semibold rounded-xl shadow-lg hover:from-orange-500 hover:via-orange-600 hover:to-orange-700 transition duration-300 ease-in-out"
+        @click="toggleAutoSave"
+      >
+        {{ store.autoSaveEnabled() ? 'غیرفعال کردن' : 'فعال کردن' }} ذخیره خودکار
       </button>
     </div>
 
@@ -39,13 +49,12 @@
         class="vue-flow__container"
       >
         <Background variant="dots" gap="15" size="1" color="#bbb" />
-        <Panel position="top-center">
-        </Panel>
+        <Panel position="top-center"> </Panel>
         <Controls>
-          <ControlButton  @click.prevent="toggleTheme">
+          <ControlButton @click.prevent="toggleTheme">
             <font-awesome-icon :icon="isDark ? faSun : faMoon" />
           </ControlButton>
-          <ControlButton  @click.prevent="doScreenshot">
+          <ControlButton @click.prevent="doScreenshot">
             <font-awesome-icon :icon="faCamera" />
           </ControlButton>
           <ControlButton @click.prevent="sortByConnectionOrder">
@@ -53,7 +62,6 @@
           </ControlButton>
         </Controls>
         <MiniMap />
-
       </VueFlow>
     </div>
 
@@ -66,7 +74,7 @@ import { markRaw, reactive, ref, watch, onMounted } from 'vue'
 import { Panel, useVueFlow, VueFlow } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
 import { Controls, ControlButton } from '@vue-flow/controls'
-import { faCamera,faSun,faMoon,faSortAmountDown } from '@fortawesome/free-solid-svg-icons'
+import { faCamera, faSun, faMoon, faSortAmountDown } from '@fortawesome/free-solid-svg-icons'
 import { MiniMap } from '@vue-flow/minimap'
 import ServiceNode from './nodes/ServiceNode.vue'
 import CombinedServiceNode from './nodes/CombinedServiceNode.vue'
@@ -129,26 +137,26 @@ function toggleAutoSave() {
 
 function sortByConnectionOrder() {
   function getLastNumber(id) {
-    const parts = id.split('-');
-    return Number(parts[parts.length - 1]) || 0;
+    const parts = id.split('-')
+    return Number(parts[parts.length - 1]) || 0
   }
 
   // Sort nodes by last number of their ID
   const sortedNodes = [...store.nodes].sort((a, b) => {
-    return getLastNumber(a.id) - getLastNumber(b.id);
-  });
+    return getLastNumber(a.id) - getLastNumber(b.id)
+  })
 
   // Layout parameters for horizontal layout
-  const startX = 100;
-  const startY = 200;
-  const gapX = 250;
+  const startX = 100
+  const startY = 200
+  const gapX = 250
 
   sortedNodes.forEach((node, index) => {
-    node.position = { x: startX + index * gapX, y: startY };
-  });
+    node.position = { x: startX + index * gapX, y: startY }
+  })
 
   // Update the store nodes reactively with new order & positions
-  store.nodes = [...sortedNodes];
+  store.nodes = [...sortedNodes]
 }
 function toggleTheme() {
   isDark.value = !isDark.value
