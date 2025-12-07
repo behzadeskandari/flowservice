@@ -76,7 +76,7 @@
 
           <div class="flex justify-end gap-4 mt-6">
             <button @click="cancelMerge" class="btn-cancel">لغو</button>
-            <button :disabled="!canMerge" @click="performMerge" class="btn-confirm">
+            <button  @click="performMerge" class="btn-confirm">
               ادغام
             </button>
           </div>

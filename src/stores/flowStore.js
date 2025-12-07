@@ -18,6 +18,12 @@ export const useFlowStore = defineStore('flow', () => {
   const showModal = ref(false)
   const modalMode = ref('add') // 'add'|'edit'|'view'
   const flowViewport = reactive({ x: 0, y: 0, zoom: 1 })
+
+  watch(autoSave, (newVal) => {
+    localStorage.setItem('AutoSave', newVal)
+  })
+
+
   function loadFlow() {
     const flow = localStorage.getItem(LOCAL_STORAGE_KEY)
     if (flow) {
@@ -29,7 +35,11 @@ export const useFlowStore = defineStore('flow', () => {
       }
     }
   }
-
+  const savedAutoSave = localStorage.getItem('AutoSave')
+  if (savedAutoSave !== null) {
+    // Convert string back to boolean
+    autoSave.value = savedAutoSave === 'true'
+  }
 
   watch(
     [nodes, edges],
@@ -41,6 +51,7 @@ export const useFlowStore = defineStore('flow', () => {
         }
 
       })
+
       if (autoSave.value) {
         saveFlow(newNodes, newEdges)
       }
@@ -48,6 +59,7 @@ export const useFlowStore = defineStore('flow', () => {
     { deep: true }
   )
   loadFlow()
+
 
   function addNode(options = {}) {
     const {
@@ -360,6 +372,7 @@ export const useFlowStore = defineStore('flow', () => {
     autoSave.value = false
   }
 
+
   function autoSaveEnabled() {
     return autoSave.value
   }
@@ -377,6 +390,7 @@ export const useFlowStore = defineStore('flow', () => {
         nodes: JSON.parse(JSON.stringify(nodes)),
         edges: JSON.parse(JSON.stringify(edges)),
       }
+      localStorage.setItem('AutoSave', autoSave.value)
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(flow))
       console.log('Flow auto-saved')
     } catch (e) {
