@@ -100,7 +100,21 @@ svg {
   color: black !important;
 }
 /* main.css */
+.vue-flow__handle {
+  width: 18px;
+  height: 18px;
+  background: linear-gradient(145deg, #FF6500, #ce6925);
+  border: 1.5px solid #666;
+  border-radius: 50%;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+  transition: background 0.3s ease, box-shadow 0.3s ease;
+  cursor: pointer;
+}
 
+.vue-flow__handle:hover {
+  background: linear-gradient(145deg, #7228067c, #9c2c0394);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
 
 .control-button {
   cursor: pointer;

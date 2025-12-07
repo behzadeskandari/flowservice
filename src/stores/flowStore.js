@@ -3,7 +3,7 @@ import { defineStore } from 'pinia'
 import { reactive, ref, watch } from 'vue'
 import { mergeNFields } from '../utils/schemaUtils'
 import { uniqueId } from '@/utils/modalUtils'
-import { getConnectedEdges, MarkerType } from '@vue-flow/core'
+import { MarkerType } from '@vue-flow/core'
 
 const LOCAL_STORAGE_KEY = 'flowservice-flow'
 
@@ -167,7 +167,6 @@ export const useFlowStore = defineStore('flow', () => {
   }
 
   function handleConnect(params) {
-    debugger
     const { source, target } = params
     if (!source || !target) return
 
@@ -187,12 +186,11 @@ export const useFlowStore = defineStore('flow', () => {
     })
 
     let combinedNode = null
-    const createdNodeIds = nodes.value.map(n => n.id);
     if (nodeA.type === 'combinedServiceNode' && nodeB.type === 'combinedServiceNode') {
       combinedNode = addToCombinedNode(nodeA, nodeB)
     }
 
-    else if (nodeHasConnections([nodeA.id], createdNodeIds,edges) || nodeHasConnections([nodeB.id], createdNodeIds,edges)) {
+    else if (areNodesConnected(nodeA.id, nodeB.id, edges)) {
       combinedNode = connnctToTheExistingNodeAndUpdateTheSameCombinedService(nodeA, nodeB, edges, nodes)
       const posA = nodeA.position
       const posB = nodeB.position
@@ -282,18 +280,7 @@ export const useFlowStore = defineStore('flow', () => {
       },
     };
   }
-  function nodeHasConnections(incomingNodeIds, createdNodeIds, edges) {
-    if (!edges || !Array.isArray(edges.value)) return false;
 
-    // Convert createdNodeIds and incomingNodeIds to Sets for faster lookup
-    const incomingSet = new Set(incomingNodeIds);
-    const createdSet = new Set(createdNodeIds);
-
-    return edges.value.some(edge =>
-      (incomingSet.has(edge.source) && createdSet.has(edge.target)) ||
-      (createdSet.has(edge.source) && incomingSet.has(edge.target))
-    );
-  }
   function addToCombinedNode(combinedNode, newNode) {
     // Extract existing combined fields from combinedNode.data.combinedSchema
     // assuming combinedSchema.services is an array of fields arrays per original node
@@ -358,7 +345,13 @@ export const useFlowStore = defineStore('flow', () => {
       }
     })
   }
+  function areNodesConnected(nodeIdA, nodeIdB, edges) {
 
+    return edges.some(edge =>
+      (edge.source === nodeIdA && edge.target === nodeIdB) ||
+      (edge.source === nodeIdB && edge.target === nodeIdA)
+    );
+  }
   function enableAutoSave() {
     autoSave.value = true
   }

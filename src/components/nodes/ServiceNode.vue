@@ -54,8 +54,6 @@ const props = defineProps({
   data: { type: Object, required: true },
 })
 console.log('ServiceNode props data:', props.data)
-
-const selectedMergeNodeId = ref(null)  // Which node to merge with
 const { id, data } = toRefs(props)
 const store = useFlowStore()
 const nodeRef = ref(null)
@@ -137,17 +135,7 @@ function onContextSelect(action) {
 
 
 
-const fieldsToMerge = computed(() => {
-  if (!selectedMergeNodeId.value) return []
-  const node = store.nodes.find(n => n.id === selectedMergeNodeId.value)
-  if (!node) return []
-  // Use combinedSchema or fields as fallback
-  return Array.isArray(node.data.combinedSchema)
-    ? node.data.combinedSchema
-    : Array.isArray(node.data.fields)
-      ? node.data.fields
-      : []
-})
+
 
 
 
