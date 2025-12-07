@@ -199,7 +199,7 @@ export const useFlowStore = defineStore('flow', () => {
       combinedNode = addToCombinedNode(nodeA, nodeB)
     }
 
-    else if (areNodesConnected(nodeA.id, nodeB.id, edges)) {
+    else if (areNodesConnected(nodeA.id, nodeB.id, edges , nodes)) {
       combinedNode = connnctToTheExistingNodeAndUpdateTheSameCombinedService(nodeA, nodeB, edges, nodes)
       const posA = nodeA.position
       const posB = nodeB.position
@@ -354,7 +354,8 @@ export const useFlowStore = defineStore('flow', () => {
       }
     })
   }
-  function areNodesConnected(nodeIdA, nodeIdB, edges) {
+  function areNodesConnected(nodeIdA, nodeIdB, edges, nodes) {
+    console.log('nodes nodes nodes',nodes.value)
     if (!edges || !Array.isArray(edges.value)) return false;
 
     // Build adjacency list
