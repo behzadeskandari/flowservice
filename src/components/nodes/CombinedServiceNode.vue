@@ -6,8 +6,8 @@
     </div>
 
     <div class="node-body">
-      <small>Combined</small>
-      <div class="count">Fields: {{ data.combinedSchema.length }}</div>
+      <small>ترکیب شده</small>
+      <div class="count"> فیلد های ترکیب شده: {{ data.combinedSchema }}</div>
     </div>
     <div v-if="node.type !== 'combinedServiceNode'">
       <Handle type="target" position="left" id="in" />
