@@ -115,7 +115,16 @@ svg {
   background: linear-gradient(145deg, #7228067c, #9c2c0394);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
 }
-
+.vue-flow__node-default{
+      min-width: 180px;
+    max-width: 260px;
+    padding: 8px;
+    border-radius: 8px;
+    background: white;
+    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.12);
+    border: 1px solid #e2e8f0;
+    font-family: Inter, system-ui, sans-serif;
+}
 .control-button {
   cursor: pointer;
   padding: 8px 12px;
