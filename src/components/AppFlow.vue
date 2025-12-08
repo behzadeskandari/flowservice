@@ -2,52 +2,45 @@
   <div class="flow-wrapper">
     <div class="toolbar">
       <button
-        class="px-6 py-3 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 text-white font-semibold rounded-xl shadow-lg hover:from-orange-500 hover:via-orange-600 hover:to-orange-700 transition duration-300 ease-in-out"
-        @click="onAddService"
-      >
+        class="px-3 py-2 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 text-white font-semibold rounded-xl shadow-lg hover:from-orange-500 hover:via-orange-600 hover:to-orange-700 transition duration-300 ease-in-out"
+        @click="onAddService">
+        <font-awesome-icon :icon="faPlus" style="color: white" />
         اضافه کردن سرویس
       </button>
       <button
-        class="px-6 py-3 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 text-white font-semibold rounded-xl shadow-lg hover:from-orange-500 hover:via-orange-600 hover:to-orange-700 transition duration-300 ease-in-out"
-        @click="viewAllJson"
-      >
-        فرمت بصورت JSON
+        class="px-3 py-2 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 text-white font-semibold rounded-xl shadow-lg hover:from-orange-500 hover:via-orange-600 hover:to-orange-700 transition duration-300 ease-in-out"
+        @click="viewAllJson">
+        <font-awesome-icon :icon="faFileCode" style="color: white;" />
+         JSON
+         فرمت
       </button>
       <button
-        class="px-6 py-3 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 text-white font-semibold rounded-xl shadow-lg hover:from-orange-500 hover:via-orange-600 hover:to-orange-700 transition duration-300 ease-in-out"
-        @click="exportFlowJson"
-      >
+        class="px-3 py-2 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 text-white font-semibold rounded-xl shadow-lg hover:from-orange-500 hover:via-orange-600 hover:to-orange-700 transition duration-300 ease-in-out"
+        @click="exportFlowJson">
+        <font-awesome-icon :icon="faFileExport" style="color: white;" />
         Export
       </button>
       <span
-        class="px-6 py-3 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 text-white font-semibold rounded-xl shadow-lg hover:from-orange-500 hover:via-orange-600 hover:to-orange-700 transition duration-300 ease-in-out"
-      >
+        class="px-3 py-2 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 text-white font-semibold rounded-xl shadow-lg hover:from-orange-500 hover:via-orange-600 hover:to-orange-700 transition duration-300 ease-in-out">
+        <font-awesome-icon :icon="faSave" style="color: white;" />
+
         ذخیره خودکار: {{ store.autoSaveEnabled() ? 'فعال' : 'غیرفعال' }}
       </span>
       <button
-        class="px-6 py-3 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 text-white font-semibold rounded-xl shadow-lg hover:from-orange-500 hover:via-orange-600 hover:to-orange-700 transition duration-300 ease-in-out"
-        @click="toggleAutoSave"
-      >
+        class="px-3 py-2 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 text-white font-semibold rounded-xl shadow-lg hover:from-orange-500 hover:via-orange-600 hover:to-orange-700 transition duration-300 ease-in-out"
+        @click="toggleAutoSave">
+        <font-awesome-icon v-if="store.autoSaveEnabled()" :icon="faLightbulb" style="color: red;" />
+
+        <font-awesome-icon v-else :icon="faLightbulb" style="color: white;" />
         {{ store.autoSaveEnabled() ? 'غیرفعال کردن' : 'فعال کردن' }} ذخیره خودکار
       </button>
     </div>
 
     <div class="canvas">
-      <VueFlow
-        :default-viewport="{ zoom: 0.5 }"
-        :max-zoom="1"
-        :min-zoom="0.8"
-        :nodes="store.nodes"
-        :edges="store.edges"
-        style="width: 100%; height: 95vh"
-        @nodes-change="onNodesChange"
-        @edges-change="onEdgesChange"
-        @connect="onConnect"
-        @node-dblclick="onNodeDblClick"
-        :node-types="nodeTypes"
-        v-bind="vfOptions"
-        class="vue-flow__container"
-      >
+      <VueFlow :default-viewport="{ zoom: 0.5 }" :max-zoom="1" :min-zoom="0.8" :nodes="store.nodes" :edges="store.edges"
+        style="width: 100%; height: 95vh" @nodes-change="onNodesChange" @edges-change="onEdgesChange"
+        @connect="onConnect" @node-dblclick="onNodeDblClick" :node-types="nodeTypes" v-bind="vfOptions"
+        class="vue-flow__container">
         <Background variant="dots" gap="15" size="1" color="#bbb" />
         <Panel position="top-center"> </Panel>
         <Controls>
@@ -74,11 +67,10 @@ import { markRaw, reactive, ref, watch, onMounted } from 'vue'
 import { Panel, useVueFlow, VueFlow } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
 import { Controls, ControlButton } from '@vue-flow/controls'
-import { faCamera, faSun, faMoon, faSortAmountDown } from '@fortawesome/free-solid-svg-icons'
+import { faCamera, faSun, faMoon, faSortAmountDown, faFileExport, faSave, faLightbulb,faPlus, faFileCode } from '@fortawesome/free-solid-svg-icons'
 import { MiniMap } from '@vue-flow/minimap'
 import ServiceNode from './nodes/ServiceNode.vue'
 import CombinedServiceNode from './nodes/CombinedServiceNode.vue'
-
 // Modal
 import ServiceModal from './modals/ServiceModal.vue'
 
@@ -178,6 +170,7 @@ function viewAllJson() {
   const payload = store.exportFlow()
   window.navigator.clipboard?.writeText(JSON.stringify(payload, null, 2))
   alert('Flow JSON کپی شد.')
+  this.$toast('Flow JSON کپی شد.');
 }
 
 function exportFlowJson() {
@@ -237,6 +230,7 @@ function doScreenshot() {
   gap: 8px;
   padding: 8px;
 }
+
 /* .toolbar {
   position: fixed;
   display: flex;
@@ -252,6 +246,7 @@ function doScreenshot() {
   bottom: 19px;
   right: 20px;
 }
+
 .canvas {
   border: 1px solid #e2e8f0;
   border-radius: 8px;
