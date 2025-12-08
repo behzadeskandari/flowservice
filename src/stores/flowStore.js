@@ -194,38 +194,69 @@ export const useFlowStore = defineStore('flow', () => {
       return
     }
 
+    // Identify all combined nodes already present for this group
+    const groupIds = connectedGroup.map(n => n.id)
+    const groupSet = new Set(groupIds)
+    // Find combined nodes whose underlying set overlaps this group
+    const redundantCombinedNodes = nodes.value.filter(node => {
+      if (node.type !== 'combinedServiceNode') return false;
+      // Try to recover the combined set from label
+      const parts = node.data?.label?.split(' + ')
+      if (!parts || parts.length < 2) return false;
+      return parts.every(name => groupIds.some(cid => {
+        const cn = nodes.value.find(n => n.id === cid)
+        return cn && cn.label === name
+      }))
+    })
+
+    // Remove previous combined nodes for this group
+    redundantCombinedNodes.forEach(rcn => {
+      // Remove node
+      const idx = nodes.value.findIndex(n => n.id === rcn.id)
+      if (idx !== -1) nodes.value.splice(idx, 1)
+      // Remove any edges whose source or target is this combined node
+      edges.value = edges.value.filter(e => e.source !== rcn.id && e.target !== rcn.id)
+    })
+
     // Merge all nodes in the connected group into one combined node
     const combinedNode = mergeNodeGroup(connectedGroup)
 
-    // Find edges that need to be preserved:
-    // 1. Edges from nodes in the group to nodes outside the group (outgoing)
-    // 2. Edges from nodes outside the group to nodes in the group (incoming)
-    const nodeIdsToRemove = new Set(connectedGroup.map((n) => n.id))
+    // Get all node IDs in the group
+    const nodeIdsToMerge = new Set(connectedGroup.map((n) => n.id))
+    // Find outgoing edges (from merged nodes to outside)
     const outgoingEdges = edges.value.filter(
-      (e) => nodeIdsToRemove.has(e.source) && !nodeIdsToRemove.has(e.target),
+      (e) => nodeIdsToMerge.has(e.source) && !nodeIdsToMerge.has(e.target),
     )
+    // Find incoming edges (from outside to merged nodes)
     const incomingEdges = edges.value.filter(
-      (e) => !nodeIdsToRemove.has(e.source) && nodeIdsToRemove.has(e.target),
+      (e) => !nodeIdsToMerge.has(e.source) && nodeIdsToMerge.has(e.target),
     )
 
-    // Remove all old nodes in the group
-    nodes.value = nodes.value.filter((n) => !nodeIdsToRemove.has(n.id))
-
-    // Remove all edges connected to the old nodes (both internal edges are removed)
-    edges.value = edges.value.filter(
-      (e) => !nodeIdsToRemove.has(e.source) && !nodeIdsToRemove.has(e.target),
-    )
+    // Calculate a position for the new combined node that doesn't overlap
+    let avgPosition = calculateAveragePosition(connectedGroup)
+    // Check for position overlap with existing nodes
+    const GRID_OFFSET = 60
+    let pos = { ...avgPosition }
+    let isOverlapping;
+    do {
+      isOverlapping = nodes.value.some(
+        n => Math.abs(n.position.x - pos.x) < GRID_OFFSET && Math.abs(n.position.y - pos.y) < GRID_OFFSET
+      );
+      if (isOverlapping) {
+        pos.x += GRID_OFFSET
+        pos.y += GRID_OFFSET
+      }
+    } while(isOverlapping)
 
     // Add the new combined node
-    const avgPosition = calculateAveragePosition(connectedGroup)
     nodes.value.push({
       id: combinedNode.id,
       type: 'combinedServiceNode',
-      position: avgPosition,
+      position: pos,
       data: combinedNode.data,
     })
 
-    // Recreate outgoing edges from the combined node to nodes outside the group
+    // Replicate outgoing edges for combined node
     outgoingEdges.forEach((edge) => {
       addEdge({
         id: `e_${combinedNode.id}-${edge.target}_${Date.now()}`,
@@ -235,8 +266,7 @@ export const useFlowStore = defineStore('flow', () => {
         type: edge.type || 'default',
       })
     })
-
-    // Recreate incoming edges from nodes outside the group to the combined node
+    // Replicate incoming edges for combined node
     incomingEdges.forEach((edge) => {
       addEdge({
         id: `e_${edge.source}-${combinedNode.id}_${Date.now()}`,
@@ -246,7 +276,7 @@ export const useFlowStore = defineStore('flow', () => {
         type: edge.type || 'default',
       })
     })
-
+    // (Optional) force reactivity
     nodes.value = [...nodes.value]
     edges.value = [...edges.value]
     return combinedNode

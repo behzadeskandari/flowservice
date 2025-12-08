@@ -47,7 +47,7 @@ export function mergeNFields(...servicesFields) {
   const seen = new Set(); // track keys to detect conflicts and ensure no duplicates
 
   // Store copy of each service fields to return as well
-  const servicesCopy = servicesFields.map(fields => 
+  const servicesCopy = servicesFields.map(fields =>
     Array.isArray(fields) ? fields.map(f => ({ ...f })) : []
   );
 
@@ -79,7 +79,7 @@ export function mergeNFields(...servicesFields) {
           finalKey = `${newKey}_${counter}`;
           counter++;
         }
-        
+
         merged.push({
           ...field,
           key: finalKey,
@@ -94,5 +94,50 @@ export function mergeNFields(...servicesFields) {
   return {
     services: servicesCopy,
     merged,
+  };
+}
+
+/**
+ * Merges two service node objects into one, merging their data.fields, positions, and labels.
+ * - Both nodes must have .data.fields (arrays of fields)
+ * - The merged node combines fields via mergeFields, averages position, and merges originalLabels
+ * - The label is joined as 'labelA + labelB'
+ */
+export function mergeServiceNodes(nodeA, nodeB) {
+  if (!nodeA || !nodeB || !nodeA.data || !nodeB.data) throw new Error('Both nodes must have .data');
+
+  // Merge fields with conflict-resolving logic
+  const mergedFieldsObj = mergeFields(nodeA.data.fields || [], nodeB.data.fields || []);
+
+  // Combine originalLabels
+  const originalLabels = Array.from(
+    new Set([
+      ...(nodeA.data.originalLabels || [nodeA.data.label || nodeA.label]),
+      ...(nodeB.data.originalLabels || [nodeB.data.label || nodeB.label]),
+    ])
+  );
+
+  // Average position
+  const posA = nodeA.position || { x: 100, y: 100 };
+  const posB = nodeB.position || { x: 100, y: 100 };
+  const position = {
+    x: Math.round((posA.x + posB.x) / 2),
+    y: Math.round((posA.y + posB.y) / 2),
+  };
+
+  // Merge/compose label
+  const label = originalLabels.join(' + ');
+
+  // Merge ids (mark new, leave id generation to caller)
+  return {
+    ...nodeA, // carry over any custom properties
+    type: 'serviceNode',
+    position,
+    data: {
+      ...nodeA.data,
+      label,
+      originalLabels,
+      fields: mergedFieldsObj.merged,
+    },
   };
 }
