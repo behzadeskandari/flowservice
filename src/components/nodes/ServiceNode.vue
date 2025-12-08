@@ -127,7 +127,7 @@ function onContextSelect(action) {
   if (action === 'edit') {
     store.setSelectedNode(id.value, 'edit')
   } else if (action === 'delete') {
-    if (confirm('Delete this node?')) store.deleteNode(id.value)
+    if (confirm('ایا مطمئن هستید?')) store.deleteNode(id.value)
   } else if (action === 'json') {
     store.setSelectedNode(id.value, 'view')
   }
