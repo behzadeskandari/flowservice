@@ -75,6 +75,13 @@ export default {
       isVerified: false,
     };
   },
+  // watch: {
+  //   userInput(newVal) {
+  //     if (newVal.trim()) {
+  //       this.verifyCaptcha();
+  //     }
+  //   },
+  // },
   methods: {
     generateRandomText(length = 6) {
       const chars = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789";

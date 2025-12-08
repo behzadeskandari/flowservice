@@ -1,3 +1,11 @@
+
+/**
+ * Merges fields from multiple services
+ * Ensures no duplicate keys - if a key appears in multiple services, it gets a suffix
+ * @param {Array}fieldsA fieldsB , - Variable number of field arrays, one per service
+  *@param {Array}fieldsB fieldsA , - Variable number of field arrays, one per service
+ * @returns {Object} Object with 'services' (array of serviceA field  serviceB field) and 'merged' (merged fields array)
+ */
 export function mergeFields(fieldsA = [], fieldsB = []) {
   // Keep order: A fields then B fields. If keys clash, suffix B keys with _b (simple strategy).
   const seen = new Set()

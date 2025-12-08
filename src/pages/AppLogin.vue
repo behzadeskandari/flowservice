@@ -17,13 +17,13 @@
               alt="امید تک"
               class="w-24 h-24 object-contain mx-auto"
             />
-            <h1 class="text-3xl font-bold text-orange-800 text-center drop-shadow-md py-4">
+            <!-- <h1 class="text-3xl font-bold text-orange-500 text-center drop-shadow-md py-4">
               ورود
-            </h1>
+            </h1> -->
           </div>
           <form class="space-y-6">
             <div class="flex flex-col">
-              <label class="text-right text-sm font-semibold text-orange-700 mb-2">نام کاربری</label>
+              <label class="text-right text-lg font-semibold text-orange-700 mb-2">نام کاربری</label>
               <input type="text" class="text-right h-12 px-4 rounded-lg border border-orange-200 bg-white/70
                      backdrop-blur-sm focus:bg-white focus:border-orange-500
                      focus:ring-4 focus:ring-orange-200/50 outline-none
@@ -31,7 +31,7 @@
             </div>
 
             <div class="flex flex-col">
-              <label class="text-right text-sm font-semibold text-orange-700 mb-2">رمز عبور</label>
+              <label class="text-right text-lg font-semibold text-orange-700 mb-2">رمزعبور</label>
               <input type="password" class="text-right h-12 px-4 rounded-lg border border-orange-200 bg-white/70
                      backdrop-blur-sm focus:bg-white focus:border-orange-500
                      focus:ring-4 focus:ring-orange-200/50 outline-none
