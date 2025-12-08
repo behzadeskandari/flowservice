@@ -156,3 +156,27 @@ svg {
   height: 24px;
   fill: currentColor;
 }
+.tooltip {
+  position: relative;
+  cursor: pointer;
+}
+
+/* custom tooltip */
+.tooltip:hover::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  top: 120%;
+  left: 50%;
+  transform: translateX(-50%);
+  transition: all 1.5s ease-in;
+  white-space: nowrap;
+
+  background: #000;         /* tooltip background */
+  color: #fa7b04;           /* tooltip text color */
+  font-size: 14px;
+  padding: 6px 10px;
+  border-radius: 6px;
+
+  z-index: 10;
+  pointer-events: none;
+}

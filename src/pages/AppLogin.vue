@@ -1,7 +1,7 @@
 <template>
   <div>
-    <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 to-amber-500">
-      <div class="w-full max-w-sm relative p-1 rounded-2xl
+    <div class="min-h-screen  fullscreen flex items-center justify-center bg-gradient-to-br from-orange-50 to-amber-500">
+      <div class="w-full max-w-lg relative p-1 rounded-2xl
              bg-gradient-to-br from-gery-400 via-gery-500 to-amber-600
              shadow-2xl">
         <!-- Glassy Card -->
@@ -37,9 +37,13 @@
                      focus:ring-4 focus:ring-orange-200/50 outline-none
                      text-gray-800 placeholder-gray-500 transition-all" placeholder="رمز عبور خود را وارد کنید" />
             </div>
+            <div class="flex flex-col">
+                <Captcha />
 
-            <button type="submit" class="w-full h-12 mt-4 rounded-lg bg-gradient-to-r from-orange-500 to-amber-600
+            </div>
+            <button type="submit" class="w-full h-12 mt-4 rounded-lg
                    text-white font-bold text-lg shadow-lg hover:shadow-xl
+                   bg-gradient-to-r from-orange-500 to-amber-600
                    hover:from-orange-600 hover:to-amber-700
                    active:scale-98 transition-all duration-200">
               ورود
@@ -52,6 +56,7 @@
 </template>
 
 <script setup>
+  import Captcha from '../components/AppVerifyCaptcha.vue'
 </script>
 
 <style scoped>
