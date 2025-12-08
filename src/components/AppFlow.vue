@@ -51,7 +51,7 @@
       :pan-on-scroll-speed="0.8"
       :pan-on-scroll-mode="true"
       :selection-on-click="false"
-        style="width: 100%; height: 95vh" @nodes-change="onNodesChange" @edges-change="onEdgesChange"
+        style="width: 100%; height: 96.9vh" @nodes-change="onNodesChange" @edges-change="onEdgesChange"
         @connect="onConnect" @node-dblclick="onNodeDblClick" :node-types="nodeTypes" v-bind="vfOptions"
         class="vue-flow__container">
         <Background variant="dots" gap="25" size="3" color="#bbb" />
