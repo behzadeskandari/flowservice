@@ -26,7 +26,7 @@
             </button>
             <button v-if="isEdit"
               class="px-6 py-3 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 text-white font-semibold rounded-xl shadow-lg hover:from-orange-500 hover:via-orange-600 hover:to-orange-700 transition duration-300 ease-in-out"
-              @click="deleteNode">
+              @click="askDelete">
               <font-awesome-icon :icon="faTrash" style="color: white;" />
               پاک کردن</button>
             <button v-if="isView"
@@ -124,6 +124,8 @@
           </div>
 
         </section>
+        <ConfirmModal :visible="showConfirm" message="آیا از پاک کردن گره مطمئن هستید؟" @confirm="onConfirmDelete"
+          @cancel="onCancelDelete" />
       </div>
     </div>
   </div>
@@ -131,12 +133,13 @@
 
 
 <script setup>
-import { reactive, computed } from 'vue'
+import { reactive, computed, ref } from 'vue'
 import { useFlowStore } from '../../stores/flowStore'
 import { faTrash, faSave, faArrowUp } from '@fortawesome/free-solid-svg-icons'
+import ConfirmModal from './ConfirmModal.vue'
 
 const store = useFlowStore()
-
+const showConfirm = ref(false)
 // derive selected node
 const selectedId = computed(() => store.selectedNode)
 const node = computed(() => store.nodes.find((n) => n.id === selectedId.value) || null)
@@ -213,13 +216,20 @@ function updateLabel() {
   store.clearSelected()
 }
 
-function deleteNode() {
-  if (!node.value) return
-  if (confirm('پا ک کردن گره?')) {
-    store.deleteNode(node.value.id)
-  }
+function askDelete() {
+  showConfirm.value = true
 }
 
+function onConfirmDelete() {
+  if (!node.value) return
+  store.deleteNode(node.value.id)
+  showConfirm.value = false
+  close() // Close your main modal if you want
+}
+
+function onCancelDelete() {
+  showConfirm.value = false
+}
 function close() {
   store.clearSelected()
 }

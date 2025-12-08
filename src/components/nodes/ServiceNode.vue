@@ -39,15 +39,22 @@
         </ul>
       </div>
     </div>
+    <ConfirmModal
+  :visible="showConfirm"
+  message="آیا از پاک کردن گره مطمئن هستید؟"
+  @confirm="onConfirmDelete"
+  @cancel="onCancelDelete"
+/>
   </div>
 </template>
 
 <script setup>
 import { onBeforeUnmount, onMounted, toRefs, ref, computed } from 'vue'
 import { Handle } from '@vue-flow/core'
-import { faEdit, faEye, faTrash  } from '@fortawesome/free-solid-svg-icons'
-
+import { faEdit, faEye, faTrash } from '@fortawesome/free-solid-svg-icons'
+import ConfirmModal from '../modals/ConfirmModal.vue'
 import { useFlowStore } from '@/stores/flowStore'
+const showConfirm = ref(false)
 // import { useEventListener  } from '@vueuse/core'
 const props = defineProps({
   id: { type: String, required: true },
@@ -127,7 +134,7 @@ function onContextSelect(action) {
   if (action === 'edit') {
     store.setSelectedNode(id.value, 'edit')
   } else if (action === 'delete') {
-    if (confirm('ایا مطمئن هستید?')) store.deleteNode(id.value)
+    showConfirm.value = true
   } else if (action === 'json') {
     store.setSelectedNode(id.value, 'view')
   }
@@ -136,7 +143,14 @@ function onContextSelect(action) {
 
 
 
+function onConfirmDelete() {
+  store.deleteNode(id.value)
+  showConfirm.value = false
+}
 
+function onCancelDelete() {
+  showConfirm.value = false
+}
 
 
 </script>
