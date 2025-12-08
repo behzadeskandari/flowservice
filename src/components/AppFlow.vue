@@ -58,7 +58,9 @@
       </VueFlow>
     </div>
 
-    <ServiceModal />
+    <ServiceModal />.
+     <notifications />
+
   </div>
 </template>
 
@@ -86,10 +88,9 @@ const nodeTypes = {
   serviceNode: markRaw(ServiceNode),
   combinedServiceNode: markRaw(CombinedServiceNode),
 }
+import { notify } from "@kyvg/vue3-notification";
 
-onMounted(() => {
-  this.$notify({ title: 'Hello!', text: 'This is a toast.' })
-})
+
 const store = useFlowStore()
 
 const vfOptions = reactive({
@@ -172,8 +173,11 @@ function onAddService() {
 function viewAllJson() {
   const payload = store.exportFlow()
   window.navigator.clipboard?.writeText(JSON.stringify(payload, null, 2))
-  alert('Flow JSON کپی شد.')
-  this.$toast('Flow JSON کپی شد.');
+  notify({
+  title: "کپی شد",
+  text: "Flow JSON کپی شد.",
+  type: "success"
+  });
 }
 
 function exportFlowJson() {

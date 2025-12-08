@@ -5,7 +5,8 @@
     @click.self="close">
     <div class="bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 p-[2px] rounded-3xl">
 
-      <div class="bg-white dark:bg-gray-900 shadow-2xl rounded-3xl w-full max-w-2xl animate-scaleIn " style="width:90vw; padding:17px">
+      <div class="bg-white dark:bg-gray-900 shadow-2xl rounded-3xl w-full max-w-2xl animate-scaleIn "
+        style="width:90vw; padding:17px">
 
         <!-- Header -->
         <header class="flex items-center justify-between border-b pb-3 mb-4">
@@ -165,6 +166,7 @@ const localLabel = reactive({ value: nodeData.value ? nodeData.value.label : '' 
 
 /* Watch for node changes to refresh local copy */
 import { watch } from 'vue'
+import { notify } from '@kyvg/vue3-notification'
 watch(
   node,
   (n) => {
@@ -226,7 +228,12 @@ function copyJson() {
   if (!node.value) return
   const payload = isCombined.value ? nodeData.value.combinedSchema : nodeValueToExport(node.value)
   window.navigator.clipboard?.writeText(JSON.stringify(payload, null, 2))
-  alert('JSON مورد نظر کپی شد.')
+
+  notify({
+    title: "JSON مورد نظر کپی شد.",
+    text: "JSON مورد نظر کپی شد.",
+    type: "success"
+  });
 }
 
 function nodeValueToExport(n) {

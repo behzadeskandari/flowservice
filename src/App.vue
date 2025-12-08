@@ -3,7 +3,6 @@
 
     <h1 class="text-lg">فلوچارت  ترکیب سرویس ها</h1>
     <VueFlow></VueFlow>
-     <notifications />
   </div>
 </template>
 <script setup>
