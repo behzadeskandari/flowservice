@@ -9,7 +9,6 @@ const LOCAL_STORAGE_KEY = 'flowservice-flow'
 
 // Simple unique id generator
 
-
 export const useFlowStore = defineStore('flow', () => {
   const nodes = ref([])
   const edges = ref([])
@@ -22,7 +21,6 @@ export const useFlowStore = defineStore('flow', () => {
   watch(autoSave, (newVal) => {
     localStorage.setItem('AutoSave', newVal)
   })
-
 
   function loadFlow() {
     const flow = localStorage.getItem(LOCAL_STORAGE_KEY)
@@ -44,30 +42,27 @@ export const useFlowStore = defineStore('flow', () => {
   watch(
     [nodes, edges],
     ([newNodes, newEdges]) => {
-      newNodes.forEach(node => {
-        if (!node.position || typeof node.position.x !== 'number' || typeof node.position.y !== 'number') {
+      newNodes.forEach((node) => {
+        if (
+          !node.position ||
+          typeof node.position.x !== 'number' ||
+          typeof node.position.y !== 'number'
+        ) {
           console.warn(`Fixing node ${node.id} missing or invalid position`)
           node.position = { x: 100, y: 100 }
         }
-
       })
 
       if (autoSave.value) {
         saveFlow(newNodes, newEdges)
       }
     },
-    { deep: true }
+    { deep: true },
   )
   loadFlow()
 
-
   function addNode(options = {}) {
-    const {
-      position = {},
-      label = 'New Service',
-      serviceName = '',
-      fields = [],
-    } = options
+    const { position = {}, label = 'New Service', serviceName = '', fields = [] } = options
 
     const x = typeof position.x === 'number' ? position.x : 100
     const y = typeof position.y === 'number' ? position.y : 100
@@ -75,7 +70,7 @@ export const useFlowStore = defineStore('flow', () => {
     const node = {
       id: uniqueId('svc'),
       type: 'serviceNode',
-      position: { x, y },    // 100% guaranteed to exist
+      position: { x, y }, // 100% guaranteed to exist
       data: {
         id,
         label,
@@ -110,10 +105,7 @@ export const useFlowStore = defineStore('flow', () => {
     const node = nodes.value[idx]
 
     // Prevent accidental deletion or invalid overwrite
-    if (patch.position && (
-      patch.position.x == null ||
-      patch.position.y == null
-    )) {
+    if (patch.position && (patch.position.x == null || patch.position.y == null)) {
       delete patch.position
     }
 
@@ -167,11 +159,10 @@ export const useFlowStore = defineStore('flow', () => {
   }
 
   function handleConnect(params) {
-    if (!params.sourceHandle === 'out' || !params.targetHandle === 'in') {
-      return;
+    if (params.sourceHandle !== 'out' || params.targetHandle !== 'in') {
+      return
     }
-    console.log('Connecting nodes:', params);
-    console.log('handleConnect', params)
+    console.log('Connecting nodes:', params)
     const { source, target } = params
     if (!source || !target) return
 
@@ -182,6 +173,7 @@ export const useFlowStore = defineStore('flow', () => {
     if (!nodeA.position) nodeA.position = { x: 0, y: 0 }
     if (!nodeB.position) nodeB.position = { x: 200, y: 200 }
 
+    // Add the new edge first
     addEdge({
       id: `e_${source}-${target}_${Date.now()}`,
       source,
@@ -190,138 +182,216 @@ export const useFlowStore = defineStore('flow', () => {
       type: 'default',
     })
 
-    const connectedNodes = getConnectedNodes(nodes.value, edges.value)
-    const notConnectedNodes = getNotConnectedNodes(nodes.value, edges.value)
-    console.log('Connected nodes:', connectedNodes)
-    console.log('Not connected nodes:', notConnectedNodes)
-    let combinedNode = null
-    if (nodeA.type === 'combinedServiceNode' && nodeB.type === 'combinedServiceNode') {
-      combinedNode = addToCombinedNode(nodeA, nodeB)
+    // Find all nodes in the connected component that includes both source and target
+    const connectedGroup = findConnectedComponent(source, target)
+    console.log(
+      'Connected group:',
+      connectedGroup.map((n) => n.id),
+    )
+
+    if (connectedGroup.length < 2) {
+      console.warn('Connected group has less than 2 nodes, skipping merge')
+      return
     }
 
-    else if (areNodesConnected(nodeA.id, nodeB.id, edges)) {
-      combinedNode = connnctToTheExistingNodeAndUpdateTheSameCombinedService(nodeA, nodeB, edges, nodes)
-      const posA = nodeA.position
-      const posB = nodeB.position
-      const position = {
-        x: Math.round((posA.x + posB.x) / 2) + 40,
-        y: Math.round((posA.y + posB.y) / 2) + 40,
-      }
-      nodes.value.push({
-        id: combinedNode.id,
-        type: 'combinedServiceNode',
-        position,
-        data: combinedNode.data,
-      })
-    }
-    else {
+    // Merge all nodes in the connected group into one combined node
+    const combinedNode = mergeNodeGroup(connectedGroup)
 
-      // هر دو سرویس عادی هستن، کارت جدید بساز
-      combinedNode = generateCombinedService(nodeA, nodeB)
-      const posA = nodeA.position
-      const posB = nodeB.position
-      const position = {
-        x: Math.round((posA.x + posB.x) / 2) + 40,
-        y: Math.round((posA.y + posB.y) / 2) + 40,
-      }
-      nodes.value.push({
-        id: combinedNode.id,
-        type: 'combinedServiceNode',
-        position,
-        data: combinedNode.data,
+    // Find edges that need to be preserved:
+    // 1. Edges from nodes in the group to nodes outside the group (outgoing)
+    // 2. Edges from nodes outside the group to nodes in the group (incoming)
+    const nodeIdsToRemove = new Set(connectedGroup.map((n) => n.id))
+    const outgoingEdges = edges.value.filter(
+      (e) => nodeIdsToRemove.has(e.source) && !nodeIdsToRemove.has(e.target),
+    )
+    const incomingEdges = edges.value.filter(
+      (e) => !nodeIdsToRemove.has(e.source) && nodeIdsToRemove.has(e.target),
+    )
+
+    // Remove all old nodes in the group
+    nodes.value = nodes.value.filter((n) => !nodeIdsToRemove.has(n.id))
+
+    // Remove all edges connected to the old nodes (both internal edges are removed)
+    edges.value = edges.value.filter(
+      (e) => !nodeIdsToRemove.has(e.source) && !nodeIdsToRemove.has(e.target),
+    )
+
+    // Add the new combined node
+    const avgPosition = calculateAveragePosition(connectedGroup)
+    nodes.value.push({
+      id: combinedNode.id,
+      type: 'combinedServiceNode',
+      position: avgPosition,
+      data: combinedNode.data,
+    })
+
+    // Recreate outgoing edges from the combined node to nodes outside the group
+    outgoingEdges.forEach((edge) => {
+      addEdge({
+        id: `e_${combinedNode.id}-${edge.target}_${Date.now()}`,
+        source: combinedNode.id,
+        target: edge.target,
+        animated: edge.animated || true,
+        type: edge.type || 'default',
       })
-    }
+    })
+
+    // Recreate incoming edges from nodes outside the group to the combined node
+    incomingEdges.forEach((edge) => {
+      addEdge({
+        id: `e_${edge.source}-${combinedNode.id}_${Date.now()}`,
+        source: edge.source,
+        target: combinedNode.id,
+        animated: edge.animated || true,
+        type: edge.type || 'default',
+      })
+    })
 
     nodes.value = [...nodes.value]
+    edges.value = [...edges.value]
     return combinedNode
   }
-  function connnctToTheExistingNodeAndUpdateTheSameCombinedService(nodeA, nodeB) {
-    console.log('Connecting to existing combined node', nodeA, nodeB)
+  /**
+   * Finds all nodes in the connected component that includes both startNodeId and endNodeId
+   * Uses BFS to traverse the graph and find all connected nodes
+   */
+  function findConnectedComponent(startNodeId, endNodeId) {
+    const visited = new Set()
+    const queue = [startNodeId, endNodeId]
+    const componentNodeIds = new Set([startNodeId, endNodeId])
 
-    // find combined node connected to A or B
-    const existingCombined = findExistingCombinedNode()
+    // Build adjacency list from edges
+    const adjacency = new Map()
+    edges.value.forEach((edge) => {
+      if (!adjacency.has(edge.source)) {
+        adjacency.set(edge.source, [])
+      }
+      if (!adjacency.has(edge.target)) {
+        adjacency.set(edge.target, [])
+      }
+      adjacency.get(edge.source).push(edge.target)
+      adjacency.get(edge.target).push(edge.source)
+    })
 
-    if (!existingCombined) {
-      console.warn('No existing combined node found — generating new one')
-      return generateCombinedService(nodeA, nodeB)
+    // BFS to find all connected nodes
+    while (queue.length > 0) {
+      const currentNodeId = queue.shift()
+      if (visited.has(currentNodeId)) continue
+      visited.add(currentNodeId)
+
+      const neighbors = adjacency.get(currentNodeId) || []
+      neighbors.forEach((neighborId) => {
+        if (!visited.has(neighborId) && !componentNodeIds.has(neighborId)) {
+          componentNodeIds.add(neighborId)
+          queue.push(neighborId)
+        }
+      })
     }
 
-    console.log("Found existing combined:", existingCombined)
-
-    // decide which node to add
-    const flat = existingCombined.data.combinedSchema.services.flat()
-    const nodeToAdd = flat.includes(nodeA.id) ? nodeB : nodeA
-
-    return addToCombinedNodes(existingCombined, nodeToAdd)
+    // Get all node objects from the component
+    return nodes.value.filter((n) => componentNodeIds.has(n.id))
   }
-  function addToCombinedNodes(combined, newNode) {
-    const servicesList = combined.data.combinedSchema.services
-    // insert this service's fields
-    servicesList.push(newNode.data.fields)
-    // regenerate merge
-    const merged = mergeNFields(...servicesList)
 
-    combined.data.label += ` + ${newNode.data.label}`
-    combined.data.combinedSchema = merged
-    return combined
+  /**
+   * Extracts all individual nodes from a group, handling both regular nodes and combined nodes
+   * Combined nodes contain multiple services, so we need to reconstruct the original nodes
+   */
+  function extractAllIndividualNodes(nodeGroup) {
+    const individualNodes = []
+
+    nodeGroup.forEach((node) => {
+      if (node.type === 'combinedServiceNode') {
+        // For combined nodes, we need to reconstruct individual nodes from the combinedSchema
+        // The combinedSchema.services contains arrays of fields, one per original node
+        const servicesFields = node.data.combinedSchema?.services || []
+        const combinedLabel = node.data.label || ''
+
+        // Split label by ' + ' to get individual service labels
+        // Handle edge cases where label might not be in expected format
+        let labelParts = combinedLabel
+          .split(' + ')
+          .map((l) => l.trim())
+          .filter((l) => l)
+
+        // If label splitting doesn't match services count, generate labels
+        if (labelParts.length !== servicesFields.length) {
+          labelParts = servicesFields.map((_, idx) => labelParts[idx] || `Service ${idx + 1}`)
+        }
+
+        servicesFields.forEach((fields, index) => {
+          // Create a virtual node representation for merging
+          const label = labelParts[index] || `Service ${index + 1}`
+          individualNodes.push({
+            id: `${node.id}_service_${index}`,
+            label: label,
+            fields: Array.isArray(fields) ? fields : [],
+            serviceName: label,
+          })
+        })
+      } else {
+        // Regular node - add as is
+        individualNodes.push({
+          id: node.id,
+          label: node.data.label || 'Unnamed',
+          fields: Array.isArray(node.data.fields) ? node.data.fields : [],
+          serviceName: node.data.serviceName || node.data.label || 'Unnamed',
+        })
+      }
+    })
+
+    return individualNodes
   }
-  function findExistingCombinedNode() {
-    return nodes.value.find(n => n.type === 'combinedServiceNode')
-  }
-  function generateCombinedService(nodeA, nodeB) {
-    // const fieldsList = nodes.map(node => node.data?.fields || []);
-    // const mergedResult = mergeNFields(...fieldsList);
-    const fieldsList = [
-      nodeA.data.fields || [],
-      nodeB.data.fields || []
-    ];
 
-    const mergedResult = mergeNFields(...fieldsList);
+  /**
+   * Merges all nodes in a group into one combined node
+   * Follows the exact pattern: merge data, merge fields, merge labels
+   */
+  function mergeNodeGroup(nodeGroup) {
+    if (nodeGroup.length === 0) {
+      throw new Error('Cannot merge empty node group')
+    }
 
-    const id = uniqueId('combined');
+    // Extract all individual nodes (handles both regular and combined nodes)
+    const individualNodes = extractAllIndividualNodes(nodeGroup)
+
+    // Collect all fields from all individual nodes
+    const allFieldsArrays = individualNodes.map((node) => node.fields || [])
+
+    // Merge all fields using mergeNFields
+    const mergedResult = mergeNFields(...allFieldsArrays)
+
+    // Build combined label: node1 + node2 + node3 + ...
+    const combinedLabel = individualNodes.map((node) => node.label).join(' + ')
+
+    // Create the combined node
+    const id = uniqueId('combined')
     return {
       id,
       data: {
         id,
-        label: `${nodeA.data.label} + ${nodeB.data.label}`,
+        label: combinedLabel,
         combinedSchema: mergedResult,
         editable: true,
       },
-    };
+    }
   }
 
-  function addToCombinedNode(combinedNode, newNode) {
-    // Extract existing combined fields from combinedNode.data.combinedSchema
-    // assuming combinedSchema.services is an array of fields arrays per original node
-    const existingServicesFields = combinedNode.data.combinedSchema.services || []
-    const newFields = newNode.data?.fields || []
-
-    // Add new node's fields to existing services array
-    const updatedServices = [...existingServicesFields, newFields]
-
-    // Merge all fields again
-    const mergedResult = mergeNFields(...updatedServices)
-
-    // Update combined node data
-    combinedNode.data.combinedSchema = mergedResult
-
-    // Update combined label with new node label
-    combinedNode.data.label += ` + ${newNode.data.label}`
-
-    // Optional: update combined node's data.id or keep original?
-
-    // Update node position if you want (optional)
-
-    // Update the nodes array with updated combinedNode
-    const idx = nodes.value.findIndex(n => n.id === combinedNode.id)
-    if (idx !== -1) {
-      nodes.value[idx] = { ...combinedNode }
+  /**
+   * Calculates the average position of all nodes in a group
+   */
+  function calculateAveragePosition(nodeGroup) {
+    if (nodeGroup.length === 0) {
+      return { x: 100, y: 100 }
     }
 
-    // Optionally, remove newNode from nodes list if you want to "absorb" it
-    nodes.value = nodes.value.filter(n => n.id !== newNode.id)
+    const sumX = nodeGroup.reduce((sum, node) => sum + (node.position?.x || 0), 0)
+    const sumY = nodeGroup.reduce((sum, node) => sum + (node.position?.y || 0), 0)
+    const count = nodeGroup.length
 
-    return combinedNode
+    return {
+      x: Math.round(sumX / count),
+      y: Math.round(sumY / count),
+    }
   }
 
   function exportFlow() {
@@ -355,57 +425,6 @@ export const useFlowStore = defineStore('flow', () => {
     })
   }
 
-  const adjacency = new Map()
-  function areNodesConnected(nodeIdA, nodeIdB, edges) {
-    if (!edges || !Array.isArray(edges.value)) return false;
-    // Build adjacency list
-    edges.value.forEach(edge => {
-      if (!adjacency.has(edge.source)) adjacency.set(edge.source, []);
-      if (!adjacency.has(edge.target)) adjacency.set(edge.target, []);
-      adjacency.get(edge.source).push(edge.target);
-      adjacency.get(edge.target).push(edge.source);
-    });
-
-    // BFS or DFS from nodeIdA to see if nodeIdB is reachable
-    const visited = new Set();
-    const queue = [nodeIdA];
-
-    while (queue.length > 0) {
-      const current = queue.shift();
-      if (current === nodeIdB) return true;
-      if (visited.has(current)) continue;
-      visited.add(current);
-
-      const neighbors = adjacency.get(current) || [];
-      neighbors.forEach(neighbor => {
-        if (!visited.has(neighbor)) queue.push(neighbor);
-      });
-    }
-
-    return false;
-  }
-
-
-  function getConnectedNodes(nodes, edges) {
-    const connectedNodeIds = new Set()
-
-    edges.forEach(edge => {
-      connectedNodeIds.add(edge.source)
-      connectedNodeIds.add(edge.target)
-    })
-
-    return nodes.filter(node => connectedNodeIds.has(node.id))
-  }
-  function getNotConnectedNodes(nodes, edges) {
-    const connectedNodeIds = new Set()
-
-    edges.forEach(edge => {
-      connectedNodeIds.add(edge.source)
-      connectedNodeIds.add(edge.target)
-    })
-
-    return nodes.filter(node => !connectedNodeIds.has(node.id))
-  }
   function enableAutoSave() {
     autoSave.value = true
   }
@@ -413,7 +432,6 @@ export const useFlowStore = defineStore('flow', () => {
   function disableAutoSave() {
     autoSave.value = false
   }
-
 
   function autoSaveEnabled() {
     return autoSave.value
@@ -438,7 +456,7 @@ export const useFlowStore = defineStore('flow', () => {
     } catch (e) {
       console.error('Auto-save failed', e)
     }
-  }, 500)
+  }, 1000)
   return {
     enableAutoSave,
     disableAutoSave,
@@ -457,7 +475,6 @@ export const useFlowStore = defineStore('flow', () => {
     handleConnect,
     setSelectedNode,
     clearSelected,
-    generateCombinedService,
     exportFlow,
     importFlow,
   }

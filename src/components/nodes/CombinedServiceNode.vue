@@ -9,10 +9,9 @@
       <small>ترکیب شده</small>
       <div class="count"> فیلد های ترکیب شده: {{ data.combinedSchema }}</div>
     </div>
-    <div v-if="node.type !== 'combinedServiceNode'">
-      <Handle type="target" position="left" id="in" />
-      <Handle type="source" position="right" id="out" />
-    </div>
+    <!-- Handles for connecting combined nodes -->
+    <Handle type="target" position="left" id="in" />
+    <Handle type="source" position="right" id="out" />
   </div>
 </template>
 
@@ -25,8 +24,6 @@ const props = defineProps({
   id: { type: String, required: true },
   data: { type: Object, required: true },
 })
-let node = {};
-node['type'] = 'combinedServiceNode'
 const { id, data } = toRefs(props)
 const store = useFlowStore()
 function openView() {

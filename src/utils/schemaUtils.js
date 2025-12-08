@@ -26,32 +26,66 @@ export function mergeFields(fieldsA = [], fieldsB = []) {
 }
 
 
-const suffixes = ['_b', '_c', '_d', '_e', '_f', '_g', '_h', '_i', '_j'];
+const suffixes = ['_b', '_c', '_d', '_e', '_f', '_g', '_h', '_i', '_j', '_k', '_l', '_m', '_n', '_o', '_p'];
 
+/**
+ * Merges fields from multiple services
+ * Ensures no duplicate keys - if a key appears in multiple services, it gets a suffix
+ * @param {...Array} servicesFields - Variable number of field arrays, one per service
+ * @returns {Object} Object with 'services' (array of original field arrays) and 'merged' (merged fields array)
+ */
 export function mergeNFields(...servicesFields) {
   // servicesFields: array of arrays of fields, e.g. [fieldsA, fieldsB, fieldsC, ...]
+  if (servicesFields.length === 0) {
+    return {
+      services: [],
+      merged: [],
+    }
+  }
 
   const merged = [];
-  const seen = new Set(); // track keys to detect conflicts
+  const seen = new Set(); // track keys to detect conflicts and ensure no duplicates
 
   // Store copy of each service fields to return as well
-  const servicesCopy = servicesFields.map(fields => fields.map(f => ({ ...f })));
+  const servicesCopy = servicesFields.map(fields => 
+    Array.isArray(fields) ? fields.map(f => ({ ...f })) : []
+  );
 
   servicesFields.forEach((fields, index) => {
+    if (!Array.isArray(fields)) {
+      console.warn(`Service ${index} fields is not an array, skipping`)
+      return
+    }
+
     const suffix = index === 0 ? '' : (suffixes[index - 1] || `_x${index}`); // suffix for keys (no suffix for first service)
 
     fields.forEach(field => {
+      if (!field || !field.key) {
+        console.warn(`Invalid field in service ${index}, skipping`)
+        return
+      }
+
       if (!seen.has(field.key)) {
-        merged.push({ ...field }); // no conflict, add as is
+        // No conflict - add field as is
+        merged.push({ ...field });
         seen.add(field.key);
       } else {
-        // conflict: create a new key with suffix for this service
+        // Conflict detected - create a new key with suffix for this service
         const newKey = `${field.key}${suffix}`;
+        // Ensure the new key is also unique
+        let finalKey = newKey;
+        let counter = 1;
+        while (seen.has(finalKey)) {
+          finalKey = `${newKey}_${counter}`;
+          counter++;
+        }
+        
         merged.push({
           ...field,
-          key: newKey,
+          key: finalKey,
           label: `${field.label} (from service ${index + 1})`
         });
+        seen.add(finalKey);
       }
     });
   });
