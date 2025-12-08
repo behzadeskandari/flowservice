@@ -9,51 +9,36 @@
 
       <!-- Input Field -->
       <div class="captcha-input">
-        <input
-          v-model="userInput"
-          @keyup.enter="verifyCaptcha"
-          type="text"
-          placeholder="کد را وارد کنید"
-          class="w-full h-12 px-4 text-right rounded-lg border
+        <input v-model="userInput" @keyup.enter="verifyCaptcha" type="text" placeholder="کد را وارد کنید" class="w-full h-12 px-4 text-right rounded-lg border
                  border-orange-300 bg-white/80 backdrop-blur-sm
                  focus:bg-white focus:border-orange-500 focus:ring-4
                  focus:ring-orange-200/50 outline-none transition-all
-                 text-gray-800 placeholder-gray-500"
-          autocomplete="off"
-        />
+                 text-gray-800 placeholder-gray-500" autocomplete="off" />
       </div>
-      <button
-          @click="generateCaptcha"
-          class="refresh-btn tooltip"
-          data-tooltip="تولید مجدد کپچا"
-          aria-label="تولید مجدد کپچا"
-        >
-          <font-awesome-icon :icon="['fa', 'fa-refresh']" style="color: orange;z-index:99999" />
-        </button>
+      <button @click="generateCaptcha" class="refresh-btn tooltip" data-tooltip="تولید مجدد کپچا"
+        aria-label="تولید مجدد کپچا">
+        <font-awesome-icon :icon="['fa', 'fa-refresh']" style="color: orange;z-index:99999" />
+      </button>
     </div>
 
     <!-- Submit Button -->
-    <button
-      @click="verifyCaptcha"
-      class="verify-btn"
-      :disabled="!userInput.trim()"
-    >
+    <button @click="verifyCaptcha" class="verify-btn" :disabled="!userInput.trim()">
       تأیید کپچا
     </button>
     <div class="text-right">
-        <p v-if="verificationMessage" :class="{ success: isVerified , error: !isVerified }">
-      {{ verificationMessage }}
-    </p>
+      <p v-if="verificationMessage" :class="{ success: isVerified, error: !isVerified }">
+        {{ verificationMessage }}
+      </p>
     </div>
 
   </div>
 </template>
 <script>
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
-import { faRefresh,faTrash } from "@fortawesome/free-solid-svg-icons";
+import { faRefresh, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { library } from "@fortawesome/fontawesome-svg-core";
 
-library.add(faTrash,faRefresh);
+library.add(faTrash, faRefresh);
 
 
 export default {
@@ -168,13 +153,13 @@ export default {
 
 <style scoped>
 .captcha-container {
-    max-width: 420px;
-    margin: 2rem auto;
-    /* padding: 1.5rem; */
-    font-family: 'Vazirmatn', system-ui, sans-serif;
-    display: flex;
-    flex-flow: row wrap;
-    gap: 2;
+  max-width: 420px;
+  /* margin: 2rem auto; */
+  /* padding: 1.5rem; */
+  font-family: 'Vazirmatn', system-ui, sans-serif;
+  display: flex;
+  flex-flow: row wrap;
+  gap: 2;
 }
 
 .captcha-wrapper {
@@ -251,16 +236,35 @@ export default {
   transform: none;
 }
 
-.success { color: #16a34a; font-weight: bold; }
-.error   { color: #dc2626; font-weight: bold; }
+.success {
+  color: #16a34a;
+  font-weight: bold;
+}
+
+.error {
+  color: #dc2626;
+  font-weight: bold;
+}
 
 @media (max-width: 480px) {
   .captcha-wrapper {
     flex-direction: column;
     align-items: stretch;
   }
+
   .captcha-image img {
     max-width: 100%;
+  }
+
+  .captcha-container {
+    max-width: 100%;
+    min-width: 100%;
+    width: 100vw;
+    display: block;
+  }
+
+  .captcha-input input {
+    margin-top: 2em;
   }
 }
 </style>
