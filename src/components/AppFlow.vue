@@ -87,6 +87,9 @@ const nodeTypes = {
   combinedServiceNode: markRaw(CombinedServiceNode),
 }
 
+onMounted(() => {
+  this.$notify({ title: 'Hello!', text: 'This is a toast.' })
+})
 const store = useFlowStore()
 
 const vfOptions = reactive({
