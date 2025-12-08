@@ -38,11 +38,23 @@
     </div>
 
     <div class="canvas">
-      <VueFlow :default-viewport="{ zoom: 0.5 }" :max-zoom="1" :min-zoom="0.8" :nodes="store.nodes" :edges="store.edges"
+      <VueFlow :default-viewport="{ x: 0, y: 0, zoom: 0.25 }"
+      :max-zoom="2"
+      :min-zoom="0.05"
+      :nodes="store.nodes"
+      :edges="store.edges"
+      :zoom-on-scroll="true"
+      :fit-view-on-init="true"
+      :zoom-on-double-click="false"
+      :pan-on-drag="true"
+      :pan-on-scroll="true"
+      :pan-on-scroll-speed="0.8"
+      :pan-on-scroll-mode="true"
+      :selection-on-click="false"
         style="width: 100%; height: 95vh" @nodes-change="onNodesChange" @edges-change="onEdgesChange"
         @connect="onConnect" @node-dblclick="onNodeDblClick" :node-types="nodeTypes" v-bind="vfOptions"
         class="vue-flow__container">
-        <Background variant="dots" gap="15" size="1" color="#bbb" />
+        <Background variant="dots" gap="25" size="3" color="#bbb" />
         <Panel position="top-center"> </Panel>
         <Controls>
           <ControlButton @click.prevent="toggleTheme">
@@ -54,6 +66,7 @@
           <ControlButton @click.prevent="sortByConnectionOrder">
             <font-awesome-icon :icon="faSortAmountDown" />
           </ControlButton>
+
         </Controls>
         <MiniMap />
       </VueFlow>

@@ -10,13 +10,17 @@
       <div class="count"> فیلد های ترکیب شده: {{ data.combinedSchema }}</div>
     </div>
     <!-- Handles for connecting combined nodes -->
-    <Handle type="target" position="left" id="in" />
-    <Handle type="source" position="right" id="out" />
+
+        <Handle type="source" position="right" id="out" />
+        <Handle type="target" position="left" id="in" />
+
+    <div v-if="showHandle">
+    </div>
   </div>
 </template>
 
 <script setup>
-import { toRefs } from 'vue'
+import { toRefs, ref } from 'vue'
 import { Handle } from '@vue-flow/core'
 import { useFlowStore } from '@/stores/flowStore'
 
@@ -24,6 +28,8 @@ const props = defineProps({
   id: { type: String, required: true },
   data: { type: Object, required: true },
 })
+
+const showHandle = ref(false)
 const { id, data } = toRefs(props)
 const store = useFlowStore()
 function openView() {

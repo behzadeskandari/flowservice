@@ -158,6 +158,128 @@ export const useFlowStore = defineStore('flow', () => {
     showModal.value = false
   }
 
+  // function handleConnect(params) {
+  //   if (params.sourceHandle !== 'out' || params.targetHandle !== 'in') {
+  //     return
+  //   }
+  //   console.log('Connecting nodes:', params)
+  //   const { source, target } = params
+  //   if (!source || !target) return
+
+  //   const nodeA = nodes.value.find((n) => n.id === source)
+  //   const nodeB = nodes.value.find((n) => n.id === target)
+  //   if (!nodeA || !nodeB) return
+
+  //   if (!nodeA.position) nodeA.position = { x: 0, y: 0 }
+  //   if (!nodeB.position) nodeB.position = { x: 200, y: 200 }
+
+  //   // Add the new edge first
+  //   addEdge({
+  //     id: `e_${source}-${target}_${Date.now()}`,
+  //     source,
+  //     target,
+  //     animated: true,
+  //     type: 'default',
+  //   })
+
+  //   // Find all nodes in the connected component that includes both source and target
+  //   const connectedGroup = findConnectedComponent(source, target)
+  //   console.log(
+  //     'Connected group:',
+  //     connectedGroup.map((n) => n.id),
+  //   )
+
+  //   if (connectedGroup.length < 2) {
+  //     console.warn('Connected group has less than 2 nodes, skipping merge')
+  //     return
+  //   }
+
+  //   // Identify all combined nodes already present for this group
+  //   const groupIds = connectedGroup.map(n => n.id)
+  //   // Find combined nodes whose underlying set overlaps this group
+  //   const redundantCombinedNodes = nodes.value.filter(node => {
+  //     if (node.type !== 'combinedServiceNode') return false;
+  //     // Try to recover the combined set from label
+  //     const parts = node.data?.label?.split(' + ')
+  //     if (!parts || parts.length < 2) return false;
+  //     return parts.every(name => groupIds.some(cid => {
+  //       const cn = nodes.value.find(n => n.id === cid)
+  //       return cn && cn.label === name
+  //     }))
+  //   })
+
+  //   // Remove previous combined nodes for this group
+  //   redundantCombinedNodes.forEach(rcn => {
+  //     // Remove node
+  //     const idx = nodes.value.findIndex(n => n.id === rcn.id)
+  //     if (idx !== -1) nodes.value.splice(idx, 1)
+  //     // Remove any edges whose source or target is this combined node
+  //     edges.value = edges.value.filter(e => e.source !== rcn.id && e.target !== rcn.id)
+  //   })
+
+  //   // Merge all nodes in the connected group into one combined node
+  //   const combinedNode = mergeNodeGroup(connectedGroup)
+
+  //   // Get all node IDs in the group
+  //   const nodeIdsToMerge = new Set(connectedGroup.map((n) => n.id))
+  //   // Find outgoing edges (from merged nodes to outside)
+  //   const outgoingEdges = edges.value.filter(
+  //     (e) => nodeIdsToMerge.has(e.source) && !nodeIdsToMerge.has(e.target),
+  //   )
+  //   // Find incoming edges (from outside to merged nodes)
+  //   const incomingEdges = edges.value.filter(
+  //     (e) => !nodeIdsToMerge.has(e.source) && nodeIdsToMerge.has(e.target),
+  //   )
+
+  //   // Calculate a position for the new combined node that doesn't overlap
+  //   let avgPosition = calculateAveragePosition(connectedGroup)
+  //   // Check for position overlap with existing nodes
+  //   const GRID_OFFSET = 60
+  //   let pos = { ...avgPosition }
+  //   let isOverlapping;
+  //   do {
+  //     isOverlapping = nodes.value.some(
+  //       n => Math.abs(n.position.x - pos.x) < GRID_OFFSET && Math.abs(n.position.y - pos.y) < GRID_OFFSET
+  //     );
+  //     if (isOverlapping) {
+  //       pos.x += GRID_OFFSET
+  //       pos.y += GRID_OFFSET
+  //     }
+  //   } while(isOverlapping)
+
+  //   // Add the new combined node
+  //   nodes.value.push({
+  //     id: combinedNode.id,
+  //     type: 'combinedServiceNode',
+  //     position: pos,
+  //     data: combinedNode.data,
+  //   })
+
+  //   // Replicate outgoing edges for combined node
+  //   outgoingEdges.forEach((edge) => {
+  //     addEdge({
+  //       id: `e_${combinedNode.id}-${edge.target}_${Date.now()}`,
+  //       source: combinedNode.id,
+  //       target: edge.target,
+  //       animated: edge.animated || true,
+  //       type: edge.type || 'default',
+  //     })
+  //   })
+  //   // Replicate incoming edges for combined node
+  //   incomingEdges.forEach((edge) => {
+  //     addEdge({
+  //       id: `e_${edge.source}-${combinedNode.id}_${Date.now()}`,
+  //       source: edge.source,
+  //       target: combinedNode.id,
+  //       animated: edge.animated || true,
+  //       type: edge.type || 'default',
+  //     })
+  //   })
+  //   // (Optional) force reactivity
+  //   nodes.value = [...nodes.value]
+  //   edges.value = [...edges.value]
+  //   return combinedNode
+  // }
   function handleConnect(params) {
     if (params.sourceHandle !== 'out' || params.targetHandle !== 'in') {
       return
@@ -196,7 +318,6 @@ export const useFlowStore = defineStore('flow', () => {
 
     // Identify all combined nodes already present for this group
     const groupIds = connectedGroup.map(n => n.id)
-    const groupSet = new Set(groupIds)
     // Find combined nodes whose underlying set overlaps this group
     const redundantCombinedNodes = nodes.value.filter(node => {
       if (node.type !== 'combinedServiceNode') return false;
@@ -284,34 +405,34 @@ export const useFlowStore = defineStore('flow', () => {
   /**
    * Finds all nodes in the connected component that includes both startNodeId and endNodeId
    * Uses BFS to traverse the graph and find all connected nodes
-   */
+  */
+  const visited =  ref(new Set())
+  const adjacency = ref(new Map())
   function findConnectedComponent(startNodeId, endNodeId) {
-    const visited = new Set()
     const queue = [startNodeId, endNodeId]
     const componentNodeIds = new Set([startNodeId, endNodeId])
 
     // Build adjacency list from edges
-    const adjacency = new Map()
     edges.value.forEach((edge) => {
-      if (!adjacency.has(edge.source)) {
-        adjacency.set(edge.source, [])
+      if (!adjacency.value.has(edge.source)) {
+        adjacency.value.set(edge.source, [])
       }
-      if (!adjacency.has(edge.target)) {
-        adjacency.set(edge.target, [])
+      if (!adjacency.value.has(edge.target)) {
+        adjacency.value.set(edge.target, [])
       }
-      adjacency.get(edge.source).push(edge.target)
-      adjacency.get(edge.target).push(edge.source)
+      adjacency.value.get(edge.source).push(edge.target)
+      adjacency.value.get(edge.target).push(edge.source)
     })
 
     // BFS to find all connected nodes
     while (queue.length > 0) {
       const currentNodeId = queue.shift()
-      if (visited.has(currentNodeId)) continue
-      visited.add(currentNodeId)
+      if (visited.value.has(currentNodeId)) continue
+      visited.value.add(currentNodeId)
 
-      const neighbors = adjacency.get(currentNodeId) || []
+      const neighbors = adjacency.value.get(currentNodeId) || []
       neighbors.forEach((neighborId) => {
-        if (!visited.has(neighborId) && !componentNodeIds.has(neighborId)) {
+        if (!visited.value.has(neighborId) && !componentNodeIds.has(neighborId)) {
           componentNodeIds.add(neighborId)
           queue.push(neighborId)
         }
@@ -392,7 +513,7 @@ export const useFlowStore = defineStore('flow', () => {
 
     // Build combined label: node1 + node2 + node3 + ...
     const combinedLabel = individualNodes.map((node) => node.label).join(' + ')
-
+    mergedResult['label'] = combinedLabel
     // Create the combined node
     const id = uniqueId('combined')
     return {
@@ -508,4 +629,5 @@ export const useFlowStore = defineStore('flow', () => {
     exportFlow,
     importFlow,
   }
+
 })
