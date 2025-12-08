@@ -143,6 +143,7 @@ export default {
     },
 
     verifyCaptcha() {
+      //:TODO Add your verification logic here
       if (this.userInput.toLowerCase() === this.captchaText.toLowerCase()) {
         this.isVerified = true;
         this.verificationMessage = "عالی! کپچا با موفقیت تأیید شد";
