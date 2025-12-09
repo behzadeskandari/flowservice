@@ -61,7 +61,6 @@ import { useAuthStore } from '@/stores/authStore'
 import { ref } from 'vue'
 import { notify } from "@kyvg/vue3-notification";
 import { useRouter } from 'vue-router';
-import { meta } from '@eslint/js';
 import { faExclamationCircle } from '@fortawesome/free-solid-svg-icons'
 const router = useRouter()
 const username = ref('')
@@ -90,13 +89,24 @@ function login() {
       type: 'success',
       duration: 3000,
     })
-    router.push('/home').catch(err => {
-      console.error('Navigation error:', err)
-    })
+    setTimeout(() => {
+          router.push('/home').catch(err => {
+            console.error('Navigation error:', err)
+          });
+    }, 1000)
   } else {
     errorMessage.value = 'نام کاربری یا رمز عبور اشتباه است.'
   }
 }
+router.beforeEach((to, from, next) => {
+  const authStore = useAuthStore()
+  console.log('Navigating to:', to.path, 'Authenticated:', authStore.isAuthenticated)
+  if (to.meta.requiresAuth && !authStore.isAuthenticated) {
+    next('/Login')
+  } else {
+    next()
+  }
+})
 </script>
 
 <style scoped>

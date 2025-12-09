@@ -8,7 +8,14 @@ export const useAuthStore = defineStore('auth', () => {
     count.value++
   }
   const user = ref(null)
-  const isAuthenticated = computed(() => !!user.value)
+  const isAuthenticated = computed(() => {
+    if (localStorage.getItem('isAuthenticated') === 'true') {
+      return true
+    }
+    else {
+      return !!user.value
+    }
+  })
 
   function login(username, password) {
     // Simulate authentication
@@ -29,6 +36,7 @@ export const useAuthStore = defineStore('auth', () => {
       //     localStorage.setItem('user', JSON.stringify(userRecord))
             user.value = { username ,password }  // Simple user object
             isAuthenticated.value = true
+            localStorage.setItem('isAuthenticated','true')
       //   } else {
       //     throw new Error('Authentication failed')
       //   }

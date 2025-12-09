@@ -51,7 +51,7 @@ const routes = [
   },
   {
     path: '/Login',
-    meta: { title: 'ورود', breadCrumb: 'ورود' },
+    meta: { title: 'ورود', breadCrumb: 'ورود',requiresAuth: true },
     name: 'login',
     component: AppLogin,
   },
