@@ -15,17 +15,17 @@
                  focus:ring-orange-200/50 outline-none transition-all
                  text-gray-800 placeholder-gray-500" autocomplete="off" />
       </div>
-      <button @click="generateCaptcha" class="refresh-btn tooltip" data-tooltip="تولید مجدد کپچا"
+      <button @click.prevent="generateCaptcha" class="refresh-btn tooltip" data-tooltip="تولید مجدد کپچا"
         aria-label="تولید مجدد کپچا">
         <font-awesome-icon :icon="['fa', 'fa-refresh']" style="color: orange;z-index:99999" />
       </button>
     </div>
 
     <!-- Submit Button -->
-    <button @click="verifyCaptcha" class="verify-btn" :disabled="!userInput.trim()">
+    <button type="button" @click="verifyCaptcha" class="verify-btn" :disabled="!userInput.trim()">
       تأیید کپچا
     </button>
-    <div class="text-right">
+    <div class="text-right chapchata-message">
       <p v-if="verificationMessage" :class="{ success: isVerified, error: !isVerified }">
         {{ verificationMessage }}
       </p>
@@ -49,6 +49,11 @@ export default {
   mounted() {
     this.generateCaptcha();
   },
+
+  unmounted() {
+    clearTimeout(this.verificationTimeout);
+  },
+
   data() {
     return {
       showCaptcha: true,
@@ -138,7 +143,7 @@ export default {
       //:TODO Add your verification logic here
       if (this.userInput.toLowerCase() === this.captchaText.toLowerCase()) {
         this.isVerified = true;
-        this.verificationMessage = "عالی! کپچا با موفقیت تأیید شد";
+        this.verificationMessage = "! کپچا با موفقیت تأیید شد";
         this.showCaptcha = false;
         this.$emit("verified"); // optional
       } else {
@@ -229,7 +234,13 @@ export default {
   background: linear-gradient(to right, #ea580c, #d97706);
   transform: translateY(-2px);
 }
-
+.chapchata-message{
+  color: #16a34a;
+    font-weight: bold;
+    width: 100%;
+    padding-top:10px;
+    padding-right: 3px;
+}
 .verify-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;

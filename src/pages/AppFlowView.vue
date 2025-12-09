@@ -6,6 +6,7 @@
 </template>
 <script setup>
 import VueFlow from '../components/AppFlow.vue'
+
 </script>
 <style lang="">
 

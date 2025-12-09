@@ -1,6 +1,7 @@
 <template>
   <div>
-    <div class="min-h-screen  fullscreen flex items-center justify-center bg-gradient-to-br from-orange-50 to-amber-500">
+    <div
+      class="min-h-screen  fullscreen flex items-center justify-center bg-gradient-to-br from-orange-50 to-amber-500">
       <div class="w-full max-w-lg relative p-1 rounded-2xl
              bg-gradient-to-br from-gery-400 via-gery-500 to-amber-600
              shadow-2xl">
@@ -12,19 +13,15 @@
           </div>
 
           <div class="flex flex-col items-center justify-center space-y-2">
-            <img
-              src="../assets/css/images/omidLogo.png"
-              alt="امید تک"
-              class="w-24 h-24 object-contain mx-auto"
-            />
+            <img src="../assets/css/images/omidLogo.png" alt="امید تک" class="w-24 h-24 object-contain mx-auto" />
             <!-- <h1 class="text-3xl font-bold text-orange-500 text-center drop-shadow-md py-4">
               ورود
             </h1> -->
           </div>
-          <form class="space-y-6">
+          <form class="space-y-6" @submit.prevent="login">
             <div class="flex flex-col">
               <label class="text-right text-lg font-semibold text-orange-700 mb-2">نام کاربری</label>
-              <input type="text" class="text-right h-12 px-4 rounded-lg border border-orange-200 bg-white/70
+              <input type="text" v-model="username" class="text-right h-12 px-4 rounded-lg border border-orange-200 bg-white/70
                      backdrop-blur-sm focus:bg-white focus:border-orange-500
                      focus:ring-4 focus:ring-orange-200/50 outline-none
                      text-gray-800 placeholder-gray-500 transition-all" placeholder="نام کاربری خود را وارد کنید" />
@@ -32,23 +29,26 @@
 
             <div class="flex flex-col">
               <label class="text-right text-lg font-semibold text-orange-700 mb-2">رمزعبور</label>
-              <input type="password" class="text-right h-12 px-4 rounded-lg border border-orange-200 bg-white/70
+              <input type="password" v-model="password" class="text-right h-12 px-4 rounded-lg border border-orange-200 bg-white/70
                      backdrop-blur-sm focus:bg-white focus:border-orange-500
                      focus:ring-4 focus:ring-orange-200/50 outline-none
                      text-gray-800 placeholder-gray-500 transition-all" placeholder="رمز عبور خود را وارد کنید" />
             </div>
             <div class="flex flex-col">
-                <Captcha />
-
+              <Captcha @verified="onCaptchaVerified" />
             </div>
-            <button type="submit" class="w-full h-12 mt-4 rounded-lg
-                   text-white font-bold text-lg shadow-lg hover:shadow-xl
-                   bg-gradient-to-r from-orange-500 to-amber-600
-                   hover:from-orange-600 hover:to-amber-700
-                   active:scale-98 transition-all duration-200">
+            <button type="submit" :disabled="!isCaptchaVerified" class="w-full h-12 mt-4 rounded-lg
+  text-white font-bold text-lg shadow-lg hover:shadow-xl
+  bg-gradient-to-r from-orange-500 to-amber-600
+  hover:from-orange-600 hover:to-amber-700
+  active:scale-98 transition-all duration-200">
               ورود
             </button>
           </form>
+          <p v-if="errorMessage" class="text-red-600 mt-4 text-center errorMessage">
+            <font-awesome-icon :icon="faExclamationCircle" class="mr-2" style="color:red" />
+            {{ errorMessage }}
+          </p>
         </div>
       </div>
     </div>
@@ -56,7 +56,47 @@
 </template>
 
 <script setup>
-  import Captcha from '../components/AppVerifyCaptcha.vue'
+import Captcha from '../components/AppVerifyCaptcha.vue'
+import { useAuthStore } from '@/stores/authStore'
+import { ref } from 'vue'
+import { notify } from "@kyvg/vue3-notification";
+import { useRouter } from 'vue-router';
+import { meta } from '@eslint/js';
+import { faExclamationCircle } from '@fortawesome/free-solid-svg-icons'
+const router = useRouter()
+const username = ref('')
+const password = ref('')
+const errorMessage = ref('')
+const authStore = useAuthStore()
+const isCaptchaVerified = ref(false)
+function onCaptchaVerified() {
+  isCaptchaVerified.value = true
+  if (errorMessage.value) {
+    errorMessage.value = ''
+  }
+}
+function login() {
+  debugger
+  if (!isCaptchaVerified.value) {
+    errorMessage.value = 'لطفا کد امنیتی را تایید کنید.'
+    return
+  }
+  const success = authStore.login(username.value, password.value)
+  if (success) {
+    errorMessage.value = ''
+    notify({
+      title: 'ورود موفقیت‌آمیز',
+      text: 'شما با موفقیت وارد شدید.',
+      type: 'success',
+      duration: 3000,
+    })
+    router.push('/home').catch(err => {
+      console.error('Navigation error:', err)
+    })
+  } else {
+    errorMessage.value = 'نام کاربری یا رمز عبور اشتباه است.'
+  }
+}
 </script>
 
 <style scoped>
@@ -65,5 +105,11 @@
   .backdrop-blur-xl {
     backdrop-filter: blur(16px);
   }
+}
+
+.errorMessage {
+  color: #f15a03;
+  font-weight: bold;
+  text-align: center;
 }
 </style>
