@@ -158,7 +158,7 @@ export default {
 
 <style scoped>
 .captcha-container {
-  max-width: 420px;
+  max-width: 439px;
   /* margin: 2rem auto; */
   /* padding: 1.5rem; */
   font-family: 'Vazirmatn', system-ui, sans-serif;
@@ -190,29 +190,30 @@ export default {
 }
 
 .refresh-btn {
-  position: absolute;
-  top: 8px;
-  left: 8px;
-  width: 32px;
-  height: 32px;
-  background: rgba(0, 0, 0, 0.5);
-  color: white;
-  border: none;
-  border-radius: 50%;
-  cursor: pointer;
-  display: grid;
-  place-items: center;
-  font-size: 18px;
-  transition: all 0.2s;
+    position: relative;
+    top: -95px;
+    left: 5px;
+    width: 32px;
+    height: 32px;
+    background: rgba(0, 0, 0, 0.5);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    font-size: 18px;
+    transition: all 0.2s;
 }
 
 .refresh-btn:hover {
   background: rgba(0, 0, 0, 0.7);
-  transform: rotate(90deg);
+  transform: scale(-10px) scale(10px);
+  transition: all 0.6s;
 }
 
 .captcha-input {
-  flex: 1;
+   flex: 1;
   min-width: 180px;
 }
 
