@@ -171,7 +171,7 @@ export default {
   display: flex;
   align-items: center;
   gap: 1rem;
-  margin-bottom: 1.5rem;
+  /* margin-bottom: 1.5rem; */
   flex-wrap: wrap;
 }
 
