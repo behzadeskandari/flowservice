@@ -5,40 +5,39 @@
         class="px-3 py-2 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 text-white font-semibold rounded-xl shadow-lg hover:from-orange-500 hover:via-orange-600 hover:to-orange-700 transition duration-300 ease-in-out"
         @click="onAddService">
         <font-awesome-icon :icon="faPlus" style="color: white" />
-        اضافه کردن سرویس
+        <span class="toolbar-text">اضافه کردن سرویس</span>
       </button>
       <button
         class="px-3 py-2 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 text-white font-semibold rounded-xl shadow-lg hover:from-orange-500 hover:via-orange-600 hover:to-orange-700 transition duration-300 ease-in-out"
         @click="viewAllJson">
         <font-awesome-icon :icon="faFileCode" style="color: white;" />
-         JSON
+        <span class="toolbar-text"> JSON
          فرمت
+        </span>
       </button>
       <button
         class="px-3 py-2 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 text-white font-semibold rounded-xl shadow-lg hover:from-orange-500 hover:via-orange-600 hover:to-orange-700 transition duration-300 ease-in-out"
         @click="exportFlowJson">
         <font-awesome-icon :icon="faFileExport" style="color: white;" />
-        Export
+        <span class="toolbar-text">Export</span>
       </button>
       <span
         class="px-3 py-2 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 text-white font-semibold rounded-xl shadow-lg hover:from-orange-500 hover:via-orange-600 hover:to-orange-700 transition duration-300 ease-in-out">
         <font-awesome-icon v-if="store.autoSaveEnabled()" :icon="faSave" style="color: white;" />
         <font-awesome-icon v-else :icon="faSave" style="color: red;" />
-
-        ذخیره خودکار: {{ store.autoSaveEnabled() ? 'فعال' : 'غیرفعال' }}
+        <span class="toolbar-text">ذخیره خودکار: {{ store.autoSaveEnabled() ? 'فعال' : 'غیرفعال' }}</span>
       </span>
       <button
         class="px-3 py-2 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 text-white font-semibold rounded-xl shadow-lg hover:from-orange-500 hover:via-orange-600 hover:to-orange-700 transition duration-300 ease-in-out"
         @click="toggleAutoSave">
         <font-awesome-icon v-if="store.autoSaveEnabled()" :icon="faLightbulb" style="color: red;" />
-
         <font-awesome-icon v-else :icon="faLightbulb" style="color: white;" />
-        {{ store.autoSaveEnabled() ? 'غیرفعال کردن' : 'فعال کردن' }} ذخیره خودکار
+        <span class="toolbar-text">{{ store.autoSaveEnabled() ? 'غیرفعال کردن' : 'فعال کردن' }} ذخیره خودکار</span>
       </button>
     </div>
 
     <div class="canvas">
-      <VueFlow :default-viewport="{ x: 0, y: 0, zoom: 0.25 }"
+      <VueFlow  :default-viewport="{ x: 0, y: 0, zoom: 0.25 }"
       :max-zoom="2"
       :min-zoom="0.05"
       :nodes="store.nodes"
@@ -284,5 +283,14 @@ function doScreenshot() {
   font-size: 1.5rem;
   color: inherit;
   padding: 0.5rem;
+}
+.toolbar-text {
+  display: inline;
+}
+
+@media (max-width: 600px) {
+  .toolbar-text {
+    display: none !important;
+  }
 }
 </style>

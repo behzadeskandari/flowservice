@@ -16,24 +16,25 @@
               class="px-6 py-3 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 text-white font-semibold rounded-xl shadow-lg hover:from-orange-500 hover:via-orange-600 hover:to-orange-700 transition duration-300 ease-in-out"
               @click="close">
               <font-awesome-icon :icon="faArrowUp" style="color: white;" />
-              خروج
+              <span class="header-btn-text">خروج</span>
             </button>
             <button v-if="isEdit"
               class="px-6 py-3 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 text-white font-semibold rounded-xl shadow-lg hover:from-orange-500 hover:via-orange-600 hover:to-orange-700 transition duration-300 ease-in-out"
               @click="save">
               <font-awesome-icon :icon="faSave" style="color: white;" />
-              ذخیره
+              <span class="header-btn-text">ذخیره</span>
             </button>
             <button v-if="isEdit"
               class="px-6 py-3 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 text-white font-semibold rounded-xl shadow-lg hover:from-orange-500 hover:via-orange-600 hover:to-orange-700 transition duration-300 ease-in-out"
               @click="askDelete">
               <font-awesome-icon :icon="faTrash" style="color: white;" />
-              پاک کردن</button>
+              <span class="header-btn-text">پاک کردن</span>
+            </button>
             <button v-if="isView"
               class="px-6 py-3 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 text-white font-semibold rounded-xl shadow-lg hover:from-orange-500 hover:via-orange-600 hover:to-orange-700 transition duration-300 ease-in-out"
               @click="copyJson">کپی JSON</button>
           </div>
-          <h3 class="text-xl font-bold text-gray-800 dark:text-gray-100 p-3">{{ title }}</h3>
+          <h3 class="text-xl font-bold text-gray-800 dark:text-gray-100 p-3 responsive-modal-header">{{ title }}</h3>
 
         </header>
 
@@ -82,7 +83,7 @@
 
             <div class="space-y-3">
               <div v-for="(f, idx) in local.fields" :key="f.idx"
-                class="flex gap-2 items-center bg-gray-50 dark:bg-gray-800 p-2 rounded-xl">
+                class="field-row-mobile flex gap-2 items-center bg-gray-50 dark:bg-gray-800 p-2 rounded-xl">
                 <input v-model="f.label" placeholder="label" class="w-full px-4 py-2 rounded-xl border border-gray-300
          focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent
          bg-white shadow-sm transition" />
@@ -116,7 +117,7 @@
               class="px-6 py-3 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 text-white font-semibold rounded-xl shadow-lg hover:from-orange-500 hover:via-orange-600 hover:to-orange-700 transition duration-300 ease-in-out"
               @click="addField">
               <font-awesome-icon :icon="['fas', 'plus']" style="color: var(--color-white-300); font-size:larger" />
-              <span class="text-white-300">
+              <span class="responsive-btn-text text-white-300">
                 اضافه کردن فیلد
               </span>
             </button>
@@ -295,5 +296,47 @@ function nodeValueToExport(n) {
 
 .danger {
   background: #fee2e2;
+}
+.responsive-modal-header {
+  font-size: 1.25rem;
+  padding: 0.75rem;
+}
+@media (max-width: 600px) {
+  .responsive-modal-header {
+    font-size: 1rem;
+    padding: 0.5rem 0.25rem;
+    word-break: break-word;
+  }
+}
+.header-btn-text {
+  display: inline;
+  margin-right: 0.4rem;
+}
+@media (max-width: 600px) {
+  .header-btn-text {
+    display: none !important;
+  }
+}
+.responsive-btn-text {
+  display: inline;
+  margin-right: 0.4rem;
+}
+
+@media (max-width: 600px) {
+  .responsive-btn-text {
+    display: none !important;
+  }
+}
+.field-row-mobile {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+@media (max-width: 600px) {
+  .field-row-mobile {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.5rem !important;
+  }
 }
 </style>
