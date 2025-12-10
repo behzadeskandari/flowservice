@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div class="service-node" @contextmenu.prevent="onRightClick">
+    <div class="service-node" @contextmenu.prevent="onRightClick" @touchstart="onTouchStart" @touchend="onTouchEnd" @touchmove="onTouchCancel">
       <div class="node-header" @dblclick="openEdit">
         <strong>{{ data.label }}</strong>
       </div>
@@ -126,6 +126,40 @@ function onRightClick(e) {
   // Calculate position so menu doesn't overflow screen
   contextMenu.value.x = (clickX + menuWidth > screenW) ? (screenW - menuWidth) : clickX
   contextMenu.value.y = (clickY + menuHeight > screenH) ? (screenH - menuHeight) : clickY
+}
+
+let touchTimeout = null
+function onTouchStart(e) {
+  if (e.touches && e.touches.length === 1) {
+    // Only start for a single touch
+    touchTimeout = setTimeout(() => {
+      e.preventDefault();
+      contextMenu.value.visible = true;
+      openContextMenuId.value = id.value;
+      // Place it near the touch
+      const touch = e.touches[0];
+      const clickX = touch.clientX
+      const clickY = touch.clientY
+      const screenW = window.innerWidth
+      const screenH = window.innerHeight
+      const menuWidth = 150
+      const menuHeight = 100
+      contextMenu.value.x = (clickX + menuWidth > screenW) ? (screenW - menuWidth) : clickX
+      contextMenu.value.y = (clickY + menuHeight > screenH) ? (screenH - menuHeight) : clickY
+    }, 500)
+  }
+}
+function onTouchEnd(e) {
+  if (touchTimeout) {
+    clearTimeout(touchTimeout)
+    touchTimeout = null
+  }
+}
+function onTouchCancel(e) {
+  if (touchTimeout) {
+    clearTimeout(touchTimeout)
+    touchTimeout = null
+  }
 }
 
 function onContextSelect(action) {
