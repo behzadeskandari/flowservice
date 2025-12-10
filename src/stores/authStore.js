@@ -40,7 +40,12 @@ export const useAuthStore = defineStore('auth', () => {
             isAuthenticated.value = true
             localStorage.setItem('isAuthenticated','true')
         } else {
-          throw new Error('Authentication failed')
+            notify({
+              title: 'خطا در ورود',
+              text: 'نام کاربری یا رمز عبور اشتباه است.',
+              type: 'error',
+              duration: 3000,
+            })
         }
       })
 
