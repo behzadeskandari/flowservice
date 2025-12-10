@@ -71,7 +71,7 @@ const router = createRouter({
 // Setup your global guard here:
 router.beforeEach((to, from, next) => {
   const authStore = useAuthStore()
-  if (to.meta.requiresAuth && !authStore.isAuthenticated) {
+  if (to.meta.requiresAuth && !authStore.isAuthenticated && to.path !== '/Login') {
     next('/Login')
   } else {
     next()

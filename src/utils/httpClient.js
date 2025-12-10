@@ -2,7 +2,7 @@ import axios from 'axios'
 
 export function createHttpClient(options = {}) {
   const {
-    baseURL = import.meta?.env?.VITE_API_BASE || '/',
+    baseURL = "http://192.168.140.172:8099/api", /// || '/',
     timeout = 15000,
     headers = {},
     getToken = () => localStorage.getItem('token'),

@@ -29,18 +29,18 @@ export const useAuthStore = defineStore('auth', () => {
     }
     else {
 
-      // createHttpClient().post('/login', { username, password }).then(response => {
-      //   if (response.data.success) {
-      //     let userRecord = response.data.user
-      //     user.value = userRecord
-      //     localStorage.setItem('user', JSON.stringify(userRecord))
+      createHttpClient().post('/Auth/login', { username, password }).then(response => {
+        if (response.data.success) {
+          let userRecord = response.data.user
+          user.value = userRecord
+          localStorage.setItem('user', JSON.stringify(userRecord))
             user.value = { username ,password }  // Simple user object
             isAuthenticated.value = true
             localStorage.setItem('isAuthenticated','true')
-      //   } else {
-      //     throw new Error('Authentication failed')
-      //   }
-      // })
+        } else {
+          throw new Error('Authentication failed')
+        }
+      })
 
       return true
     }
