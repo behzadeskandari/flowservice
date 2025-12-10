@@ -32,7 +32,20 @@ export function createHttpClient(options = {}) {
     (response) => response,
     (error) => {
       if (error.response?.status === 401) {
-        // place to trigger logout/refresh if needed
+        notify({
+          title: 'دسترسی غیرمجاز',
+          text: 'دسترسی شما به این بخش محدود است.',
+          type: 'error',
+          duration: 3000,
+        })
+      }
+      if (error.response?.status === 403) {
+        notify({
+          title: 'دسترسی غیرمجاز',
+          text: 'دسترسی شما به این بخش محدود است.',
+          type: 'error',
+          duration: 3000,
+        })
       }
       return Promise.reject(error)
     },

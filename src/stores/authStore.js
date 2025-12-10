@@ -30,11 +30,13 @@ export const useAuthStore = defineStore('auth', () => {
     else {
 
       createHttpClient().post('/Auth/login', { username, password }).then(response => {
-        if (response.data.success) {
-          let userRecord = response.data.user
-          user.value = userRecord
-          localStorage.setItem('user', JSON.stringify(userRecord))
-            user.value = { username ,password }  // Simple user object
+        if (response && response.status === 200) {
+            let userRecord = response
+            user.value = userRecord
+            localStorage.setItem('user', JSON.stringify(userRecord))
+            localStorage.setItem('token', JSON.stringify(userRecord?.token))
+            localStorage.setItem('username', JSON.stringify(userRecord?.username))
+
             isAuthenticated.value = true
             localStorage.setItem('isAuthenticated','true')
         } else {
