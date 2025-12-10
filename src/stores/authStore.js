@@ -1,6 +1,7 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import { createHttpClient} from '@/utils/httpClient'
+import StatusCode from './../constant/StatusCode';
 export const useAuthStore = defineStore('auth', () => {
 
   const count = ref(0)
@@ -30,8 +31,8 @@ export const useAuthStore = defineStore('auth', () => {
     else {
 
       createHttpClient().post('/Auth/login', { username, password }).then(response => {
-        if (response && response.status === 200) {
-            let userRecord = response
+        if (response.data && response.data.status === StatusCode.OK) {
+            let userRecord = response.data
             user.value = userRecord
             localStorage.setItem('user', JSON.stringify(userRecord))
             localStorage.setItem('token', JSON.stringify(userRecord?.token))

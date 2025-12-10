@@ -1,5 +1,5 @@
 import axios from 'axios'
-
+import StatusCode from '@/constant/StatusCode'
 export function createHttpClient(options = {}) {
   const {
     baseURL = "http://192.168.140.172:8099/api", /// || '/',
@@ -31,7 +31,7 @@ export function createHttpClient(options = {}) {
   instance.interceptors.response.use(
     (response) => response,
     (error) => {
-      if (error.response?.status === 401) {
+      if (error.response?.status === StatusCode.UNAUTHORIZED) {
         notify({
           title: 'دسترسی غیرمجاز',
           text: 'دسترسی شما به این بخش محدود است.',
@@ -39,7 +39,7 @@ export function createHttpClient(options = {}) {
           duration: 3000,
         })
       }
-      if (error.response?.status === 403) {
+      if (error.response?.status === StatusCode.FORBIDDEN) {
         notify({
           title: 'دسترسی غیرمجاز',
           text: 'دسترسی شما به این بخش محدود است.',
