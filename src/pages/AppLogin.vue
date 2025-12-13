@@ -74,28 +74,31 @@ function onCaptchaVerified() {
     errorMessage.value = ''
   }
 }
-function login() {
-  debugger
-  if (!isCaptchaVerified.value) {
-    errorMessage.value = 'لطفا کد امنیتی را تایید کنید.'
-    return
+async function login() {
+   if (!isCaptchaVerified.value) {
+    errorMessage.value = 'لطفا کد امنیتی را تایید کنید.';
+    return;
   }
-  const success = authStore.login(username.value, password.value)
-  if (success) {
-    errorMessage.value = ''
-    notify({
-      title: 'ورود موفقیت‌آمیز',
-      text: 'شما با موفقیت وارد شدید.',
-      type: 'success',
-      duration: 3000,
-    })
-    setTimeout(() => {
-          router.push('/home').catch(err => {
-            console.error('Navigation error:', err)
-          });
-    }, 1000)
-  } else {
-    errorMessage.value = 'نام کاربری یا رمز عبور اشتباه است.'
+  try {
+    const success = await authStore.login(username.value, password.value);
+    if (success) {
+      errorMessage.value = '';
+      notify({
+        title: 'ورود موفقیت‌آمیز',
+        text: 'شما با موفقیت وارد شدید.',
+        type: 'success',
+        duration: 3000,
+      });
+      // Navigate after showing the success message
+      setTimeout(() => {
+        router.push('/Dashboard');
+      }, 1000);
+    } else {
+      errorMessage.value = 'نام کاربری یا رمز عبور اشتباه است.';
+    }
+  } catch (error) {
+    console.error('Login error:', error);
+    errorMessage.value = 'خطایی در ارتباط با سرور رخ داد. لطفاً دوباره تلاش کنید.';
   }
 }
 router.beforeEach((to, from, next) => {

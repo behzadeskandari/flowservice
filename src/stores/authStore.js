@@ -1,7 +1,8 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
-import { createHttpClient} from '@/utils/httpClient'
+import { createHttpClient } from '@/utils/httpClient'
 import StatusCode from './../constant/StatusCode';
+import { notify } from '@kyvg/vue3-notification';
 export const useAuthStore = defineStore('auth', () => {
 
   const count = ref(0)
@@ -18,48 +19,49 @@ export const useAuthStore = defineStore('auth', () => {
     }
   })
 
-  function login(username, password) {
-    // Simulate authentication
-    //Todo Use use UTILS httpClient to authenticate
-    // In a real application, you would replace this with an API call
-    if (!username || !password) return false
-
-
-    if (username === '' &&  password === '') {
+  async function login(username, password) {
+    // Validate input
+    if (!username || !password || username.trim() === '' || password.trim() === '') {
       return false;
     }
-    else {
 
-      createHttpClient().post('/Auth/login', { username, password }).then(response => {
-        if (response.data && response.data.status === StatusCode.OK) {
-            let userRecord = response.data
-            user.value = userRecord
-            localStorage.setItem('user', JSON.stringify(userRecord))
-            localStorage.setItem('token', JSON.stringify(userRecord?.token))
-            localStorage.setItem('username', JSON.stringify(userRecord?.username))
+    try {
+      const response = await createHttpClient().post('/Auth/login', { username, password });
 
-            isAuthenticated.value = true
-            localStorage.setItem('isAuthenticated','true')
-        } else {
-            notify({
-              title: 'خطا در ورود',
-              text: 'نام کاربری یا رمز عبور اشتباه است.',
-              type: 'error',
-              duration: 3000,
-            })
-        }
-      }).catch(error => {
-        console.log(error)
-      })
-
-      return true
+      if (response.data && response.status === StatusCode.OK) {
+        const userRecord = response.data;
+        user.value = userRecord;
+        localStorage.setItem('user', JSON.stringify(userRecord));
+        localStorage.setItem('token', JSON.stringify(userRecord?.token || ''));
+        localStorage.setItem('username', JSON.stringify(userRecord?.username || ''));
+        localStorage.setItem('isAuthenticated', 'true');
+        isAuthenticated.value = true;
+        return true;
+      } else {
+        isAuthenticated.value = false;
+        notify({
+          title: 'خطا در ورود',
+          text: 'نام کاربری یا رمز عبور اشتباه است.',
+          type: 'error',
+          duration: 3000,
+        });
+        return false;
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      notify({
+        title: 'خطا در ارتباط با سرور',
+        text: 'خطایی در برقراری ارتباط با سرور رخ داده است.',
+        type: 'error',
+        duration: 3000,
+      });
+      return false;
     }
-    return false
   }
 
   function logout() {
     user.value = null
   }
 
-  return { logout,login,isAuthenticated,user }
+  return { logout, login, isAuthenticated, user }
 })
