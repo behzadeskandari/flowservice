@@ -38,10 +38,10 @@
               <Captcha @verified="onCaptchaVerified" />
             </div>
             <button type="submit" :disabled="!isCaptchaVerified" class="w-full h-12 mt-4 rounded-lg
-  text-white font-bold text-lg shadow-lg hover:shadow-xl
-  bg-gradient-to-r from-orange-500 to-amber-600
-  hover:from-orange-600 hover:to-amber-700
-  active:scale-98 transition-all duration-200">
+                      text-white font-bold text-lg shadow-lg hover:shadow-xl
+                      bg-gradient-to-r from-orange-500 to-amber-600
+                      hover:from-orange-600 hover:to-amber-700
+                      active:scale-98 transition-all duration-200">
               ورود
             </button>
           </form>
@@ -68,8 +68,9 @@ const password = ref('')
 const errorMessage = ref('')
 const authStore = useAuthStore()
 const isCaptchaVerified = ref(false)
-function onCaptchaVerified() {
-  isCaptchaVerified.value = true
+function onCaptchaVerified(isVerified) {
+  console.log(isVerified,'isVerified from $emit')
+  isCaptchaVerified.value = isVerified
   if (errorMessage.value) {
     errorMessage.value = ''
   }
@@ -84,14 +85,14 @@ async function login() {
     if (success) {
       errorMessage.value = '';
       notify({
-        title: 'ورود موفقیت‌آمیز',
+        title: 'ورود موفقیت آمیز',
         text: 'شما با موفقیت وارد شدید.',
         type: 'success',
         duration: 3000,
       });
       // Navigate after showing the success message
       setTimeout(() => {
-        router.push('/Dashboard');
+        router.push('/home');
       }, 1000);
     } else {
       errorMessage.value = 'نام کاربری یا رمز عبور اشتباه است.';

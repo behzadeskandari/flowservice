@@ -88,7 +88,8 @@ const routes = [
     meta: {
       title: 'خانه',
       breadCrumb: 'خانه',
-      requiresAuth: true
+      requiresAuth: true,
+      public: false,
     },
     component: AppFlowView,
   },

@@ -145,7 +145,7 @@ export default {
         this.isVerified = true;
         this.verificationMessage = "! کپچا با موفقیت تأیید شد";
         this.showCaptcha = false;
-        this.$emit("verified"); // optional
+        this.$emit("verified", this.isVerified); // optional
       } else {
         this.isVerified = false;
         this.verificationMessage = "کد اشتباه است. دوباره امتحان کنید.";
