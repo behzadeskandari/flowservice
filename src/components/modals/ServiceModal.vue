@@ -24,7 +24,7 @@
               <font-awesome-icon :icon="faSave" style="color: white;" />
               <span class="header-btn-text">ذخیره</span>
             </button>
-            <button v-if="isEdit"
+            <button v-if="isEdit && node && node.data && node.data.serviceId"
               class="px-6 py-3 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 text-white font-semibold rounded-xl shadow-lg hover:from-orange-500 hover:via-orange-600 hover:to-orange-700 transition duration-300 ease-in-out"
               @click="askDelete">
               <font-awesome-icon :icon="faTrash" style="color: white;" />
@@ -178,7 +178,10 @@ const node = computed(() => store.nodes.find((n) => n.id === selectedId.value) |
 
 const isCombined = computed(() => node.value && node.value.type === 'combinedServiceNode')
 const isView = computed(() => store.modalMode === 'view')
-const isEdit = computed(() => store.modalMode === 'edit')
+const isEdit = computed(() => {
+  const mode = store.modalMode
+  return mode === 'edit' || (mode === 'add' && node.value)
+})
 
 const nodeData = computed(() => {
   if (!node.value) return null
@@ -229,6 +232,9 @@ watch(
   { immediate: true },
 )
 
+/**
+ * Add a field to the service (local only, no API call)
+ */
 function addField() {
   const newKey = `f_${Date.now().toString(36)}_${Math.floor(Math.random() * 1000)}`
   local.fields.push({ key: newKey, label: 'newField', type: 'string', defaultValue: '' })
@@ -238,26 +244,76 @@ function removeField(idx) {
   local.fields.splice(idx, 1)
 }
 
+/**
+ * Save the service
+ * - If in edit mode and service exists: call update-service
+ * - If in edit mode and service doesn't exist: call create-service first, then update-service
+ */
 async function save() {
-  if (!node.value) return
+  if (!node.value || !node.value.data) return
   const id = node.value.id
-  await store.updateNode(id, {
-    data: {
-      label: local.label,
-      serviceName: local.serviceName,
-      url: local.url || node.value.data.url || '',
-      method: local.method || node.value.data.method || 'GET',
-      type: local.type || node.value.data.type || 'REST',
-      status: node.value.data.status !== undefined ? node.value.data.status : true,
-      fields: local.fields,
-    },
-  })
+  const nodeData = node.value.data
+
+  if (isEdit.value) {
+    if (nodeData.id) {
+      await store.updateNode(id, {
+        data: {
+          label: local.label,
+          serviceName: local.serviceName,
+          url: local.url || nodeData.url || '',
+          method: local.method || nodeData.method || 'GET',
+          type: local.type || nodeData.type || 'REST',
+          status: nodeData.status !== undefined ? nodeData.status : true,
+          fields: local.fields,
+        },
+      })
+      notify({
+        title: 'ذخیره شد',
+        text: 'سرویس با موفقیت بروزرسانی شد',
+        type: 'success',
+      })
+    } else {
+      await store.ensureService(id)
+      await store.updateNode(id, {
+        data: {
+          label: local.label,
+          serviceName: local.serviceName,
+          url: local.url || nodeData.url || '',
+          method: local.method || nodeData.method || 'GET',
+          type: local.type || nodeData.type || 'REST',
+          status: nodeData.status !== undefined ? nodeData.status : true,
+          fields: local.fields,
+        },
+      })
+      notify({
+        title: 'ذخیره شد',
+        text: 'سرویس با موفقیت ایجاد و بروزرسانی شد',
+        type: 'success',
+      })
+    }
+  } else {
+    if (!nodeData.serviceId) {
+      await store.ensureService(id)
+    }
+    await store.updateNode(id, {
+      data: {
+        label: local.label,
+        serviceName: local.serviceName,
+        url: local.url || nodeData.url || '',
+        method: local.method || nodeData.method || 'GET',
+        type: local.type || nodeData.type || 'REST',
+        status: nodeData.status !== undefined ? nodeData.status : true,
+        fields: local.fields,
+      },
+    })
+    notify({
+      title: 'ذخیره شد',
+      text: 'سرویس با موفقیت ذخیره شد',
+      type: 'success',
+    })
+  }
+
   store.clearSelected()
-  notify({
-    title: 'ذخیره شد',
-    text: 'سرویس با موفقیت ذخیره شد',
-    type: 'success',
-  })
 }
 
 function updateLabel() {

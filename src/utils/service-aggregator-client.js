@@ -14,7 +14,7 @@ class ServiceAggregatorClient {
   }
 
   async updateAggregate(data) {
-    const response = await httpClient.put(`aggregate/update-aggregate`, data)
+    const response = await httpClient.post(`aggregate/update-aggregate`, data)
     return response.data
   }
 
@@ -24,7 +24,7 @@ class ServiceAggregatorClient {
   }
 
   async updateService(data) {
-    const response = await httpClient.put(`/aggregate/update-service`, data)
+    const response = await httpClient.post(`/aggregate/update-service`, data)
     return response.data
   }
 
@@ -34,7 +34,7 @@ class ServiceAggregatorClient {
   }
 
   async updateAggregateStep(data) {
-    const response = await httpClient.put(`/aggregate/update-aggregate-step`, data)
+    const response = await httpClient.post(`/aggregate/update-aggregate-step`, data)
     return response.data
   }
 
@@ -44,7 +44,7 @@ class ServiceAggregatorClient {
   }
 
   async updateAggregateStepMapping(data) {
-    const response = await httpClient.put(`/aggregate/update-aggregate-step-mapping`, data)
+    const response = await httpClient.post(`/aggregate/update-aggregate-step-mapping`, data)
     return response.data
   }
 }

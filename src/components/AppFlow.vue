@@ -174,14 +174,36 @@ function toggleTheme() {
   localStorage.setItem('theme', isDark.value ? 'dark' : 'light')
   updateBodyClass()
 }
-function onAddService() {
+/**
+ * Handle adding a new service node
+ * This creates a service in the backend first, then adds the node to VueFlow
+ */
+async function onAddService() {
   const position = { x: 200 + Math.random() * 60, y: 150 + Math.random() * 60 }
-  const newNode = store.addNode({
-    position,
-    label: 'سرویس ' + (store.nodes.length + 1),
-    fields: [],
-  })
-  store.setSelectedNode(newNode.id, 'edit')
+  try {
+    const newNode = await store.addNode({
+      position,
+      label: 'سرویس ' + (store.nodes.length + 1),
+      serviceName: 'سرویس ' + (store.nodes.length + 1),
+      url: '',
+      method: 'GET',
+      type: 'REST',
+      fields: [],
+    })
+    store.setSelectedNode(newNode.id, 'edit')
+    notify({
+      title: 'موفق',
+      text: 'سرویس جدید ایجاد شد',
+      type: 'success',
+    })
+  } catch (error) {
+    console.error('Failed to add service:', error)
+    notify({
+      title: 'خطا',
+      text: 'خطا در ایجاد سرویس',
+      type: 'error',
+    })
+  }
 }
 
 function viewAllJson() {

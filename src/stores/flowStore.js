@@ -88,6 +88,12 @@ export const useFlowStore = defineStore('flow', () => {
     }
   }
 
+  /**
+   * Load aggregate flow from backend and convert to VueFlow nodes and edges
+   * This function fetches the aggregate with all its steps and services,
+   * then maps them to VueFlow format
+   * API Response structure: { id, name, description, status, steps: [{ id, stepName, serviceId, service, nextStepId, trueStepId, falseStepId, condition, mappings }] }
+   */
   async function loadAggregateFlow(aggregateId) {
     try {
       const aggregates = await serviceAggregatorClient.getAggregates()
@@ -96,54 +102,48 @@ export const useFlowStore = defineStore('flow', () => {
         : aggregates
 
       if (!aggregate) {
-        const aggregateResponse = await httpClient.get(`/Aggregate/${aggregateId}`).catch(() => null)
-        if (!aggregateResponse || !aggregateResponse.data) return
-        aggregate = aggregateResponse.data
+        console.warn(`Aggregate ${aggregateId} not found`)
+        return
       }
 
       currentAggregateId.value = aggregateId
       const flowNodes = []
       const flowEdges = []
-      const serviceMap = new Map()
-      const nodeIdMap = new Map()
+      const stepIdToNodeIdMap = new Map()
+      const nodeIdToStepIdMap = new Map()
 
-      const aggregateSteps = aggregate.aggregateSteps || []
-
-      for (const step of aggregateSteps) {
-        if (step.serviceId && !serviceMap.has(step.serviceId)) {
-          try {
-            const serviceResponse = await httpClient.get(`/Service/${step.serviceId}`)
-            if (serviceResponse && serviceResponse.data) {
-              serviceMap.set(step.serviceId, serviceResponse.data)
-            }
-          } catch (error) {
-            console.warn(`Failed to load service ${step.serviceId}:`, error)
-          }
-        }
-      }
+      const steps = aggregate.steps || []
 
       let xPos = 100
       let yPos = 100
+      const stepPositions = new Map()
 
-      for (const step of aggregateSteps) {
-        if (!step.serviceId) continue
+      for (const step of steps) {
+        if (!stepPositions.has(step.id)) {
+          stepPositions.set(step.id, { x: xPos, y: yPos })
+          xPos += 300
+          if (xPos > 1500) {
+            xPos = 100
+            yPos += 200
+          }
+        }
 
-        const service = serviceMap.get(step.serviceId)
-        if (!service) continue
+        if (step.serviceId && step.service) {
+          const nodeId = `node-${step.id}`
+          stepIdToNodeIdMap.set(step.id, nodeId)
+          nodeIdToStepIdMap.set(nodeId, step.id)
 
-        const nodeId = `node-${step.serviceId}-${step.id}`
-        if (!nodeIdMap.has(step.serviceId)) {
-          nodeIdMap.set(step.serviceId, nodeId)
-
+          const service = step.service
           flowNodes.push({
             id: nodeId,
             type: 'serviceNode',
-            position: { x: xPos, y: yPos },
+            position: stepPositions.get(step.id),
             data: {
               id: nodeId,
               serviceId: service.id,
               aggregateId: aggregateId,
-              label: service.name || 'Service',
+              aggregateStepId: step.id,
+              label: service.name || step.stepName || 'Service',
               serviceName: service.name || '',
               url: service.url || '',
               method: service.method || 'GET',
@@ -152,47 +152,113 @@ export const useFlowStore = defineStore('flow', () => {
               fields: [],
             },
           })
+        } else if (!step.serviceId) {
+          const nodeId = `node-${step.id}`
+          stepIdToNodeIdMap.set(step.id, nodeId)
+          nodeIdToStepIdMap.set(nodeId, step.id)
 
-          xPos += 300
-          if (xPos > 1500) {
-            xPos = 100
-            yPos += 200
-          }
+          flowNodes.push({
+            id: nodeId,
+            type: 'serviceNode',
+            position: stepPositions.get(step.id),
+            data: {
+              id: nodeId,
+              serviceId: null,
+              aggregateId: aggregateId,
+              aggregateStepId: step.id,
+              label: step.stepName || 'Decision Step',
+              serviceName: step.stepName || '',
+              url: '',
+              method: 'GET',
+              type: 'DECISION',
+              status: step.status !== undefined ? step.status : true,
+              fields: [],
+            },
+          })
         }
       }
 
-      for (const step of aggregateSteps) {
-        if (!step.serviceId || !step.sourceStepId) continue
+      for (const step of steps) {
+        const sourceNodeId = stepIdToNodeIdMap.get(step.id)
+        if (!sourceNodeId) continue
 
-        const sourceStep = aggregateSteps.find(s => s.id === step.sourceStepId)
-        if (!sourceStep || !sourceStep.serviceId) continue
+        const stepMappings = step.mappings || []
 
-        const sourceNodeId = nodeIdMap.get(sourceStep.serviceId)
-        const targetNodeId = nodeIdMap.get(step.serviceId)
+        if (step.nextStepId) {
+          const targetNodeId = stepIdToNodeIdMap.get(step.nextStepId)
+          if (targetNodeId) {
+            flowEdges.push({
+              id: `edge-${step.id}-next-${step.nextStepId}`,
+              source: sourceNodeId,
+              target: targetNodeId,
+              animated: true,
+              type: 'default',
+              markerEnd: {
+                type: MarkerType.ArrowClosed,
+                width: 20,
+                height: 20,
+                color: '#FF0072',
+              },
+              data: {
+                aggregateStepId: step.nextStepId,
+                aggregateId: aggregateId,
+                condition: step.condition || '',
+                mappings: stepMappings,
+              },
+            })
+          }
+        }
 
-        if (sourceNodeId && targetNodeId) {
-          const stepMappings = step.mappings || []
-          const edgeId = `edge-${step.id}`
+        if (step.trueStepId) {
+          const targetNodeId = stepIdToNodeIdMap.get(step.trueStepId)
+          if (targetNodeId) {
+            flowEdges.push({
+              id: `edge-${step.id}-true-${step.trueStepId}`,
+              source: sourceNodeId,
+              target: targetNodeId,
+              animated: true,
+              type: 'default',
+              markerEnd: {
+                type: MarkerType.ArrowClosed,
+                width: 20,
+                height: 20,
+                color: '#10B981',
+              },
+              label: 'True',
+              data: {
+                aggregateStepId: step.trueStepId,
+                aggregateId: aggregateId,
+                condition: step.condition || '',
+                mappings: [],
+              },
+            })
+          }
+        }
 
-          flowEdges.push({
-            id: edgeId,
-            source: sourceNodeId,
-            target: targetNodeId,
-            animated: true,
-            type: 'default',
-            markerEnd: {
-              type: MarkerType.ArrowClosed,
-              width: 20,
-              height: 20,
-              color: '#FF0072',
-            },
-            data: {
-              aggregateStepId: step.id,
-              aggregateId: aggregateId,
-              condition: step.condition || '',
-              mappings: stepMappings,
-            },
-          })
+        if (step.falseStepId) {
+          const targetNodeId = stepIdToNodeIdMap.get(step.falseStepId)
+          if (targetNodeId) {
+            flowEdges.push({
+              id: `edge-${step.id}-false-${step.falseStepId}`,
+              source: sourceNodeId,
+              target: targetNodeId,
+              animated: true,
+              type: 'default',
+              markerEnd: {
+                type: MarkerType.ArrowClosed,
+                width: 20,
+                height: 20,
+                color: '#EF4444',
+              },
+              label: 'False',
+              data: {
+                aggregateStepId: step.falseStepId,
+                aggregateId: aggregateId,
+                condition: step.condition || '',
+                mappings: [],
+              },
+            })
+          }
         }
       }
 
@@ -210,31 +276,151 @@ export const useFlowStore = defineStore('flow', () => {
     }
   }
 
-  async function ensureAggregate() {
-    if (!currentAggregateId.value) {
-      try {
-        const aggregates = await serviceAggregatorClient.getAggregates()
-        if (aggregates && aggregates.length > 0) {
-          currentAggregateId.value = aggregates[0].id
-        } else {
-          const newAggregate = await serviceAggregatorClient.createAggregate({
-            name: 'Flow Aggregate',
-            description: 'Auto-generated aggregate',
-          })
-          currentAggregateId.value = newAggregate.id
-        }
-      } catch (error) {
-        console.error('Failed to ensure aggregate:', error)
-        notify({
-          title: 'خطا',
-          text: 'خطا در ایجاد aggregate',
-          type: 'error',
+  /**
+   * Update aggregate in backend
+   * @param {Object} aggregateData - { name: string, description: string, status?: boolean }
+   * @param {string} aggregateId - ID of aggregate to update
+   * @returns {Promise<Object>} Updated aggregate
+   */
+  async function updateAggregateData(aggregateData, aggregateId) {
+    if (!aggregateId || !aggregateData) return null
+
+    try {
+      const aggregates = await serviceAggregatorClient.getAggregates()
+      const existingAggregate = Array.isArray(aggregates)
+        ? aggregates.find(a => a.id === aggregateId)
+        : null
+
+      if (existingAggregate) {
+        const updated = await serviceAggregatorClient.updateAggregate({
+          id: aggregateId,
+          name: aggregateData.name || existingAggregate.name,
+          description: aggregateData.description || existingAggregate.description,
+          status: aggregateData.status !== undefined ? aggregateData.status : (existingAggregate.status !== undefined ? existingAggregate.status : true),
         })
+        return updated
       }
+      return null
+    } catch (error) {
+      console.error('Failed to update aggregate:', error)
+      notify({
+        title: 'خطا',
+        text: 'خطا در بروزرسانی aggregate',
+        type: 'error',
+      })
+      return null
     }
-    return currentAggregateId.value
   }
 
+  /**
+   * Ensure aggregate exists in backend
+   * @param {Object} aggregateData - { name: string, description: string }
+   * @param {string} aggregateId - Optional ID to check/update
+   * @returns {Promise<string>} The aggregate ID
+   */
+  async function ensureAggregate(aggregateData = null, aggregateId = null) {
+    try {
+      const aggregates = await serviceAggregatorClient.getAggregates()
+      const targetId = aggregateId || currentAggregateId.value
+
+      if (targetId) {
+        const existingAggregate = Array.isArray(aggregates)
+          ? aggregates.find(a => a.id === targetId)
+          : null
+
+        if (existingAggregate) {
+          if (aggregateData) {
+            await serviceAggregatorClient.updateAggregate({
+              id: targetId,
+              name: aggregateData.name || existingAggregate.name,
+              description: aggregateData.description || existingAggregate.description,
+              status: aggregateData.status !== undefined ? aggregateData.status : (existingAggregate.status !== undefined ? existingAggregate.status : true),
+            })
+          } else {
+            await serviceAggregatorClient.updateAggregate({
+              id: targetId,
+              name: existingAggregate.name,
+              description: existingAggregate.description,
+              status: existingAggregate.status !== undefined ? existingAggregate.status : true,
+            })
+          }
+          currentAggregateId.value = targetId
+          return targetId
+        } else {
+          if (aggregateData) {
+            const newAggregate = await serviceAggregatorClient.createAggregate({
+              name: aggregateData.name || 'Flow Aggregate',
+              description: aggregateData.description || 'Auto-generated aggregate',
+            })
+            currentAggregateId.value = newAggregate.id
+            return newAggregate.id
+          }
+        }
+      }
+
+      if (aggregates && aggregates.length > 0) {
+        currentAggregateId.value = aggregates[0].id
+        return aggregates[0].id
+      }
+
+      if (aggregateData) {
+        const newAggregate = await serviceAggregatorClient.createAggregate({
+          name: aggregateData.name || 'Flow Aggregate',
+          description: aggregateData.description || 'Auto-generated aggregate',
+        })
+        currentAggregateId.value = newAggregate.id
+        return newAggregate.id
+      }
+
+      return currentAggregateId.value
+    } catch (error) {
+      console.error('Failed to ensure aggregate:', error)
+      notify({
+        title: 'خطا',
+        text: 'خطا در ایجاد یا بروزرسانی aggregate',
+        type: 'error',
+      })
+      return currentAggregateId.value
+    }
+  }
+
+  /**
+   * Add a node locally without API call (for initial creation)
+   * The API call will happen later when user adds a field
+   */
+  function addNodeLocal(options = {}) {
+    const { position = {}, label = 'New Service', serviceName = '', fields = [], url = '', method = 'GET', type = 'REST' } = options
+
+    const x = typeof position.x === 'number' ? position.x : 100
+    const y = typeof position.y === 'number' ? position.y : 100
+    const id = uniqueId('svc')
+
+    const node = {
+      id: id,
+      type: 'serviceNode',
+      position: { x, y },
+      data: {
+        id,
+        serviceId: null,
+        aggregateId: currentAggregateId.value,
+        label: label,
+        serviceName: serviceName || label,
+        url: url,
+        method: method,
+        type: type,
+        status: true,
+        fields: structuredClone(fields),
+      },
+    }
+
+    nodes.value.push(node)
+    nodes.value = [...nodes.value]
+    return node
+  }
+
+  /**
+   * Add a node with API call (creates service in backend)
+   */
   async function addNode(options = {}) {
     const { position = {}, label = 'New Service', serviceName = '', fields = [], url = '', method = 'GET', type = 'REST' } = options
 
@@ -305,6 +491,55 @@ export const useFlowStore = defineStore('flow', () => {
     }
   }
 
+  /**
+   * Ensure service exists in backend (create if it doesn't)
+   * Called when user adds first field to a new service
+   */
+  async function ensureService(nodeId) {
+    const node = nodes.value.find(n => n.id === nodeId)
+    if (!node) return false
+
+    if (node.data.serviceId) {
+      return true
+    }
+
+    await ensureAggregate()
+
+    try {
+      const serviceData = {
+        name: node.data.serviceName || node.data.label,
+        url: node.data.url || '',
+        method: node.data.method || 'GET',
+        type: node.data.type || 'REST',
+      }
+
+      const createdService = await serviceAggregatorClient.createService(serviceData)
+
+      const nodeIndex = nodes.value.findIndex(n => n.id === nodeId)
+      if (nodeIndex !== -1) {
+        nodes.value[nodeIndex].data.serviceId = createdService.id
+        nodes.value[nodeIndex].data.aggregateId = currentAggregateId.value
+        nodes.value = [...nodes.value]
+      }
+
+      notify({
+        title: 'موفق',
+        text: 'سرویس در سرور ایجاد شد',
+        type: 'success',
+      })
+
+      return true
+    } catch (error) {
+      console.error('Failed to create service:', error)
+      notify({
+        title: 'خطا',
+        text: 'خطا در ایجاد سرویس در سرور',
+        type: 'error',
+      })
+      return false
+    }
+  }
+
   // function updateNode(nodeId, patch) {
   //   const idx = nodes.value.findIndex((n) => n.id === nodeId)
   //   if (idx === -1) return null
@@ -361,7 +596,31 @@ export const useFlowStore = defineStore('flow', () => {
     return nodes.value[idx]
   }
 
-  function deleteNode(nodeId) {
+  /**
+   * Delete a node (service) from both UI and backend
+   * Calls the backend API to soft-delete the service
+   */
+  async function deleteNode(nodeId) {
+    const node = nodes.value.find((n) => n.id === nodeId)
+
+    if (node && node.data.serviceId) {
+      try {
+        await serviceAggregatorClient.deleteService(node.data.serviceId)
+        notify({
+          title: 'موفق',
+          text: 'سرویس با موفقیت حذف شد',
+          type: 'success',
+        })
+      } catch (error) {
+        console.error('Failed to delete service:', error)
+        notify({
+          title: 'خطا',
+          text: 'خطا در حذف سرویس',
+          type: 'error',
+        })
+      }
+    }
+
     nodes.value = nodes.value.filter((n) => n.id !== nodeId)
     edges.value = edges.value.filter((e) => e.source !== nodeId && e.target !== nodeId)
     nodes.value = [...nodes.value]
@@ -1064,7 +1323,10 @@ export const useFlowStore = defineStore('flow', () => {
     loadAggregates,
     loadAggregateFlow,
     addNode,
+    addNodeLocal,
+    ensureService,
     updateNode,
+    updateAggregateData,
     deleteNode,
     addEdge,
     updateEdge,
