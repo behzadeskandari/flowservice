@@ -556,6 +556,7 @@ export const useFlowStore = defineStore('flow', () => {
   // }
   async function updateNode(nodeId, patch) {
     const idx = nodes.value.findIndex((n) => n.id === nodeId)
+    const serviceId = nodes.value.findIndex((n) => n.id === nodeId).serviceId
     if (idx === -1) return null
 
     const node = nodes.value[idx]
@@ -566,10 +567,10 @@ export const useFlowStore = defineStore('flow', () => {
 
     const updatedData = { ...node.data, ...patch.data }
 
-    if (node.data.serviceId && updatedData.serviceName) {
+    if (nodes.value[idx].data.serviceId && updatedData.serviceName) {
       try {
         await serviceAggregatorClient.updateService({
-          id: node.data.serviceId,
+          id: nodes.value[idx].data.serviceId,
           name: updatedData.serviceName,
           url: updatedData.url || '',
           method: updatedData.method || 'GET',

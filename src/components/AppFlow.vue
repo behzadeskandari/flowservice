@@ -37,22 +37,29 @@
     </div>
 
     <div class="canvas">
-      <VueFlow  :default-viewport="{ x: 0, y: 0, zoom: 0.25 }"
-      :max-zoom="2"
-      :min-zoom="0.05"
-      :nodes="store.nodes"
-      :edges="store.edges"
-      :zoom-on-scroll="true"
-      :fit-view-on-init="true"
-      :zoom-on-double-click="false"
-      :pan-on-drag="true"
-      :pan-on-scroll="true"
-      :pan-on-scroll-speed="0.8"
-      :pan-on-scroll-mode="true"
-      :selection-on-click="false"
-        style="width: 100%; height: 96.9vh" @nodes-change="onNodesChange" @edges-change="onEdgesChange"
-        @connect="onConnect" @node-dblclick="onNodeDblClick" :node-types="nodeTypes" v-bind="vfOptions"
-        class="vue-flow__container">
+      <VueFlow
+        :default-viewport="{ x: 0, y: 0, zoom: 0.25 }"
+        :max-zoom="2"
+        :min-zoom="0.05"
+        :nodes="store.nodes"
+        :edges="store.edges"
+        :zoom-on-scroll="true"
+        :fit-view-on-init="true"
+        :zoom-on-double-click="false"
+        :pan-on-drag="true"
+        :pan-on-scroll="true"
+        :pan-on-scroll-speed="0.8"
+        :pan-on-scroll-mode="true"
+        :selection-on-click="false"
+        style="width: 100%; height: 100vh"
+        @nodes-change="onNodesChange"
+        @edges-change="onEdgesChange"
+        @connect="onConnect"
+        @node-dblclick="onNodeDblClick"
+        :node-types="nodeTypes"
+        v-bind="vfOptions"
+        class="vue-flow__container"
+      >
         <Background variant="dots" gap="25" size="3" color="#bbb" />
         <Panel position="top-center"> </Panel>
         <Controls>
@@ -176,34 +183,21 @@ function toggleTheme() {
 }
 /**
  * Handle adding a new service node
- * This creates a service in the backend first, then adds the node to VueFlow
+ * Creates a local node only (no API call yet)
+ * API call will happen when user clicks "Add Field" in the modal
  */
-async function onAddService() {
+function onAddService() {
   const position = { x: 200 + Math.random() * 60, y: 150 + Math.random() * 60 }
-  try {
-    const newNode = await store.addNode({
-      position,
-      label: 'سرویس ' + (store.nodes.length + 1),
-      serviceName: 'سرویس ' + (store.nodes.length + 1),
-      url: '',
-      method: 'GET',
-      type: 'REST',
-      fields: [],
-    })
-    store.setSelectedNode(newNode.id, 'edit')
-    notify({
-      title: 'موفق',
-      text: 'سرویس جدید ایجاد شد',
-      type: 'success',
-    })
-  } catch (error) {
-    console.error('Failed to add service:', error)
-    notify({
-      title: 'خطا',
-      text: 'خطا در ایجاد سرویس',
-      type: 'error',
-    })
-  }
+  const newNode = store.addNodeLocal({
+    position,
+    label: 'سرویس ' + (store.nodes.length + 1),
+    serviceName: 'سرویس ' + (store.nodes.length + 1),
+    url: '',
+    method: 'GET',
+    type: 'REST',
+    fields: [],
+  })
+  store.setSelectedNode(newNode.id, 'edit')
 }
 
 function viewAllJson() {
@@ -286,10 +280,16 @@ function doScreenshot() {
 .toolbar {
   position: fixed;
   display: flex;
-  gap: 8px;
-  z-index: 999;
-  bottom: 19px;
+  gap: 10px;
+  z-index: 1000;
+  bottom: 20px;
   right: 20px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(5px);
+  border: 1px solid #e2e8f0;
 }
 
 .canvas {
@@ -311,11 +311,46 @@ function doScreenshot() {
 }
 .toolbar-text {
   display: inline;
+  white-space: nowrap;
 }
 
-@media (max-width: 600px) {
+.toolbar button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  min-width: 40px;
+  height: 40px;
+}
+
+.toolbar button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  filter: brightness(1.05);
+}
+
+@media (max-width: 768px) {
+  .toolbar {
+    bottom: 10px;
+    right: 10px;
+    padding: 6px 8px;
+  }
+
+  .toolbar button {
+    padding: 6px 10px;
+    height: 36px;
+    font-size: 13px;
+  }
+
   .toolbar-text {
-    display: none !important;
+    display: none;
   }
 }
 </style>
