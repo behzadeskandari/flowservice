@@ -128,54 +128,44 @@ export const useFlowStore = defineStore('flow', () => {
           }
         }
 
-        if (step.serviceId && step.service) {
-          const nodeId = `node-${step.id}`
-          stepIdToNodeIdMap.set(step.id, nodeId)
-          nodeIdToStepIdMap.set(nodeId, step.id)
+        const nodeId = `node-${step.id}`
+        stepIdToNodeIdMap.set(step.id, nodeId)
+        nodeIdToStepIdMap.set(nodeId, step.id)
 
-          const service = step.service
-          flowNodes.push({
-            id: nodeId,
-            type: 'serviceNode',
-            position: stepPositions.get(step.id),
-            data: {
-              id: nodeId,
-              serviceId: service.id,
-              aggregateId: aggregateId,
-              aggregateStepId: step.id,
-              label: service.name || step.stepName || 'Service',
-              serviceName: service.name || '',
-              url: service.url || '',
-              method: service.method || 'GET',
-              type: service.type || 'REST',
-              status: service.status !== undefined ? service.status : true,
-              fields: [],
-            },
-          })
-        } else if (!step.serviceId) {
-          const nodeId = `node-${step.id}`
-          stepIdToNodeIdMap.set(step.id, nodeId)
-          nodeIdToStepIdMap.set(nodeId, step.id)
+        const hasCondition =
+          step.condition !== null &&
+          step.condition !== undefined &&
+          `${step.condition}`.trim() !== ''
 
-          flowNodes.push({
+        const service = step.service
+        const isDecision = hasCondition
+
+        flowNodes.push({
+          id: nodeId,
+          type: isDecision ? 'decisionNode' : 'serviceNode',
+          position: stepPositions.get(step.id),
+          data: {
             id: nodeId,
-            type: 'serviceNode',
-            position: stepPositions.get(step.id),
-            data: {
-              id: nodeId,
-              serviceId: null,
-              aggregateId: aggregateId,
-              aggregateStepId: step.id,
-              label: step.stepName || 'Decision Step',
-              serviceName: step.stepName || '',
-              url: '',
-              method: 'GET',
-              type: 'DECISION',
-              status: step.status !== undefined ? step.status : true,
-              fields: [],
-            },
-          })
-        }
+            aggregateStepId: step.id,
+            aggregateId: aggregateId,
+            stepName: step.stepName || '',
+            condition: step.condition || '',
+            conditionParameters: step.conditionParameters || '',
+            serviceId: service?.id || null,
+            serviceName: service?.name || '',
+            url: service?.url || '',
+            method: service?.method || 'GET',
+            type: service?.type || (isDecision ? 'DECISION' : 'REST'),
+            status:
+              service?.status !== undefined
+                ? service.status
+                : step.status !== undefined
+                  ? step.status
+                  : true,
+            mappings: step.mappings || [],
+            fields: [],
+          },
+        })
       }
 
       for (const step of steps) {
@@ -199,10 +189,13 @@ export const useFlowStore = defineStore('flow', () => {
                 height: 20,
                 color: '#FF0072',
               },
+              label: '',
+              style: {},
               data: {
-                aggregateStepId: step.nextStepId,
+                aggregateStepId: step.id,
                 aggregateId: aggregateId,
                 condition: step.condition || '',
+                conditionParameters: step.conditionParameters || '',
                 mappings: stepMappings,
               },
             })
@@ -226,9 +219,10 @@ export const useFlowStore = defineStore('flow', () => {
               },
               label: 'True',
               data: {
-                aggregateStepId: step.trueStepId,
+                aggregateStepId: step.id,
                 aggregateId: aggregateId,
                 condition: step.condition || '',
+                conditionParameters: step.conditionParameters || '',
                 mappings: [],
               },
             })
@@ -244,6 +238,7 @@ export const useFlowStore = defineStore('flow', () => {
               target: targetNodeId,
               animated: true,
               type: 'default',
+              style: { stroke: '#EF4444', strokeDasharray: '6 4' },
               markerEnd: {
                 type: MarkerType.ArrowClosed,
                 width: 20,
@@ -252,9 +247,10 @@ export const useFlowStore = defineStore('flow', () => {
               },
               label: 'False',
               data: {
-                aggregateStepId: step.falseStepId,
+                aggregateStepId: step.id,
                 aggregateId: aggregateId,
                 condition: step.condition || '',
+                conditionParameters: step.conditionParameters || '',
                 mappings: [],
               },
             })
@@ -419,6 +415,43 @@ export const useFlowStore = defineStore('flow', () => {
   }
 
   /**
+   * Create a service in backend and attach to a node (used in add mode)
+   */
+  async function createServiceForNode(nodeId, serviceData) {
+    const node = nodes.value.find(n => n.id === nodeId)
+    if (!node) return null
+    await ensureAggregate()
+    try {
+      const createdService = await serviceAggregatorClient.createService({
+        name: serviceData.serviceName || serviceData.name,
+        url: serviceData.url || '',
+        method: serviceData.method || 'GET',
+        type: serviceData.type || 'REST',
+      })
+      const idx = nodes.value.findIndex(n => n.id === nodeId)
+      if (idx !== -1) {
+        nodes.value[idx].data = {
+          ...nodes.value[idx].data,
+          serviceId: createdService.id,
+          serviceName: serviceData.serviceName || serviceData.name,
+          url: serviceData.url || '',
+          method: serviceData.method || 'GET',
+          type: serviceData.type || 'REST',
+        }
+        nodes.value = [...nodes.value]
+      }
+      return createdService
+    } catch (error) {
+      console.error('Failed to create service:', error)
+      notify({
+        title: 'خطا',
+        text: 'خطا در ایجاد سرویس',
+        type: 'error',
+      })
+      return null
+    }
+  }
+  /**
    * Add a node with API call (creates service in backend)
    */
   async function addNode(options = {}) {
@@ -554,9 +587,8 @@ export const useFlowStore = defineStore('flow', () => {
   //   nodes.value = [...nodes.value]
   //   return nodes.value[idx]
   // }
-  async function updateNode(nodeId, patch) {
+  async function updateNode(nodeId, patch, options = {}) {
     const idx = nodes.value.findIndex((n) => n.id === nodeId)
-    const serviceId = nodes.value.findIndex((n) => n.id === nodeId).serviceId
     if (idx === -1) return null
 
     const node = nodes.value[idx]
@@ -567,7 +599,7 @@ export const useFlowStore = defineStore('flow', () => {
 
     const updatedData = { ...node.data, ...patch.data }
 
-    if (nodes.value[idx].data.serviceId && updatedData.serviceName) {
+    if (!options.skipServiceSync && nodes.value[idx].data.serviceId && updatedData.serviceName) {
       try {
         await serviceAggregatorClient.updateService({
           id: nodes.value[idx].data.serviceId,
@@ -805,11 +837,14 @@ export const useFlowStore = defineStore('flow', () => {
 
     try {
       const stepData = {
+        stepName: nodeB.data.stepName || nodeB.data.serviceName || 'Step',
         aggregateId: currentAggregateId.value,
         serviceId: nodeB.data.serviceId,
         nextStepId: null,
-        sourceStepId: sourceStepId || null,
+        trueStepId: null,
+        falseStepId: null,
         condition: '',
+        conditionParameters: '',
       }
 
       const createdStep = await serviceAggregatorClient.addAggregateStep(stepData)
@@ -831,6 +866,7 @@ export const useFlowStore = defineStore('flow', () => {
           aggregateStepId: createdStep.id,
           aggregateId: currentAggregateId.value,
           condition: '',
+          conditionParameters: '',
           mappings: [],
         },
       }
@@ -1172,11 +1208,14 @@ export const useFlowStore = defineStore('flow', () => {
 
       await serviceAggregatorClient.updateAggregateStep({
         id: edge.data.aggregateStepId,
+        stepName: targetNode.data.stepName || targetNode.data.serviceName || 'Step',
         aggregateId: edge.data.aggregateId || currentAggregateId.value,
         serviceId: targetNode.data.serviceId,
         nextStepId: nextStepId || null,
-        sourceStepId: sourceStepId || null,
+        trueStepId: updates.trueStepId !== undefined ? updates.trueStepId : null,
+        falseStepId: updates.falseStepId !== undefined ? updates.falseStepId : null,
         condition: updates.condition !== undefined ? updates.condition : (edge.data.condition || ''),
+        conditionParameters: updates.conditionParameters !== undefined ? updates.conditionParameters : (edge.data.conditionParameters || ''),
         status: updates.status !== undefined ? updates.status : true,
       })
 
@@ -1209,8 +1248,10 @@ export const useFlowStore = defineStore('flow', () => {
         aggregateId: edge.data.aggregateId || currentAggregateId.value,
         serviceId: nodes.value.find(n => n.id === edge.target)?.data?.serviceId,
         nextStepId: null,
-        sourceStepId: null,
+        trueStepId: null,
+        falseStepId: null,
         condition: edge.data.condition || '',
+        conditionParameters: edge.data.conditionParameters || '',
         status: false,
       })
 
@@ -1325,6 +1366,7 @@ export const useFlowStore = defineStore('flow', () => {
     loadAggregateFlow,
     addNode,
     addNodeLocal,
+    createServiceForNode,
     ensureService,
     updateNode,
     updateAggregateData,

@@ -394,34 +394,116 @@ export const useStepFlowStore = defineStore('stepFlow', () => {
     }
   }
 
-  async function loadAggregateFlow(aggregateId) {
-    try {
-      const aggregates = await serviceAggregatorClient.getAggregates()
-      const aggregate = Array.isArray(aggregates)
-        ? aggregates.find(a => a.id === aggregateId)
-        : aggregates
+  // async function loadAggregateFlow(aggregateId) {
+  //   try {
+  //     const aggregates = await serviceAggregatorClient.getAggregates()
+  //     const aggregate = Array.isArray(aggregates)
+  //       ? aggregates.find(a => a.id === aggregateId)
+  //       : aggregates
 
-      if (!aggregate) {
-        console.warn(`Aggregate ${aggregateId} not found`)
-        return
+  //     if (!aggregate) {
+  //       console.warn(`Aggregate ${aggregateId} not found`)
+  //       return
+  //     }
+
+  //     currentAggregateId.value = aggregateId
+  //     const { nodes: flowNodes, edges: flowEdges } = mapAggregateToFlow(aggregate)
+
+  //     nodes.value = flowNodes
+  //     edges.value = flowEdges
+
+  //   } catch (error) {
+  //     console.error('Error loading aggregate flow:', error)
+  //     notify({
+  //       title: 'Error',
+  //       text: 'Failed to load flow',
+  //       type: 'error',
+  //     })
+  //   }
+  // }
+
+  async function loadAggregateFlow(aggregateId) {
+    // fetch aggregates, pick the one by id
+    const aggregates = await serviceAggregatorClient.getAggregates()
+    const aggregate = Array.isArray(aggregates) ? aggregates.find(a => a.id === aggregateId) : aggregates
+    if (!aggregate) return
+
+    currentAggregateId.value = aggregateId
+    const steps = aggregate.steps || []
+    const nodesOut = []
+    const edgesOut = []
+    const stepIdToNodeId = new Map()
+
+    // positions (simple grid)
+    let x = 100, y = 100
+    const nextPos = () => {
+      const pos = { x, y }
+      x += 260
+      if (x > 1500) { x = 100; y += 220 }
+      return pos
+    }
+
+    // nodes
+    steps.forEach(step => {
+      const nodeId = `step-${step.id}`
+      stepIdToNodeId.set(step.id, nodeId)
+
+      const hasCondition = step.condition !== null && step.condition !== undefined && step.condition !== ''
+      const isDecision = hasCondition
+      const service = step.service
+
+      nodesOut.push({
+        id: nodeId,
+        type: isDecision ? 'decisionNode' : 'serviceNode', // add a diamond node type in VueFlow
+        position: nextPos(),
+        data: {
+          aggregateStepId: step.id,
+          stepName: step.stepName,
+          condition: step.condition,
+          serviceId: service?.id || null,
+          serviceName: service?.name || '',
+          url: service?.url || '',
+          method: service?.method || 'GET',
+          type: service?.type || 'REST',
+          status: service?.status ?? true,
+        },
+      })
+    })
+
+    // edges
+    steps.forEach(step => {
+      const sourceId = stepIdToNodeId.get(step.id)
+      if (!sourceId) return
+
+      const pushEdge = (targetStepId, label, color) => {
+        const targetId = stepIdToNodeId.get(targetStepId)
+        if (!targetId) return
+        edgesOut.push({
+          id: `edge-${step.id}-${targetStepId}`,
+          source: sourceId,
+          target: targetId,
+          animated: true,
+          type: 'default',
+          style: color ? { stroke: color, strokeDasharray: color === '#EF4444' ? '6 4' : undefined } : {},
+          label,
+          markerEnd: { type: MarkerType.ArrowClosed, width: 18, height: 18, color: color || '#FF0072' },
+          data: {
+            aggregateStepId: step.id,
+            aggregateId: aggregateId,
+            condition: step.condition || '',
+            mappings: step.mappings || [],
+          },
+        })
       }
 
-      currentAggregateId.value = aggregateId
-      const { nodes: flowNodes, edges: flowEdges } = mapAggregateToFlow(aggregate)
+      if (step.nextStepId) pushEdge(step.nextStepId, '', '#FF0072')
+      if (step.trueStepId) pushEdge(step.trueStepId, 'True', '#10B981')
+      if (step.falseStepId) pushEdge(step.falseStepId, 'False', '#EF4444')
+    })
 
-      nodes.value = flowNodes
-      edges.value = flowEdges
-
-    } catch (error) {
-      console.error('Error loading aggregate flow:', error)
-      notify({
-        title: 'Error',
-        text: 'Failed to load flow',
-        type: 'error',
-      })
-    }
+    nodes.value = [...nodesOut]
+    edges.value = [...edgesOut]
   }
-
   function mapAggregateToFlow(aggregate) {
     const flowNodes = []
     const flowEdges = []
@@ -605,7 +687,7 @@ export const useStepFlowStore = defineStore('stepFlow', () => {
     // Remove existing edges for this step
     edges.value = edges.value.filter(
       e => !e.source.endsWith(step.id) ||
-           (e.data?.type !== 'next' && e.data?.type !== 'true' && e.data?.type !== 'false')
+        (e.data?.type !== 'next' && e.data?.type !== 'true' && e.data?.type !== 'false')
     )
 
     const sourceNodeId = `step-${step.id}`

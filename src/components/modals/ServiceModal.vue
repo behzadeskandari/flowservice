@@ -189,8 +189,9 @@ const nodeData = computed(() => {
 })
 
 const title = computed(() => {
-  if (!node.value) return 'اضافه کردن سرویس'
-  return isCombined.value ? ` ترکیب سرویس: ${nodeData.value.label}` : ` ویرایش: ${nodeData.value.label}`
+  if (!node.value || !nodeData.value) return 'اضافه کردن سرویس'
+  const label = nodeData.value.label || nodeData.value.stepName || 'سرویس'
+  return isCombined.value ? ` ترکیب سرویس: ${label}` : ` ویرایش: ${label}`
 })
 
 // local copy for edits
@@ -246,8 +247,8 @@ function removeField(idx) {
 
 /**
  * Save the service
- * - If in edit mode and service exists: call update-service
- * - If in edit mode and service doesn't exist: call create-service first, then update-service
+ * - Edit mode: if serviceId exists → update-service; if not → create-service then update step locally
+ * - Add mode: create-service then update step locally (no extra update-service call)
  */
 async function save() {
   if (!node.value || !node.value.data) return
@@ -255,7 +256,8 @@ async function save() {
   const nodeData = node.value.data
 
   if (isEdit.value) {
-    if (nodeData.id) {
+    if (nodeData.serviceId) {
+      // update-service
       await store.updateNode(id, {
         data: {
           label: local.label,
@@ -267,50 +269,58 @@ async function save() {
           fields: local.fields,
         },
       })
-      notify({
-        title: 'ذخیره شد',
-        text: 'سرویس با موفقیت بروزرسانی شد',
-        type: 'success',
-      })
+      notify({ title: 'ذخیره شد', text: 'سرویس با موفقیت بروزرسانی شد', type: 'success' })
     } else {
-      await store.ensureService(id)
-      await store.updateNode(id, {
-        data: {
-          label: local.label,
-          serviceName: local.serviceName,
-          url: local.url || nodeData.url || '',
-          method: local.method || nodeData.method || 'GET',
-          type: local.type || nodeData.type || 'REST',
-          status: nodeData.status !== undefined ? nodeData.status : true,
-          fields: local.fields,
+      // create-service then update step locally (skip service sync to avoid extra update-service)
+      await store.createServiceForNode(id, {
+        serviceName: local.serviceName,
+        name: local.serviceName,
+        url: local.url || '',
+        method: local.method || 'GET',
+        type: local.type || 'REST',
+      })
+      await store.updateNode(
+        id,
+        {
+          data: {
+            label: local.label,
+            serviceName: local.serviceName,
+            url: local.url || '',
+            method: local.method || 'GET',
+            type: local.type || 'REST',
+            status: nodeData.status !== undefined ? nodeData.status : true,
+            fields: local.fields,
+          },
         },
-      })
-      notify({
-        title: 'ذخیره شد',
-        text: 'سرویس با موفقیت ایجاد و بروزرسانی شد',
-        type: 'success',
-      })
+        { skipServiceSync: true },
+      )
+      notify({ title: 'ذخیره شد', text: 'سرویس با موفقیت ایجاد شد', type: 'success' })
     }
   } else {
-    if (!nodeData.serviceId) {
-      await store.ensureService(id)
-    }
-    await store.updateNode(id, {
-      data: {
-        label: local.label,
-        serviceName: local.serviceName,
-        url: local.url || nodeData.url || '',
-        method: local.method || nodeData.method || 'GET',
-        type: local.type || nodeData.type || 'REST',
-        status: nodeData.status !== undefined ? nodeData.status : true,
-        fields: local.fields,
+    // add mode: always create-service then update step locally
+    await store.createServiceForNode(id, {
+      serviceName: local.serviceName,
+      name: local.serviceName,
+      url: local.url || '',
+      method: local.method || 'GET',
+      type: local.type || 'REST',
+    })
+    await store.updateNode(
+      id,
+      {
+        data: {
+          label: local.label,
+          serviceName: local.serviceName,
+          url: local.url || '',
+          method: local.method || 'GET',
+          type: local.type || 'REST',
+          status: nodeData.status !== undefined ? nodeData.status : true,
+          fields: local.fields,
+        },
       },
-    })
-    notify({
-      title: 'ذخیره شد',
-      text: 'سرویس با موفقیت ذخیره شد',
-      type: 'success',
-    })
+      { skipServiceSync: true },
+    )
+    notify({ title: 'ذخیره شد', text: 'سرویس با موفقیت ایجاد شد', type: 'success' })
   }
 
   store.clearSelected()

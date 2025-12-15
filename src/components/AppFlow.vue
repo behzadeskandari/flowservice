@@ -93,6 +93,7 @@ import { faCamera, faSun, faMoon, faSortAmountDown, faFileExport, faSave, faLigh
 import { MiniMap } from '@vue-flow/minimap'
 import ServiceNode from './nodes/ServiceNode.vue'
 import CombinedServiceNode from './nodes/CombinedServiceNode.vue'
+import DecisionNode from './nodes/DecisionNode.vue'
 // Modal
 import ServiceModal from './modals/ServiceModal.vue'
 
@@ -107,6 +108,7 @@ const isDark = ref(false)
 const nodeTypes = {
   serviceNode: markRaw(ServiceNode),
   combinedServiceNode: markRaw(CombinedServiceNode),
+  decisionNode: markRaw(DecisionNode),
 }
 import { notify } from "@kyvg/vue3-notification";
 

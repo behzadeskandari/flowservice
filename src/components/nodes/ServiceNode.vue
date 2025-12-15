@@ -2,15 +2,18 @@
   <div>
     <div class="service-node" @contextmenu.prevent="onRightClick" @touchstart="onTouchStart" @touchend="onTouchEnd" @touchmove="onTouchCancel">
       <div class="node-header" @dblclick="openEdit">
-        <strong>{{ data.label }}</strong>
+        <strong>{{ data.stepName || data.label }}</strong>
       </div>
 
       <div class="node-body">
-        <small>{{ data.serviceName }}</small>
-        <div v-if="previewFields && previewFields.length" class="preview">
-          <div v-for="f in previewFields" :key="f.key" class="preview-row">
-            <span class="p-key">{{ f.label }}:</span>
-            <span class="p-val">{{ f.defaultValue || '-' }}</span>
+        <small class="meta">Step: {{ data.stepName || data.label }}</small>
+        <small class="meta">Service: {{ data.serviceName || 'بدون سرویس' }}</small>
+        <small class="meta" v-if="data.conditionParameters">Params: {{ data.conditionParameters }}</small>
+        <div v-if="data.mappings && data.mappings.length" class="mappings">
+          <div v-for="m in data.mappings" :key="m.id || m.targetField" class="map-row">
+            <span class="map-target">{{ m.targetField || '-' }}</span>
+            <span class="map-dir">←</span>
+            <span class="map-source">{{ m.sourceField || m.value || m.source || '-' }}</span>
           </div>
         </div>
       </div>
