@@ -72,6 +72,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import AppFlowView from '../pages/AppFlowView.vue'
 import AppLogin from '../pages/AppLogin.vue'
 import AppNotFound from '@/pages/AppNotFound.vue'
+import ServicesPage from '@/pages/ServicesPage.vue'
 import { useAuthStore } from '@/stores/authStore'
 
 const routes = [
@@ -92,6 +93,17 @@ const routes = [
       public: false,
     },
     component: AppFlowView,
+  },
+  {
+    path: '/services',
+    name: 'services',
+    meta: {
+      title: 'سرویس‌ها',
+      breadCrumb: 'سرویس‌ها',
+      requiresAuth: true,
+      public: false,
+    },
+    component: ServicesPage,
   },
   {
     path: '/Login',
@@ -119,6 +131,7 @@ const routes = [
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes,
+
 })
 
 // Navigation guard

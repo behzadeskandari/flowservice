@@ -1,6 +1,10 @@
 <template>
   <div class="flow-wrapper">
     <div class="toolbar">
+      <router-link to="/services" class="px-3 py-2 bg-gradient-to-r from-blue-400 via-blue-500 to-blue-600 text-white font-semibold rounded-xl shadow-lg hover:from-blue-500 hover:via-blue-600 hover:to-blue-700 transition duration-300 ease-in-out" title="مدیریت سرویس‌ها">
+        <font-awesome-icon :icon="faTools" style="color: white" />
+        <span class="toolbar-text">مدیریت سرویس‌ها</span>
+      </router-link>
       <button
         class="px-3 py-2 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 text-white font-semibold rounded-xl shadow-lg hover:from-orange-500 hover:via-orange-600 hover:to-orange-700 transition duration-300 ease-in-out"
         @click="onAddService">
@@ -79,6 +83,7 @@
     </div>
 
     <ServiceModal />.
+    <ConnectionStepModal />
      <notifications />
 
   </div>
@@ -89,13 +94,14 @@ import { markRaw, reactive, ref, watch, onMounted } from 'vue'
 import { Panel, useVueFlow, VueFlow } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
 import { Controls, ControlButton } from '@vue-flow/controls'
-import { faCamera, faSun, faMoon, faSortAmountDown, faFileExport, faSave, faLightbulb,faPlus, faFileCode } from '@fortawesome/free-solid-svg-icons'
+import { faCamera, faSun, faMoon, faSortAmountDown, faFileExport, faSave, faLightbulb,faPlus, faFileCode, faTools } from '@fortawesome/free-solid-svg-icons'
 import { MiniMap } from '@vue-flow/minimap'
 import ServiceNode from './nodes/ServiceNode.vue'
 import CombinedServiceNode from './nodes/CombinedServiceNode.vue'
 import DecisionNode from './nodes/DecisionNode.vue'
 // Modal
 import ServiceModal from './modals/ServiceModal.vue'
+import ConnectionStepModal from './modals/ConnectionStepModal.vue'
 
 // Store
 import { useFlowStore } from '../stores/flowStore'

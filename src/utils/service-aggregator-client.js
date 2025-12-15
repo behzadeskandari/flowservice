@@ -8,6 +8,11 @@ class ServiceAggregatorClient {
     return response.data
   }
 
+  async getServices() {
+    const response = await httpClient.get('/aggregate/get-services')
+    return response.data
+  }
+
   async createAggregate(data) {
     const response = await httpClient.post('aggregate/create-aggregate', data)
     return response.data
@@ -29,7 +34,9 @@ class ServiceAggregatorClient {
   }
 
   async addAggregateStep(data) {
-    const response = await httpClient.post('/aggregate/add-aggregate-step', data)
+    const response = await httpClient.post('/aggregate/add-aggregate-step', {
+      addAggregateStep: data
+    })
     return response.data
   }
 
