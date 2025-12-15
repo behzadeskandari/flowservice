@@ -110,7 +110,7 @@ const vfOptions = reactive({
   fitView: true,
 })
 
-onMounted(() => {
+onMounted(async () => {
   const saved = localStorage.getItem('theme')
   if (saved === 'dark') {
     isDark.value = false
@@ -120,6 +120,7 @@ onMounted(() => {
     isDark.value = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
   }
   updateBodyClass()
+  await store.loadAggregates()
 })
 watch(isDark, () => {
   updateBodyClass()
@@ -221,12 +222,14 @@ function onNodesChange(changes) {
   })
 }
 
-function onEdgesChange(changes) {
-  changes.forEach((change) => {
+async function onEdgesChange(changes) {
+  for (const change of changes) {
     if (change.type === 'remove') {
-      store.edges = store.edges.filter((e) => e.id !== change.id)
+      await store.deleteEdge(change.id)
+    } else if (change.type === 'update') {
+      await store.updateEdge(change.id, change.data || {})
     }
-  })
+  }
 }
 
 function onNodeDblClick({ id }) {

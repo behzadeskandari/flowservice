@@ -1,5 +1,7 @@
 import axios from 'axios'
 import StatusCode from '@/constant/StatusCode'
+import { notify } from '@kyvg/vue3-notification'
+
 export function createHttpClient(options = {}) {
   const {
     baseURL = "http://192.168.140.172:8099/api", /// || '/',
@@ -21,7 +23,18 @@ export function createHttpClient(options = {}) {
     (config) => {
       const token = getToken?.()
       if (token) {
-        config.headers.Authorization = `Bearer ${token}`
+        let cleanToken = token
+        if (typeof token === 'string') {
+          try {
+            const parsed = JSON.parse(token)
+            if (typeof parsed === 'string') {
+              cleanToken = parsed
+            }
+          } catch (e) {
+            cleanToken = token.replace(/^["']|["']$/g, '')
+          }
+        }
+        config.headers.Authorization = `Bearer ${cleanToken}`
       }
       return config
     },

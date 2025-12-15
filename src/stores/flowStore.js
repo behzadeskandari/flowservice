@@ -4,10 +4,13 @@ import { reactive, ref, watch } from 'vue'
 import { mergeNFields } from '../utils/schemaUtils'
 import { uniqueId } from '@/utils/modalUtils'
 import { MarkerType } from '@vue-flow/core'
+import serviceAggregatorClient from '@/utils/service-aggregator-client'
+import { notify } from '@kyvg/vue3-notification'
+import { createHttpClient } from '@/utils/httpClient'
+
+const httpClient = createHttpClient()
 
 const LOCAL_STORAGE_KEY = 'flowservice-flow'
-
-// Simple unique id generator
 
 export const useFlowStore = defineStore('flow', () => {
   const nodes = ref([])
@@ -15,8 +18,10 @@ export const useFlowStore = defineStore('flow', () => {
   const autoSave = ref(false)
   const selectedNode = ref(null)
   const showModal = ref(false)
-  const modalMode = ref('add') // 'add'|'edit'|'view'
+  const modalMode = ref('add')
   const flowViewport = reactive({ x: 0, y: 0, zoom: 1 })
+  const currentAggregateId = ref(null)
+  const isLoading = ref(false)
 
   watch(autoSave, (newVal) => {
     localStorage.setItem('AutoSave', newVal)
@@ -61,27 +66,243 @@ export const useFlowStore = defineStore('flow', () => {
   )
   loadFlow()
 
-  function addNode(options = {}) {
-    const { position = {}, label = 'New Service', serviceName = '', fields = [] } = options
+  async function loadAggregates() {
+    if (isLoading.value) return
+    isLoading.value = true
+    try {
+      const aggregates = await serviceAggregatorClient.getAggregates()
+      if (aggregates && aggregates.length > 0) {
+        const firstAggregate = aggregates[0]
+        currentAggregateId.value = firstAggregate.id
+        await loadAggregateFlow(firstAggregate.id)
+      }
+    } catch (error) {
+      console.error('Failed to load aggregates:', error)
+      notify({
+        title: 'خطا',
+        text: 'خطا در بارگذاری aggregates',
+        type: 'error',
+      })
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  async function loadAggregateFlow(aggregateId) {
+    try {
+      const aggregates = await serviceAggregatorClient.getAggregates()
+      const aggregate = Array.isArray(aggregates)
+        ? aggregates.find(a => a.id === aggregateId)
+        : aggregates
+
+      if (!aggregate) {
+        const aggregateResponse = await httpClient.get(`/Aggregate/${aggregateId}`).catch(() => null)
+        if (!aggregateResponse || !aggregateResponse.data) return
+        aggregate = aggregateResponse.data
+      }
+
+      currentAggregateId.value = aggregateId
+      const flowNodes = []
+      const flowEdges = []
+      const serviceMap = new Map()
+      const nodeIdMap = new Map()
+
+      const aggregateSteps = aggregate.aggregateSteps || []
+
+      for (const step of aggregateSteps) {
+        if (step.serviceId && !serviceMap.has(step.serviceId)) {
+          try {
+            const serviceResponse = await httpClient.get(`/Service/${step.serviceId}`)
+            if (serviceResponse && serviceResponse.data) {
+              serviceMap.set(step.serviceId, serviceResponse.data)
+            }
+          } catch (error) {
+            console.warn(`Failed to load service ${step.serviceId}:`, error)
+          }
+        }
+      }
+
+      let xPos = 100
+      let yPos = 100
+
+      for (const step of aggregateSteps) {
+        if (!step.serviceId) continue
+
+        const service = serviceMap.get(step.serviceId)
+        if (!service) continue
+
+        const nodeId = `node-${step.serviceId}-${step.id}`
+        if (!nodeIdMap.has(step.serviceId)) {
+          nodeIdMap.set(step.serviceId, nodeId)
+
+          flowNodes.push({
+            id: nodeId,
+            type: 'serviceNode',
+            position: { x: xPos, y: yPos },
+            data: {
+              id: nodeId,
+              serviceId: service.id,
+              aggregateId: aggregateId,
+              label: service.name || 'Service',
+              serviceName: service.name || '',
+              url: service.url || '',
+              method: service.method || 'GET',
+              type: service.type || 'REST',
+              status: service.status !== undefined ? service.status : true,
+              fields: [],
+            },
+          })
+
+          xPos += 300
+          if (xPos > 1500) {
+            xPos = 100
+            yPos += 200
+          }
+        }
+      }
+
+      for (const step of aggregateSteps) {
+        if (!step.serviceId || !step.sourceStepId) continue
+
+        const sourceStep = aggregateSteps.find(s => s.id === step.sourceStepId)
+        if (!sourceStep || !sourceStep.serviceId) continue
+
+        const sourceNodeId = nodeIdMap.get(sourceStep.serviceId)
+        const targetNodeId = nodeIdMap.get(step.serviceId)
+
+        if (sourceNodeId && targetNodeId) {
+          const stepMappings = step.mappings || []
+          const edgeId = `edge-${step.id}`
+
+          flowEdges.push({
+            id: edgeId,
+            source: sourceNodeId,
+            target: targetNodeId,
+            animated: true,
+            type: 'default',
+            markerEnd: {
+              type: MarkerType.ArrowClosed,
+              width: 20,
+              height: 20,
+              color: '#FF0072',
+            },
+            data: {
+              aggregateStepId: step.id,
+              aggregateId: aggregateId,
+              condition: step.condition || '',
+              mappings: stepMappings,
+            },
+          })
+        }
+      }
+
+      nodes.value = flowNodes
+      edges.value = flowEdges
+      nodes.value = [...nodes.value]
+      edges.value = [...edges.value]
+    } catch (error) {
+      console.error('Failed to load aggregate flow:', error)
+      notify({
+        title: 'خطا',
+        text: 'خطا در بارگذاری flow',
+        type: 'error',
+      })
+    }
+  }
+
+  async function ensureAggregate() {
+    if (!currentAggregateId.value) {
+      try {
+        const aggregates = await serviceAggregatorClient.getAggregates()
+        if (aggregates && aggregates.length > 0) {
+          currentAggregateId.value = aggregates[0].id
+        } else {
+          const newAggregate = await serviceAggregatorClient.createAggregate({
+            name: 'Flow Aggregate',
+            description: 'Auto-generated aggregate',
+          })
+          currentAggregateId.value = newAggregate.id
+        }
+      } catch (error) {
+        console.error('Failed to ensure aggregate:', error)
+        notify({
+          title: 'خطا',
+          text: 'خطا در ایجاد aggregate',
+          type: 'error',
+        })
+      }
+    }
+    return currentAggregateId.value
+  }
+
+  async function addNode(options = {}) {
+    const { position = {}, label = 'New Service', serviceName = '', fields = [], url = '', method = 'GET', type = 'REST' } = options
 
     const x = typeof position.x === 'number' ? position.x : 100
     const y = typeof position.y === 'number' ? position.y : 100
     const id = uniqueId('svc')
-    const node = {
-      id: uniqueId('svc'),
-      type: 'serviceNode',
-      position: { x, y }, // 100% guaranteed to exist
-      data: {
-        id,
-        label,
-        serviceName: serviceName || label,
-        fields: structuredClone(fields),
-      },
-    }
 
-    nodes.value.push(node)
-    nodes.value = [...nodes.value] // force reactivity
-    return node
+    await ensureAggregate()
+
+    try {
+      const serviceData = {
+        name: serviceName || label,
+        url: url || '',
+        method: method,
+        type: type,
+      }
+
+      const createdService = await serviceAggregatorClient.createService(serviceData)
+
+      const node = {
+        id: id,
+        type: 'serviceNode',
+        position: { x, y },
+        data: {
+          id,
+          serviceId: createdService.id,
+          aggregateId: currentAggregateId.value,
+          label: label,
+          serviceName: serviceName || label,
+          url: url,
+          method: method,
+          type: type,
+          status: true,
+          fields: structuredClone(fields),
+        },
+      }
+
+      nodes.value.push(node)
+      nodes.value = [...nodes.value]
+      return node
+    } catch (error) {
+      console.error('Failed to create service:', error)
+      notify({
+        title: 'خطا',
+        text: 'خطا در ایجاد سرویس',
+        type: 'error',
+      })
+      const node = {
+        id: id,
+        type: 'serviceNode',
+        position: { x, y },
+        data: {
+          id,
+          serviceId: null,
+          aggregateId: currentAggregateId.value,
+          label: label,
+          serviceName: serviceName || label,
+          url: url,
+          method: method,
+          type: type,
+          status: true,
+          fields: structuredClone(fields),
+        },
+      }
+      nodes.value.push(node)
+      nodes.value = [...nodes.value]
+      return node
+    }
   }
 
   // function updateNode(nodeId, patch) {
@@ -98,21 +319,42 @@ export const useFlowStore = defineStore('flow', () => {
   //   nodes.value = [...nodes.value]
   //   return nodes.value[idx]
   // }
-  function updateNode(nodeId, patch) {
+  async function updateNode(nodeId, patch) {
     const idx = nodes.value.findIndex((n) => n.id === nodeId)
     if (idx === -1) return null
 
     const node = nodes.value[idx]
 
-    // Prevent accidental deletion or invalid overwrite
     if (patch.position && (patch.position.x == null || patch.position.y == null)) {
       delete patch.position
+    }
+
+    const updatedData = { ...node.data, ...patch.data }
+
+    if (node.data.serviceId && updatedData.serviceName) {
+      try {
+        await serviceAggregatorClient.updateService({
+          id: node.data.serviceId,
+          name: updatedData.serviceName,
+          url: updatedData.url || '',
+          method: updatedData.method || 'GET',
+          type: updatedData.type || 'REST',
+          status: updatedData.status !== undefined ? updatedData.status : true,
+        })
+      } catch (error) {
+        console.error('Failed to update service:', error)
+        notify({
+          title: 'خطا',
+          text: 'خطا در بروزرسانی سرویس',
+          type: 'error',
+        })
+      }
     }
 
     nodes.value[idx] = {
       ...node,
       ...patch,
-      data: { ...node.data, ...patch.data },
+      data: updatedData,
     }
 
     nodes.value = [...nodes.value]
@@ -280,11 +522,10 @@ export const useFlowStore = defineStore('flow', () => {
   //   edges.value = [...edges.value]
   //   return combinedNode
   // }
-  function handleConnect(params) {
+  async function handleConnect(params) {
     if (params.sourceHandle !== 'out' || params.targetHandle !== 'in') {
       return
     }
-    console.log('Connecting nodes:', params)
     const { source, target } = params
     if (!source || !target) return
 
@@ -295,14 +536,54 @@ export const useFlowStore = defineStore('flow', () => {
     if (!nodeA.position) nodeA.position = { x: 0, y: 0 }
     if (!nodeB.position) nodeB.position = { x: 200, y: 200 }
 
-    // Add the new edge first
-    addEdge({
-      id: `e_${source}-${target}_${Date.now()}`,
-      source,
-      target,
-      animated: true,
-      type: 'default',
-    })
+    await ensureAggregate()
+
+    const sourceStepId = edges.value
+      .filter(e => e.target === source)
+      .map(e => e.data?.aggregateStepId)
+      .find(id => id)
+
+    try {
+      const stepData = {
+        aggregateId: currentAggregateId.value,
+        serviceId: nodeB.data.serviceId,
+        nextStepId: null,
+        sourceStepId: sourceStepId || null,
+        condition: '',
+      }
+
+      const createdStep = await serviceAggregatorClient.addAggregateStep(stepData)
+
+      const edgeId = `e_${source}-${target}_${Date.now()}`
+      const newEdge = {
+        id: edgeId,
+        source,
+        target,
+        animated: true,
+        type: 'default',
+        markerEnd: {
+          type: MarkerType.ArrowClosed,
+          width: 20,
+          height: 20,
+          color: '#FF0072',
+        },
+        data: {
+          aggregateStepId: createdStep.id,
+          aggregateId: currentAggregateId.value,
+          condition: '',
+          mappings: [],
+        },
+      }
+
+      addEdge(newEdge)
+    } catch (error) {
+      console.error('Failed to create aggregate step:', error)
+      notify({
+        title: 'خطا',
+        text: 'خطا در ایجاد step',
+        type: 'error',
+      })
+    }
 
     // Find all nodes in the connected component that includes both source and target
     const connectedGroup = findConnectedComponent(source, target)
@@ -608,6 +889,166 @@ export const useFlowStore = defineStore('flow', () => {
       console.error('Auto-save failed', e)
     }
   }, 1000)
+
+  async function updateEdge(edgeId, updates) {
+    const edge = edges.value.find(e => e.id === edgeId)
+    if (!edge || !edge.data?.aggregateStepId) return
+
+    try {
+      const sourceNode = nodes.value.find(n => n.id === edge.source)
+      const targetNode = nodes.value.find(n => n.id === edge.target)
+
+      if (!sourceNode || !targetNode) return
+
+      const sourceStepId = edges.value
+        .filter(e => e.target === edge.source)
+        .map(e => e.data?.aggregateStepId)
+        .find(id => id)
+
+      const nextStepId = edges.value
+        .filter(e => e.source === edge.target)
+        .map(e => e.data?.aggregateStepId)
+        .find(id => id)
+
+      await serviceAggregatorClient.updateAggregateStep({
+        id: edge.data.aggregateStepId,
+        aggregateId: edge.data.aggregateId || currentAggregateId.value,
+        serviceId: targetNode.data.serviceId,
+        nextStepId: nextStepId || null,
+        sourceStepId: sourceStepId || null,
+        condition: updates.condition !== undefined ? updates.condition : (edge.data.condition || ''),
+        status: updates.status !== undefined ? updates.status : true,
+      })
+
+      edge.data = {
+        ...edge.data,
+        ...updates,
+      }
+      edges.value = [...edges.value]
+    } catch (error) {
+      console.error('Failed to update aggregate step:', error)
+      notify({
+        title: 'خطا',
+        text: 'خطا در بروزرسانی step',
+        type: 'error',
+      })
+    }
+  }
+
+  async function deleteEdge(edgeId) {
+    const edge = edges.value.find(e => e.id === edgeId)
+    if (!edge || !edge.data?.aggregateStepId) {
+      edges.value = edges.value.filter(e => e.id !== edgeId)
+      edges.value = [...edges.value]
+      return
+    }
+
+    try {
+      await serviceAggregatorClient.updateAggregateStep({
+        id: edge.data.aggregateStepId,
+        aggregateId: edge.data.aggregateId || currentAggregateId.value,
+        serviceId: nodes.value.find(n => n.id === edge.target)?.data?.serviceId,
+        nextStepId: null,
+        sourceStepId: null,
+        condition: edge.data.condition || '',
+        status: false,
+      })
+
+      edges.value = edges.value.filter(e => e.id !== edgeId)
+      edges.value = [...edges.value]
+    } catch (error) {
+      console.error('Failed to delete aggregate step:', error)
+      edges.value = edges.value.filter(e => e.id !== edgeId)
+      edges.value = [...edges.value]
+    }
+  }
+
+  async function addMapping(edgeId, mappingData) {
+    const edge = edges.value.find(e => e.id === edgeId)
+    if (!edge || !edge.data?.aggregateStepId) return
+
+    try {
+      const sourceNode = nodes.value.find(n => n.id === edge.source)
+      const targetNode = nodes.value.find(n => n.id === edge.target)
+
+      if (!sourceNode || !targetNode) return
+
+      const sourceStepId = edges.value
+        .filter(e => e.target === edge.source)
+        .map(e => e.data?.aggregateStepId)
+        .find(id => id)
+
+      const mapping = await serviceAggregatorClient.addAggregateStepMapping({
+        aggregateStepId: edge.data.aggregateStepId,
+        inputStepId: sourceStepId || null,
+        source: mappingData.source || 'response',
+        targetField: mappingData.targetField || '',
+        sourceField: mappingData.sourceField || null,
+        value: mappingData.value || null,
+        valueType: mappingData.valueType || 'string',
+        status: mappingData.status !== undefined ? mappingData.status : true,
+      })
+
+      if (!edge.data.mappings) {
+        edge.data.mappings = []
+      }
+      edge.data.mappings.push(mapping)
+      edges.value = [...edges.value]
+      return mapping
+    } catch (error) {
+      console.error('Failed to add mapping:', error)
+      notify({
+        title: 'خطا',
+        text: 'خطا در ایجاد mapping',
+        type: 'error',
+      })
+    }
+  }
+
+  async function updateMapping(edgeId, mappingId, mappingData) {
+    const edge = edges.value.find(e => e.id === edgeId)
+    if (!edge || !edge.data?.aggregateStepId) return
+
+    try {
+      const sourceNode = nodes.value.find(n => n.id === edge.source)
+      const targetNode = nodes.value.find(n => n.id === edge.target)
+
+      if (!sourceNode || !targetNode) return
+
+      const sourceStepId = edges.value
+        .filter(e => e.target === edge.source)
+        .map(e => e.data?.aggregateStepId)
+        .find(id => id)
+
+      await serviceAggregatorClient.updateAggregateStepMapping({
+        id: mappingId,
+        aggregateStepId: edge.data.aggregateStepId,
+        inputStepId: sourceStepId || null,
+        source: mappingData.source || 'response',
+        targetField: mappingData.targetField || '',
+        sourceField: mappingData.sourceField || null,
+        value: mappingData.value || null,
+        valueType: mappingData.valueType || 'string',
+        status: mappingData.status !== undefined ? mappingData.status : true,
+      })
+
+      if (edge.data.mappings) {
+        const mappingIndex = edge.data.mappings.findIndex(m => m.id === mappingId)
+        if (mappingIndex !== -1) {
+          edge.data.mappings[mappingIndex] = { ...edge.data.mappings[mappingIndex], ...mappingData }
+        }
+      }
+      edges.value = [...edges.value]
+    } catch (error) {
+      console.error('Failed to update mapping:', error)
+      notify({
+        title: 'خطا',
+        text: 'خطا در بروزرسانی mapping',
+        type: 'error',
+      })
+    }
+  }
+
   return {
     enableAutoSave,
     disableAutoSave,
@@ -618,10 +1059,18 @@ export const useFlowStore = defineStore('flow', () => {
     showModal,
     modalMode,
     flowViewport,
+    currentAggregateId,
+    isLoading,
+    loadAggregates,
+    loadAggregateFlow,
     addNode,
     updateNode,
     deleteNode,
     addEdge,
+    updateEdge,
+    deleteEdge,
+    addMapping,
+    updateMapping,
     getNodes,
     handleConnect,
     setSelectedNode,

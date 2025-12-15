@@ -32,8 +32,8 @@ export const useAuthStore = defineStore('auth', () => {
         const userRecord = response.data;
         user.value = userRecord;
         localStorage.setItem('user', JSON.stringify(userRecord));
-        localStorage.setItem('token', JSON.stringify(userRecord?.token || ''));
-        localStorage.setItem('username', JSON.stringify(userRecord?.username || ''));
+        localStorage.setItem('token', userRecord?.token || '');
+        localStorage.setItem('username', userRecord?.username || '');
         localStorage.setItem('isAuthenticated', 'true');
         isAuthenticated.value = true;
         return true;

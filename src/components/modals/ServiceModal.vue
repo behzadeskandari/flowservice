@@ -79,6 +79,37 @@
          bg-white shadow-sm transition" />
             </div>
 
+            <div>
+              <label class="block font-medium text-gray-500 mb-1 text-right px-1 py-1 text-xl">URL</label>
+              <input v-model="local.url" placeholder="https://api.example.com/endpoint" class="w-full px-4 py-2 rounded-xl border text-right text-xl border-gray-300
+         focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
+         bg-white shadow-sm transition" />
+            </div>
+
+            <div>
+              <label class="block font-medium text-gray-500 mb-1 text-right px-1 py-1 text-xl">Method</label>
+              <select v-model="local.method" class="w-full px-4 py-2 rounded-xl border text-right text-xl border-gray-300
+         focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
+         bg-white shadow-sm transition">
+                <option value="GET">GET</option>
+                <option value="POST">POST</option>
+                <option value="PUT">PUT</option>
+                <option value="DELETE">DELETE</option>
+                <option value="PATCH">PATCH</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block font-medium text-gray-500 mb-1 text-right px-1 py-1 text-xl">Type</label>
+              <select v-model="local.type" class="w-full px-4 py-2 rounded-xl border text-right text-xl border-gray-300
+         focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
+         bg-white shadow-sm transition">
+                <option value="REST">REST</option>
+                <option value="SOAP">SOAP</option>
+                <option value="GRAPHQL">GRAPHQL</option>
+              </select>
+            </div>
+
             <h4 class="text-lg font-semibold text-gray-400 dark:text-gray-200">جزییات فیلدها</h4>
 
             <div class="space-y-3">
@@ -163,6 +194,9 @@ const title = computed(() => {
 const local = reactive({
   label: nodeData.value ? nodeData.value.label : '',
   serviceName: nodeData.value ? nodeData.value.serviceName : '',
+  url: nodeData.value ? nodeData.value.url : '',
+  method: nodeData.value ? nodeData.value.method : 'GET',
+  type: nodeData.value ? nodeData.value.type : 'REST',
   fields: nodeData.value ? JSON.parse(JSON.stringify(nodeData.value.fields || [])) : [],
 })
 
@@ -177,11 +211,17 @@ watch(
     if (n && n.data) {
       local.label = n.data.label || ''
       local.serviceName = n.data.serviceName || ''
+      local.url = n.data.url || ''
+      local.method = n.data.method || 'GET'
+      local.type = n.data.type || 'REST'
       local.fields = JSON.parse(JSON.stringify(n.data.fields || []))
       localLabel.value = n.data.label || ''
     } else {
       local.label = ''
       local.serviceName = ''
+      local.url = ''
+      local.method = 'GET'
+      local.type = 'REST'
       local.fields = []
       localLabel.value = ''
     }
@@ -198,17 +238,26 @@ function removeField(idx) {
   local.fields.splice(idx, 1)
 }
 
-function save() {
+async function save() {
   if (!node.value) return
   const id = node.value.id
-  store.updateNode(id, {
+  await store.updateNode(id, {
     data: {
       label: local.label,
       serviceName: local.serviceName,
+      url: local.url || node.value.data.url || '',
+      method: local.method || node.value.data.method || 'GET',
+      type: local.type || node.value.data.type || 'REST',
+      status: node.value.data.status !== undefined ? node.value.data.status : true,
       fields: local.fields,
     },
   })
   store.clearSelected()
+  notify({
+    title: 'ذخیره شد',
+    text: 'سرویس با موفقیت ذخیره شد',
+    type: 'success',
+  })
 }
 
 function updateLabel() {
