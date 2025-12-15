@@ -9,7 +9,7 @@
 
       <!-- Input Field -->
       <div class="captcha-input">
-        <input v-model="userInput" @keyup.enter="verifyCaptcha" type="text" placeholder="کد را وارد کنید" class="w-full h-12 px-4 text-right rounded-lg border
+        <input v-model="userInput" type="text" placeholder="کد را وارد کنید" class="w-full h-12 px-4 text-right rounded-lg border
                  border-orange-300 bg-white/80 backdrop-blur-sm
                  focus:bg-white focus:border-orange-500 focus:ring-4
                  focus:ring-orange-200/50 outline-none transition-all
@@ -21,10 +21,6 @@
       </button>
     </div>
 
-    <!-- Submit Button -->
-    <button type="button" @click="verifyCaptcha" class="verify-btn" :disabled="!userInput.trim()">
-      تأیید کپچا
-    </button>
     <div class="text-right chapchata-message">
       <p v-if="verificationMessage" :class="{ success: isVerified, error: !isVerified }">
         {{ verificationMessage }}
@@ -139,18 +135,23 @@ export default {
       return canvas.toDataURL("image/png");
     },
 
-    verifyCaptcha() {
-      //:TODO Add your verification logic here
+    validateCaptcha() {
       if (this.userInput.toLowerCase() === this.captchaText.toLowerCase()) {
         this.isVerified = true;
         this.verificationMessage = "! کپچا با موفقیت تأیید شد";
         this.showCaptcha = false;
-        this.$emit("verified", this.isVerified); // optional
+        this.$emit("verified", this.isVerified);
+        return true;
       } else {
         this.isVerified = false;
         this.verificationMessage = "کد اشتباه است. دوباره امتحان کنید.";
         this.generateCaptcha();
+        return false;
       }
+    },
+
+    resetCaptcha() {
+      this.generateCaptcha();
     },
   },
 };
