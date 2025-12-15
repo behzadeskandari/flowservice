@@ -6,10 +6,10 @@
         <span class="toolbar-text">مدیریت سرویس‌ها</span>
       </router-link>
       <button
-        class="px-3 py-2 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 text-white font-semibold rounded-xl shadow-lg hover:from-orange-500 hover:via-orange-600 hover:to-orange-700 transition duration-300 ease-in-out"
-        @click="onAddService">
+        class="px-3 py-2 bg-gradient-to-r from-green-400 via-green-500 to-green-600 text-white font-semibold rounded-xl shadow-lg hover:from-green-500 hover:via-green-600 hover:to-green-700 transition duration-300 ease-in-out"
+        @click="onAddStep">
         <font-awesome-icon :icon="faPlus" style="color: white" />
-        <span class="toolbar-text">اضافه کردن سرویس</span>
+        <span class="toolbar-text">اضافه کردن Step</span>
       </button>
       <button
         class="px-3 py-2 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 text-white font-semibold rounded-xl shadow-lg hover:from-orange-500 hover:via-orange-600 hover:to-orange-700 transition duration-300 ease-in-out"
@@ -49,7 +49,6 @@
         :edges="store.edges"
         :zoom-on-scroll="true"
         :fit-view-on-init="true"
-        :zoom-on-double-click="false"
         :pan-on-drag="true"
         :pan-on-scroll="true"
         :pan-on-scroll-speed="0.8"
@@ -84,6 +83,12 @@
 
     <ServiceModal />.
     <ConnectionStepModal />
+    <AggregateModal
+      :show="showAggregateModal"
+      :mode="aggregateModalMode"
+      @update:show="showAggregateModal = $event"
+      @saved="handleAggregateSaved"
+    />
      <notifications />
 
   </div>
@@ -99,9 +104,11 @@ import { MiniMap } from '@vue-flow/minimap'
 import ServiceNode from './nodes/ServiceNode.vue'
 import CombinedServiceNode from './nodes/CombinedServiceNode.vue'
 import DecisionNode from './nodes/DecisionNode.vue'
+import EndNode from './nodes/EndNode.vue'
 // Modal
 import ServiceModal from './modals/ServiceModal.vue'
 import ConnectionStepModal from './modals/ConnectionStepModal.vue'
+import AggregateModal from './modals/AggregateModal.vue'
 
 // Store
 import { useFlowStore } from '../stores/flowStore'
@@ -115,6 +122,7 @@ const nodeTypes = {
   serviceNode: markRaw(ServiceNode),
   combinedServiceNode: markRaw(CombinedServiceNode),
   decisionNode: markRaw(DecisionNode),
+  endNode: markRaw(EndNode),
 }
 import { notify } from "@kyvg/vue3-notification";
 
@@ -124,6 +132,9 @@ const store = useFlowStore()
 const vfOptions = reactive({
   fitView: true,
 })
+
+const showAggregateModal = ref(false)
+const aggregateModalMode = ref('add')
 
 onMounted(async () => {
   const saved = localStorage.getItem('theme')
@@ -190,22 +201,22 @@ function toggleTheme() {
   updateBodyClass()
 }
 /**
- * Handle adding a new service node
- * Creates a local node only (no API call yet)
- * API call will happen when user clicks "Add Field" in the modal
+ * Handle adding a new step to the aggregate
+ * First checks if an aggregate exists, if not opens AggregateModal
  */
-function onAddService() {
-  const position = { x: 200 + Math.random() * 60, y: 150 + Math.random() * 60 }
-  const newNode = store.addNodeLocal({
-    position,
-    label: 'سرویس ' + (store.nodes.length + 1),
-    serviceName: 'سرویس ' + (store.nodes.length + 1),
-    url: '',
-    method: 'GET',
-    type: 'REST',
-    fields: [],
-  })
-  store.setSelectedNode(newNode.id, 'edit')
+function onAddStep() {
+  if (!store.currentAggregateId) {
+    // No aggregate exists, open modal to create one
+    aggregateModalMode.value = 'add'
+    showAggregateModal.value = true
+  } else {
+    // Aggregate exists, notify user they need to connect nodes
+    notify({
+      title: 'اطلاع',
+      text: 'برای اضافه کردن Step، دو گره را به یکدیگر متصل کنید',
+      type: 'info',
+    })
+  }
 }
 
 function viewAllJson() {
@@ -246,6 +257,7 @@ function onNodesChange(changes) {
   })
 }
 
+
 async function onEdgesChange(changes) {
   for (const change of changes) {
     if (change.type === 'remove') {
@@ -257,7 +269,25 @@ async function onEdgesChange(changes) {
 }
 
 function onNodeDblClick({ id }) {
+  // Check if it's a combined node (don't edit combined nodes)
+  const node = store.nodes.find(n => n.id === id)
+  if (node && node.type === 'combinedServiceNode') {
+    notify({
+      title: 'اطلاع',
+      text: 'نمی‌توانید گره‌های ترکیب شده را ویرایش کنید',
+      type: 'info',
+    })
+    return
+  }
+
+  // Open ServiceModal for regular and decision nodes
   store.setSelectedNode(id, 'edit')
+}
+
+function handleAggregateSaved() {
+  showAggregateModal.value = false
+  // Load the newly created aggregate
+  store.loadAggregateFlow(store.currentAggregateId)
 }
 
 function doScreenshot() {

@@ -23,20 +23,27 @@
           </div>
 
           <div class="form-group">
-            <label>Service ID (optional)</label>
-            <input
+            <label>Service (optional)</label>
+            <select
               v-model="stepData.serviceId"
-              type="text"
               class="form-control"
-              placeholder="Service ID (if service exists)"
             >
+              <option :value="null">-- No Service --</option>
+              <option
+                v-for="service in availableServices"
+                :key="service.id"
+                :value="service.id"
+              >
+                {{ service.name }} ({{ service.method }})
+              </option>
+            </select>
             <small class="form-text text-muted">
-              Leave empty if no service is associated with this step.
+             از بین سرویس‌های موجود انتخاب کنید. سرویس‌ها در صفحه سرویس‌ها مدیریت می‌شوند.
             </small>
           </div>
 
           <div class="form-group">
-            <label>Condition (optional)</label>
+            <label>شرط (اختیاری)</label>
             <input
               v-model="stepData.condition"
               type="text"
@@ -44,12 +51,12 @@
               placeholder="e.g., user.role === 'admin'"
             >
             <small class="form-text text-muted">
-              Leave empty for regular steps. Add a condition to create a conditional step.
+              برای مراحل معمولی خالی بگذارید. برای ایجاد یک مرحله شرطی، یک شرط اضافه کنید.
             </small>
           </div>
 
           <div v-if="stepData.condition" class="form-group">
-            <label>Condition Parameters (optional)</label>
+            <label>پارامترهای شرط (اختیاری)</label>
             <input
               v-model="stepData.conditionParameters"
               type="text"
@@ -57,14 +64,14 @@
               placeholder="e.g., role,status"
             >
             <small class="form-text text-muted">
-              Comma-separated parameter names used in the condition.
+              نام پارامترهای جدا شده با کاما که در شرط استفاده می‌شوند.
             </small>
           </div>
         </div>
 
         <!-- Step Connections -->
         <div class="form-section">
-          <h4>Step Connections</h4>
+          <h4>اتصالات مرحله ای</h4>
 
           <div v-if="!stepData.condition" class="form-group">
             <label>Next Step (optional)</label>
@@ -72,7 +79,7 @@
               v-model="stepData.nextStepId"
               class="form-control"
             >
-              <option :value="null">-- None (Terminal Step) --</option>
+              <option :value="null">-- هیچکدام (مرحله پایانی) --</option>
               <option
                 v-for="step in availableNextSteps"
                 :key="step.id"
@@ -85,7 +92,7 @@
 
           <template v-else>
             <div class="form-group">
-              <label>True Path (when condition is true)</label>
+              <label>مسیر درست (وقتی شرط درست باشد)</label>
               <select
                 v-model="stepData.trueStepId"
                 class="form-control"
@@ -102,7 +109,7 @@
             </div>
 
             <div class="form-group">
-              <label>False Path (when condition is false)</label>
+              <label>مسیر نادرست (وقتی شرط نادرست است)</label>
               <select
                 v-model="stepData.falseStepId"
                 class="form-control"
@@ -124,7 +131,7 @@
       <div class="modal-footer">
         <button class="btn btn-secondary" @click="onClose">Cancel</button>
         <button class="btn btn-primary" @click="onSave" :disabled="!stepData.stepName">
-          Create Connection & Merge Services
+          ایجاد اتصال و ادغام سرویس‌ها
         </button>
       </div>
     </div>
@@ -132,10 +139,13 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useFlowStore } from '@/stores/flowStore'
+import serviceAggregatorClient from '@/utils/service-aggregator-client'
+import { notify } from '@kyvg/vue3-notification'
 
 const store = useFlowStore()
+const availableServices = ref([])
 
 const stepData = ref({
   stepName: '',
@@ -147,6 +157,21 @@ const stepData = ref({
   condition: '',
   conditionParameters: '',
 })
+
+// Load available services from backend
+const loadServices = async () => {
+  try {
+    const data = await serviceAggregatorClient.getServices()
+    availableServices.value = Array.isArray(data) ? data : []
+  } catch (error) {
+    console.error('Error loading services:', error)
+    notify({
+      title: 'خطا',
+      text: 'خطا در بارگذاری سرویس‌ها',
+      type: 'error',
+    })
+  }
+}
 
 // Available steps that can be connected to (excluding current step)
 const availableNextSteps = computed(() => {
@@ -165,7 +190,7 @@ function onClose() {
 
 async function onSave() {
   if (!stepData.value.stepName) {
-    alert('Step name is required')
+    alert('نام مرحله مورد نیاز است')
     return
   }
 
@@ -203,12 +228,23 @@ function resetForm() {
   }
 }
 
+// Load services when modal opens
+watch(() => store.showConnectionModal, (newVal) => {
+  if (newVal) {
+    loadServices()
+  }
+})
+
 // Watch for modal opening and update aggregateId
 watch(() => store.connectionStepData, (newData) => {
   if (newData) {
     stepData.value = JSON.parse(JSON.stringify(newData))
   }
 }, { immediate: true, deep: true })
+
+onMounted(() => {
+  loadServices()
+})
 </script>
 
 <style scoped>

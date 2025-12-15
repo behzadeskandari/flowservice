@@ -6,10 +6,10 @@
     </div>
 
     <div class="node-body">
-      <small class="combined-label">Merged Services</small>
+      <small class="combined-label">خدمات ادغام شده</small>
       <div v-if="data.combinedSchema" class="service-info">
         <div class="schema-preview">
-          {{ Object.keys(data.combinedSchema).length }} combined fields
+          {{ Object.keys(data.combinedSchema).length }} زمینه های ترکیبی
         </div>
       </div>
     </div>

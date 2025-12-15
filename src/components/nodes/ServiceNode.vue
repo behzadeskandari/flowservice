@@ -6,18 +6,18 @@
       </div>
 
       <div class="node-body">
-        <small class="meta">Step: {{ data.stepName || data.label }}</small>
-        <small class="meta">Service: {{ data.serviceName || 'بدون سرویس' }}</small>
-        <small class="meta" v-if="data.conditionParameters">Params: {{ data.conditionParameters }}</small>
+        <small class="meta">مرحله: {{ data.stepName || data.label }}</small>
+        <small class="meta">سرویس: {{ data.serviceName || 'بدون سرویس' }}</small>
+        <small class="meta" v-if="data.conditionParameters">پارامترها: {{ data.conditionParameters }}</small>
         <div v-if="data.mappings && data.mappings.length" class="mappings">
           <div v-for="m in data.mappings" :key="m.id || m.targetField" class="map-row">
             <span class="map-target">{{ m.targetField || '-' }}</span>
             <span class="map-dir">←</span>
             <span class="map-source">{{ m.sourceField || m.value || m.source || '-' }}</span>
+            <span class="map-source">{{ m.source }}</span>
           </div>
         </div>
       </div>
-
       <!-- connectors -->
       <Handle type="target" position="left" id="in" />
       <Handle type="source" position="right" id="out" />

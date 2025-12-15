@@ -9,9 +9,9 @@
       <div class="modal-body">
         <!-- Step Details -->
         <div class="form-section">
-          <h4>Step Information</h4>
+          <h4>اطلاعات مرحله</h4>
           <div class="form-group">
-            <label>Step Name</label>
+            <label>نام مرحله</label>
             <input
               v-model="stepData.stepName"
               type="text"
@@ -21,7 +21,7 @@
           </div>
 
           <div class="form-group">
-            <label>Condition (optional)</label>
+            <label>شرایط (اختیاری)</label>
             <input
               v-model="stepData.condition"
               type="text"
@@ -29,7 +29,7 @@
               placeholder="e.g., user.role === 'admin'"
             >
             <small class="form-text text-muted">
-              Leave empty for regular steps. Add a condition to create a conditional step.
+              برای مراحل معمولی خالی بگذارید. برای ایجاد یک مرحله شرطی، یک شرط اضافه کنید.
             </small>
           </div>
         </div>
@@ -37,19 +37,19 @@
         <!-- Service Details -->
         <div class="form-section">
           <div class="d-flex justify-content-between align-items-center">
-            <h4>Service</h4>
+            <h4>خدمات</h4>
             <button
               v-if="!stepData.service"
               class="btn btn-sm btn-outline-primary"
               @click="addService"
             >
-              Add Service
+              افزودن سرویس
             </button>
           </div>
 
           <div v-if="stepData.service" class="service-details">
             <div class="form-group">
-              <label>Service Name</label>
+              <label>نام سرویس</label>
               <input
                 v-model="stepData.service.name"
                 type="text"
@@ -107,26 +107,26 @@
               class="btn btn-sm btn-outline-danger"
               @click="removeService"
             >
-              Remove Service
+           حذف سرویس
             </button>
           </div>
 
           <div v-else class="no-service">
-            <p class="text-muted">No service attached to this step</p>
+            <p class="text-muted">هیچ خدماتی به این مرحله متصل نیستند.</p>
           </div>
         </div>
 
         <!-- Step Connections -->
         <div class="form-section">
-          <h4>Step Connections</h4>
+          <h4>اتصالات مرحله ای</h4>
 
           <div v-if="!stepData.condition" class="form-group">
-            <label>Next Step</label>
+            <label>مرحله بعدی</label>
             <select
               v-model="stepData.nextStepId"
               class="form-control"
             >
-              <option :value="null">-- Select next step --</option>
+              <option :value="null">-- مرحله بعدی را انتخاب کنید --</option>
               <option
                 v-for="step in availableNextSteps"
                 :key="step.id"
@@ -139,12 +139,12 @@
 
           <template v-else>
             <div class="form-group">
-              <label>True Path (when condition is true)</label>
+              <label>مسیر درست (وقتی شرط درست باشد)</label>
               <select
                 v-model="stepData.trueStepId"
                 class="form-control"
               >
-                <option :value="null">-- Select next step --</option>
+                <option :value="null">-- مرحله بعدی را انتخاب کنید --</option>
                 <option
                   v-for="step in availableNextSteps"
                   :key="step.id"
@@ -156,12 +156,12 @@
             </div>
 
             <div class="form-group">
-              <label>False Path (when condition is false)</label>
+              <label>مسیر نادرست (وقتی شرط نادرست است)</label>
               <select
                 v-model="stepData.falseStepId"
                 class="form-control"
               >
-                <option :value="null">-- Select next step --</option>
+                <option :value="null">-- مرحله بعدی را انتخاب کنید --</option>
                 <option
                   v-for="step in availableNextSteps"
                   :key="step.id"

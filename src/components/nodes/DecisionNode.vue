@@ -4,8 +4,8 @@
       <div class="diamond-content">
         <strong class="title">{{ data.stepName || 'شرط' }}</strong>
         <small class="condition" v-if="data.condition">if {{ data.condition }}</small>
-        <small class="condition" v-else>Conditional</small>
-        <small class="params" v-if="data.conditionParameters">params: {{ data.conditionParameters }}</small>
+        <small class="condition" v-else>مشروط</small>
+        <small class="params" v-if="data.conditionParameters">پارامترها: {{ data.conditionParameters }}</small>
       </div>
     </div>
     <Handle type="target" position="left" id="in" />

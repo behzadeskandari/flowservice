@@ -7,11 +7,11 @@
 
       <div class="node-body">
         <div v-if="data.condition" class="condition-preview">
-          <span class="condition-label">Condition:</span>
+          <span class="condition-label">شرط:</span>
           <span class="condition-value">{{ data.condition }}</span>
         </div>
         <div v-if="data.service" class="service-preview">
-          <small>{{ data.service.name || 'No service' }}</small>
+          <small>{{ data.service.name || 'بدون سرویس' }}</small>
         </div>
       </div>
 
@@ -38,7 +38,7 @@
 
     <ConfirmModal
       :visible="showConfirm"
-      message="Are you sure you want to delete this step?"
+      message="آیا مطمئن هستید که می‌خواهید این مرحله را حذف کنید؟"
       @confirm="onConfirmDelete"
       @cancel="onCancelDelete"
     />
