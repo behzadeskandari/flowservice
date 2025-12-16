@@ -486,8 +486,17 @@ onMounted(() => {
   word-break: break-word;
 }
 
+.services-table tbody tr {
+  background-color: white;
+  transition: background-color 0.2s ease;
+}
+
+.services-table tbody tr:nth-child(even) {
+  background-color: #f8f9fa;
+}
+
 .services-table tbody tr:hover {
-  background: #f8f9fa;
+  background-color: #e8f0f8;
 }
 
 .name-cell {
