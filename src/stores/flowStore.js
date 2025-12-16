@@ -333,7 +333,7 @@ export const useFlowStore = defineStore('flow', () => {
     try {
       const aggregates = await serviceAggregatorClient.getAggregates()
       const existingAggregate = Array.isArray(aggregates)
-        ? aggregates.find(a => a.id === aggregateId)
+        ? aggregates.find((a) => a.id === aggregateId)
         : null
 
       if (existingAggregate) {
@@ -341,7 +341,12 @@ export const useFlowStore = defineStore('flow', () => {
           id: aggregateId,
           name: aggregateData.name || existingAggregate.name,
           description: aggregateData.description || existingAggregate.description,
-          status: aggregateData.status !== undefined ? aggregateData.status : (existingAggregate.status !== undefined ? existingAggregate.status : true),
+          status:
+            aggregateData.status !== undefined
+              ? aggregateData.status
+              : existingAggregate.status !== undefined
+                ? existingAggregate.status
+                : true,
         })
         return updated
       }
@@ -370,7 +375,7 @@ export const useFlowStore = defineStore('flow', () => {
 
       if (targetId) {
         const existingAggregate = Array.isArray(aggregates)
-          ? aggregates.find(a => a.id === targetId)
+          ? aggregates.find((a) => a.id === targetId)
           : null
 
         if (existingAggregate) {
@@ -379,7 +384,12 @@ export const useFlowStore = defineStore('flow', () => {
               id: targetId,
               name: aggregateData.name || existingAggregate.name,
               description: aggregateData.description || existingAggregate.description,
-              status: aggregateData.status !== undefined ? aggregateData.status : (existingAggregate.status !== undefined ? existingAggregate.status : true),
+              status:
+                aggregateData.status !== undefined
+                  ? aggregateData.status
+                  : existingAggregate.status !== undefined
+                    ? existingAggregate.status
+                    : true,
             })
           } else {
             await serviceAggregatorClient.updateAggregate({
@@ -434,7 +444,15 @@ export const useFlowStore = defineStore('flow', () => {
    * The API call will happen later when user adds a field
    */
   function addNodeLocal(options = {}) {
-    const { position = {}, label = 'New Service', serviceName = '', fields = [], url = '', method = 'GET', type = 'REST' } = options
+    const {
+      position = {},
+      label = 'New Service',
+      serviceName = '',
+      fields = [],
+      url = '',
+      method = 'GET',
+      type = 'REST',
+    } = options
 
     const x = typeof position.x === 'number' ? position.x : 100
     const y = typeof position.y === 'number' ? position.y : 100
@@ -467,7 +485,7 @@ export const useFlowStore = defineStore('flow', () => {
    * Create a service in backend and attach to a node (used in add mode)
    */
   async function createServiceForNode(nodeId, serviceData) {
-    const node = nodes.value.find(n => n.id === nodeId)
+    const node = nodes.value.find((n) => n.id === nodeId)
     if (!node) return null
     await ensureAggregate()
     try {
@@ -477,7 +495,7 @@ export const useFlowStore = defineStore('flow', () => {
         method: serviceData.method || 'GET',
         type: serviceData.type || 'REST',
       })
-      const idx = nodes.value.findIndex(n => n.id === nodeId)
+      const idx = nodes.value.findIndex((n) => n.id === nodeId)
       if (idx !== -1) {
         nodes.value[idx].data = {
           ...nodes.value[idx].data,
@@ -504,7 +522,15 @@ export const useFlowStore = defineStore('flow', () => {
    * Add a node with API call (creates service in backend)
    */
   async function addNode(options = {}) {
-    const { position = {}, label = 'New Service', serviceName = '', fields = [], url = '', method = 'GET', type = 'REST' } = options
+    const {
+      position = {},
+      label = 'New Service',
+      serviceName = '',
+      fields = [],
+      url = '',
+      method = 'GET',
+      type = 'REST',
+    } = options
 
     const x = typeof position.x === 'number' ? position.x : 100
     const y = typeof position.y === 'number' ? position.y : 100
@@ -578,7 +604,7 @@ export const useFlowStore = defineStore('flow', () => {
    * Called when user adds first field to a new service
    */
   async function ensureService(nodeId) {
-    const node = nodes.value.find(n => n.id === nodeId)
+    const node = nodes.value.find((n) => n.id === nodeId)
     if (!node) return false
 
     if (node.data.serviceId) {
@@ -597,7 +623,7 @@ export const useFlowStore = defineStore('flow', () => {
 
       const createdService = await serviceAggregatorClient.createService(serviceData)
 
-      const nodeIndex = nodes.value.findIndex(n => n.id === nodeId)
+      const nodeIndex = nodes.value.findIndex((n) => n.id === nodeId)
       if (nodeIndex !== -1) {
         nodes.value[nodeIndex].data.serviceId = createdService.id
         nodes.value[nodeIndex].data.aggregateId = currentAggregateId.value
@@ -914,7 +940,7 @@ export const useFlowStore = defineStore('flow', () => {
       const createdStep = await serviceAggregatorClient.addAggregateStep(updatedStepData)
 
       // Update the target node with the created step data
-      const targetNodeIdx = nodes.value.findIndex(n => n.id === target)
+      const targetNodeIdx = nodes.value.findIndex((n) => n.id === target)
       if (targetNodeIdx !== -1) {
         nodes.value[targetNodeIdx] = {
           ...nodes.value[targetNodeIdx],
@@ -979,16 +1005,18 @@ export const useFlowStore = defineStore('flow', () => {
       // Check for position overlap with existing nodes
       const GRID_OFFSET = 60
       let pos = { ...avgPosition }
-      let isOverlapping;
+      let isOverlapping
       do {
         isOverlapping = nodes.value.some(
-          n => Math.abs(n.position.x - pos.x) < GRID_OFFSET && Math.abs(n.position.y - pos.y) < GRID_OFFSET
-        );
+          (n) =>
+            Math.abs(n.position.x - pos.x) < GRID_OFFSET &&
+            Math.abs(n.position.y - pos.y) < GRID_OFFSET,
+        )
         if (isOverlapping) {
           pos.x += GRID_OFFSET
           pos.y += GRID_OFFSET
         }
-      } while(isOverlapping)
+      } while (isOverlapping)
 
       // Add the new combined node
       nodes.value.push({
@@ -1050,8 +1078,8 @@ export const useFlowStore = defineStore('flow', () => {
   /**
    * Finds all nodes in the connected component that includes both startNodeId and endNodeId
    * Uses BFS to traverse the graph and find all connected nodes
-  */
-  const visited =  ref(new Set())
+   */
+  const visited = ref(new Set())
   const adjacency = ref(new Map())
   function findConnectedComponent(startNodeId, endNodeId) {
     const queue = [startNodeId, endNodeId]
@@ -1255,24 +1283,24 @@ export const useFlowStore = defineStore('flow', () => {
   }, 1000)
 
   async function updateEdge(edgeId, updates) {
-    const edge = edges.value.find(e => e.id === edgeId)
+    const edge = edges.value.find((e) => e.id === edgeId)
     if (!edge || !edge.data?.aggregateStepId) return
 
     try {
-      const sourceNode = nodes.value.find(n => n.id === edge.source)
-      const targetNode = nodes.value.find(n => n.id === edge.target)
+      const sourceNode = nodes.value.find((n) => n.id === edge.source)
+      const targetNode = nodes.value.find((n) => n.id === edge.target)
 
       if (!sourceNode || !targetNode) return
 
       const sourceStepId = edges.value
-        .filter(e => e.target === edge.source)
-        .map(e => e.data?.aggregateStepId)
-        .find(id => id)
+        .filter((e) => e.target === edge.source)
+        .map((e) => e.data?.aggregateStepId)
+        .find((id) => id)
 
       const nextStepId = edges.value
-        .filter(e => e.source === edge.target)
-        .map(e => e.data?.aggregateStepId)
-        .find(id => id)
+        .filter((e) => e.source === edge.target)
+        .map((e) => e.data?.aggregateStepId)
+        .find((id) => id)
 
       await serviceAggregatorClient.updateAggregateStep({
         id: edge.data.aggregateStepId,
@@ -1282,8 +1310,11 @@ export const useFlowStore = defineStore('flow', () => {
         nextStepId: nextStepId || null,
         trueStepId: updates.trueStepId !== undefined ? updates.trueStepId : null,
         falseStepId: updates.falseStepId !== undefined ? updates.falseStepId : null,
-        condition: updates.condition !== undefined ? updates.condition : (edge.data.condition || ''),
-        conditionParameters: updates.conditionParameters !== undefined ? updates.conditionParameters : (edge.data.conditionParameters || ''),
+        condition: updates.condition !== undefined ? updates.condition : edge.data.condition || '',
+        conditionParameters:
+          updates.conditionParameters !== undefined
+            ? updates.conditionParameters
+            : edge.data.conditionParameters || '',
         status: updates.status !== undefined ? updates.status : true,
       })
 
@@ -1303,9 +1334,9 @@ export const useFlowStore = defineStore('flow', () => {
   }
 
   async function deleteEdge(edgeId) {
-    const edge = edges.value.find(e => e.id === edgeId)
+    const edge = edges.value.find((e) => e.id === edgeId)
     if (!edge || !edge.data?.aggregateStepId) {
-      edges.value = edges.value.filter(e => e.id !== edgeId)
+      edges.value = edges.value.filter((e) => e.id !== edgeId)
       edges.value = [...edges.value]
       return
     }
@@ -1314,7 +1345,7 @@ export const useFlowStore = defineStore('flow', () => {
       await serviceAggregatorClient.updateAggregateStep({
         id: edge.data.aggregateStepId,
         aggregateId: edge.data.aggregateId || currentAggregateId.value,
-        serviceId: nodes.value.find(n => n.id === edge.target)?.data?.serviceId,
+        serviceId: nodes.value.find((n) => n.id === edge.target)?.data?.serviceId,
         nextStepId: null,
         trueStepId: null,
         falseStepId: null,
@@ -1323,29 +1354,29 @@ export const useFlowStore = defineStore('flow', () => {
         status: false,
       })
 
-      edges.value = edges.value.filter(e => e.id !== edgeId)
+      edges.value = edges.value.filter((e) => e.id !== edgeId)
       edges.value = [...edges.value]
     } catch (error) {
       console.error('Failed to delete aggregate step:', error)
-      edges.value = edges.value.filter(e => e.id !== edgeId)
+      edges.value = edges.value.filter((e) => e.id !== edgeId)
       edges.value = [...edges.value]
     }
   }
 
   async function addMapping(edgeId, mappingData) {
-    const edge = edges.value.find(e => e.id === edgeId)
+    const edge = edges.value.find((e) => e.id === edgeId)
     if (!edge || !edge.data?.aggregateStepId) return
 
     try {
-      const sourceNode = nodes.value.find(n => n.id === edge.source)
-      const targetNode = nodes.value.find(n => n.id === edge.target)
+      const sourceNode = nodes.value.find((n) => n.id === edge.source)
+      const targetNode = nodes.value.find((n) => n.id === edge.target)
 
       if (!sourceNode || !targetNode) return
 
       const sourceStepId = edges.value
-        .filter(e => e.target === edge.source)
-        .map(e => e.data?.aggregateStepId)
-        .find(id => id)
+        .filter((e) => e.target === edge.source)
+        .map((e) => e.data?.aggregateStepId)
+        .find((id) => id)
 
       const mapping = await serviceAggregatorClient.addAggregateStepMapping({
         aggregateStepId: edge.data.aggregateStepId,
@@ -1375,19 +1406,19 @@ export const useFlowStore = defineStore('flow', () => {
   }
 
   async function updateMapping(edgeId, mappingId, mappingData) {
-    const edge = edges.value.find(e => e.id === edgeId)
+    const edge = edges.value.find((e) => e.id === edgeId)
     if (!edge || !edge.data?.aggregateStepId) return
 
     try {
-      const sourceNode = nodes.value.find(n => n.id === edge.source)
-      const targetNode = nodes.value.find(n => n.id === edge.target)
+      const sourceNode = nodes.value.find((n) => n.id === edge.source)
+      const targetNode = nodes.value.find((n) => n.id === edge.target)
 
       if (!sourceNode || !targetNode) return
 
       const sourceStepId = edges.value
-        .filter(e => e.target === edge.source)
-        .map(e => e.data?.aggregateStepId)
-        .find(id => id)
+        .filter((e) => e.target === edge.source)
+        .map((e) => e.data?.aggregateStepId)
+        .find((id) => id)
 
       await serviceAggregatorClient.updateAggregateStepMapping({
         id: mappingId,
@@ -1402,7 +1433,7 @@ export const useFlowStore = defineStore('flow', () => {
       })
 
       if (edge.data.mappings) {
-        const mappingIndex = edge.data.mappings.findIndex(m => m.id === mappingId)
+        const mappingIndex = edge.data.mappings.findIndex((m) => m.id === mappingId)
         if (mappingIndex !== -1) {
           edge.data.mappings[mappingIndex] = { ...edge.data.mappings[mappingIndex], ...mappingData }
         }
@@ -1457,5 +1488,4 @@ export const useFlowStore = defineStore('flow', () => {
     exportFlow,
     importFlow,
   }
-
 })
