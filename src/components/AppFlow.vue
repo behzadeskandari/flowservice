@@ -11,6 +11,13 @@
         <font-awesome-icon :icon="faPlus" style="color: white" />
         <span class="toolbar-text">اضافه کردن Step</span>
       </button>
+      <!-- <button
+        class="px-3 py-2 bg-gradient-to-r from-purple-400 via-purple-500 to-purple-600 text-white font-semibold rounded-xl shadow-lg hover:from-purple-500 hover:via-purple-600 hover:to-purple-700 transition duration-300 ease-in-out"
+        @click="onAddServiceStep"
+        title="اضافه کردن سرویس موجود به عنوان یک Step">
+        <font-awesome-icon :icon="faPlus" style="color: white" />
+        <span class="toolbar-text">اضافه کردن سرویس</span>
+      </button> -->
       <button
         class="px-3 py-2 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 text-white font-semibold rounded-xl shadow-lg hover:from-orange-500 hover:via-orange-600 hover:to-orange-700 transition duration-300 ease-in-out"
         @click="viewAllJson">
@@ -81,7 +88,8 @@
       </VueFlow>
     </div>
 
-    <ServiceModal />.
+    <ServiceModal />
+    <StepModal ref="stepModalRef" />
     <ConnectionStepModal />
     <AggregateModal
       :show="showAggregateModal"
@@ -108,6 +116,7 @@ import EndNode from './nodes/EndNode.vue'
 // Modal
 import ServiceModal from './modals/ServiceModal.vue'
 import ConnectionStepModal from './modals/ConnectionStepModal.vue'
+import StepModal from './modals/StepModal.vue'
 import AggregateModal from './modals/AggregateModal.vue'
 
 // Store
@@ -117,6 +126,8 @@ import { useScreenshot } from '@/hooks/useScreenshot'
 const { vueFlowRef } = useVueFlow()
 const { capture } = useScreenshot()
 const isDark = ref(false)
+const stepModalRef = ref(null)
+
 // Register node components
 const nodeTypes = {
   serviceNode: markRaw(ServiceNode),
@@ -150,6 +161,18 @@ onMounted(async () => {
 })
 watch(isDark, () => {
   updateBodyClass()
+})
+
+// Watch for step modal open signal from store
+watch(() => store.stepModalOpen, (newVal) => {
+  if (newVal && stepModalRef.value) {
+    // Capture the initial data before resetting the flag
+    const initialData = JSON.parse(JSON.stringify(store.stepModalInitialData || {}))
+    // Reset the flag first
+    store.stepModalOpen = false
+    // Then open the modal with the captured data
+    stepModalRef.value.openModal('add', initialData)
+  }
 })
 
 function updateBodyClass() {
@@ -203,6 +226,7 @@ function toggleTheme() {
 /**
  * Handle adding a new step to the aggregate
  * First checks if an aggregate exists, if not opens AggregateModal
+ * After aggregate is created/exists, opens StepModal for new step
  */
 function onAddStep() {
   if (!store.currentAggregateId) {
@@ -210,13 +234,43 @@ function onAddStep() {
     aggregateModalMode.value = 'add'
     showAggregateModal.value = true
   } else {
-    // Aggregate exists, notify user they need to connect nodes
-    notify({
-      title: 'اطلاع',
-      text: 'برای اضافه کردن Step، دو گره را به یکدیگر متصل کنید',
-      type: 'info',
+    // Aggregate exists, open StepModal for step creation
+    stepModalRef.value?.openModal('add', {
+      aggregateId: store.currentAggregateId
     })
   }
+}
+
+/**
+ * Handle adding an existing service as a new step to the aggregate
+ * Opens StepModal where user can select from available services
+ */
+function onAddServiceStep() {
+  if (!store.currentAggregateId) {
+    // No aggregate exists, open modal to create one
+    aggregateModalMode.value = 'add'
+    showAggregateModal.value = true
+    // After aggregate is created, the handleAggregateSaved will be called
+    // We'll let the user manually click the button again to add service
+  } else {
+    // Aggregate exists, open StepModal for service selection
+    stepModalRef.value?.openModal('add', {
+      aggregateId: store.currentAggregateId,
+      isServiceSelection: true // Flag to indicate service selection mode
+    })
+  }
+}
+
+function handleAggregateSaved() {
+  showAggregateModal.value = false
+  // Load the newly created aggregate
+  store.loadAggregateFlow(store.currentAggregateId)
+  // Now open StepModal for creating the first step
+  setTimeout(() => {
+    stepModalRef.value?.openModal('add', {
+      aggregateId: store.currentAggregateId
+    })
+  }, 300)
 }
 
 function viewAllJson() {
@@ -282,12 +336,6 @@ function onNodeDblClick({ id }) {
 
   // Open ServiceModal for regular and decision nodes
   store.setSelectedNode(id, 'edit')
-}
-
-function handleAggregateSaved() {
-  showAggregateModal.value = false
-  // Load the newly created aggregate
-  store.loadAggregateFlow(store.currentAggregateId)
 }
 
 function doScreenshot() {

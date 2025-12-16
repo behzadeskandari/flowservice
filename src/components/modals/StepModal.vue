@@ -1,185 +1,164 @@
 <template>
-  <div v-if="show" class="modal-overlay" @click.self="onClose">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h3>{{ mode === 'add' ? 'Add Step' : 'Edit Step' }}</h3>
-        <button class="close-button" @click="onClose">&times;</button>
-      </div>
+  <div v-if="isOpen"
+    class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 animate-fadeIn"
+    @click.self="onClose">
+    <div class="bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 p-[2px] rounded-3xl">
 
-      <div class="modal-body">
-        <!-- Step Details -->
-        <div class="form-section">
-          <h4>اطلاعات مرحله</h4>
-          <div class="form-group">
-            <label>نام مرحله</label>
+      <div class="bg-white dark:bg-gray-900 shadow-2xl rounded-3xl w-full max-w-2xl animate-scaleIn"
+        style="width:90vw; padding:17px">
+
+        <!-- Header -->
+        <header class="flex items-center justify-between border-b pb-3 mb-4">
+          <div class="flex gap-2">
+            <button
+              class="px-6 py-3 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 text-white font-semibold rounded-xl shadow-lg hover:from-orange-500 hover:via-orange-600 hover:to-orange-700 transition duration-300 ease-in-out"
+              @click="onClose">
+              <font-awesome-icon :icon="faArrowUp" style="color: white;" />
+              <span class="header-btn-text">خروج</span>
+            </button>
+            <button
+              class="px-6 py-3 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 text-white font-semibold rounded-xl shadow-lg hover:from-orange-500 hover:via-orange-600 hover:to-orange-700 transition duration-300 ease-in-out"
+              @click="onSave"
+              :disabled="!stepData.stepName">
+              <font-awesome-icon :icon="faSave" style="color: white;" />
+              <span class="header-btn-text">ذخیره</span>
+            </button>
+          </div>
+          <h3 class="text-xl font-bold text-gray-800 dark:text-gray-100 p-3">اضافه کردن مرحله</h3>
+        </header>
+
+        <!-- Body -->
+        <section class="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
+        <!-- Step Information Section -->
+        <div class="space-y-4">
+          <h4 class="text-lg font-semibold text-gray-700 dark:text-gray-200">اطلاعات مرحله</h4>
+
+          <!-- Step Name -->
+          <div>
+            <label class="block font-medium text-gray-500 mb-1 text-right px-1 py-1">نام مرحله *</label>
             <input
               v-model="stepData.stepName"
               type="text"
-              class="form-control"
-              placeholder="Enter step name"
-            >
+              placeholder="نام مرحله را وارد کنید"
+              class="w-full px-4 py-2 rounded-xl border border-gray-300
+               focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
+               bg-white shadow-sm transition text-right" />
           </div>
 
-          <div class="form-group">
-            <label>شرایط (اختیاری)</label>
+          <!-- Service Dropdown -->
+          <div>
+            <label class="block font-medium text-gray-500 mb-1 text-right px-1 py-1">سرویس (اختیاری)</label>
+            <select
+              v-model="stepData.serviceId"
+              class="w-full px-4 py-2 rounded-xl border border-gray-300
+               focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
+               bg-white shadow-sm transition text-right">
+              <option :value="null">-- بدون سرویس --</option>
+              <option
+                v-for="service in availableServices"
+                :key="service.id"
+                :value="service.id">
+                {{ service.name }} ({{ service.method }})
+              </option>
+            </select>
+            <small class="block mt-1 text-gray-600 text-right">
+              از بین سرویس‌های موجود انتخاب کنید. سرویس‌ها در صفحه سرویس‌ها مدیریت می‌شوند.
+            </small>
+          </div>
+
+          <!-- Condition Field -->
+          <div>
+            <label class="block font-medium text-gray-500 mb-1 text-right px-1 py-1">شرط (اختیاری)</label>
             <input
               v-model="stepData.condition"
               type="text"
-              class="form-control"
-              placeholder="e.g., user.role === 'admin'"
-            >
-            <small class="form-text text-muted">
+              placeholder="مثال: user.role === 'admin'"
+              class="w-full px-4 py-2 rounded-xl border border-gray-300
+               focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
+               bg-white shadow-sm transition text-right" />
+            <small class="block mt-1 text-gray-600 text-right">
               برای مراحل معمولی خالی بگذارید. برای ایجاد یک مرحله شرطی، یک شرط اضافه کنید.
+            </small>
+          </div>
+
+          <!-- Condition Parameters (visible only if condition exists) -->
+          <div v-if="stepData.condition">
+            <label class="block font-medium text-gray-500 mb-1 text-right px-1 py-1">پارامترهای شرط (اختیاری)</label>
+            <input
+              v-model="stepData.conditionParameters"
+              type="text"
+              placeholder="مثال: role,status"
+              class="w-full px-4 py-2 rounded-xl border border-gray-300
+               focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
+               bg-white shadow-sm transition text-right" />
+            <small class="block mt-1 text-gray-600 text-right">
+              نام پارامترهای جدا شده با کاما که در شرط استفاده می‌شوند.
             </small>
           </div>
         </div>
 
-        <!-- Service Details -->
-        <div class="form-section">
-          <div class="d-flex justify-content-between align-items-center">
-            <h4>خدمات</h4>
-            <button
-              v-if="!stepData.service"
-              class="btn btn-sm btn-outline-primary"
-              @click="addService"
-            >
-              افزودن سرویس
-            </button>
-          </div>
+        <!-- Step Connections Section -->
+        <div class="space-y-4 pt-4 border-t border-gray-300">
+          <h4 class="text-lg font-semibold text-gray-700 dark:text-gray-200">اتصالات مرحله</h4>
 
-          <div v-if="stepData.service" class="service-details">
-            <div class="form-group">
-              <label>نام سرویس</label>
-              <input
-                v-model="stepData.service.name"
-                type="text"
-                class="form-control"
-                placeholder="Service name"
-              >
-            </div>
-
-            <div class="form-group">
-              <label>URL</label>
-              <input
-                v-model="stepData.service.url"
-                type="text"
-                class="form-control"
-                placeholder="https://api.example.com/endpoint"
-              >
-            </div>
-
-            <div class="row">
-              <div class="col-md-6">
-                <div class="form-group">
-                  <label>Method</label>
-                  <select v-model="stepData.service.method" class="form-control">
-                    <option value="GET">GET</option>
-                    <option value="POST">POST</option>
-                    <option value="PUT">PUT</option>
-                    <option value="DELETE">DELETE</option>
-                    <option value="PATCH">PATCH</option>
-                  </select>
-                </div>
-              </div>
-              <div class="col-md-6">
-                <div class="form-group">
-                  <label>Type</label>
-                  <select v-model="stepData.service.type" class="form-control">
-                    <option value="REST">REST</option>
-                    <option value="GRAPHQL">GraphQL</option>
-                    <option value="SOAP">SOAP</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            <div class="form-group form-check">
-              <input
-                v-model="stepData.service.status"
-                type="checkbox"
-                class="form-check-input"
-                id="serviceStatus"
-              >
-              <label class="form-check-label" for="serviceStatus">Active</label>
-            </div>
-
-            <button
-              class="btn btn-sm btn-outline-danger"
-              @click="removeService"
-            >
-           حذف سرویس
-            </button>
-          </div>
-
-          <div v-else class="no-service">
-            <p class="text-muted">هیچ خدماتی به این مرحله متصل نیستند.</p>
-          </div>
-        </div>
-
-        <!-- Step Connections -->
-        <div class="form-section">
-          <h4>اتصالات مرحله ای</h4>
-
-          <div v-if="!stepData.condition" class="form-group">
-            <label>مرحله بعدی</label>
+          <!-- Normal Next Step (if no condition) -->
+          <div v-if="!stepData.condition">
+            <label class="block font-medium text-gray-500 mb-1 text-right px-1 py-1">مرحله بعدی (اختیاری)</label>
             <select
               v-model="stepData.nextStepId"
-              class="form-control"
-            >
-              <option :value="null">-- مرحله بعدی را انتخاب کنید --</option>
+              class="w-full px-4 py-2 rounded-xl border border-gray-300
+               focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
+               bg-white shadow-sm transition text-right">
+              <option :value="null">-- هیچکدام (مرحله پایانی) --</option>
               <option
                 v-for="step in availableNextSteps"
                 :key="step.id"
-                :value="step.id"
-              >
+                :value="step.id">
                 {{ step.stepName || `Step ${step.id.slice(0, 8)}` }}
               </option>
             </select>
           </div>
 
+          <!-- Conditional Steps (if condition exists) -->
           <template v-else>
-            <div class="form-group">
-              <label>مسیر درست (وقتی شرط درست باشد)</label>
+            <div>
+              <label class="block font-medium text-gray-500 mb-1 text-right px-1 py-1">مسیر درست (وقتی شرط درست باشد)</label>
               <select
                 v-model="stepData.trueStepId"
-                class="form-control"
-              >
-                <option :value="null">-- مرحله بعدی را انتخاب کنید --</option>
+                class="w-full px-4 py-2 rounded-xl border border-gray-300
+                 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
+                 bg-white shadow-sm transition text-right">
+                <option :value="null">-- None --</option>
                 <option
                   v-for="step in availableNextSteps"
                   :key="step.id"
-                  :value="step.id"
-                >
+                  :value="step.id">
                   {{ step.stepName || `Step ${step.id.slice(0, 8)}` }}
                 </option>
               </select>
             </div>
 
-            <div class="form-group">
-              <label>مسیر نادرست (وقتی شرط نادرست است)</label>
+            <div>
+              <label class="block font-medium text-gray-500 mb-1 text-right px-1 py-1">مسیر نادرست (وقتی شرط نادرست است)</label>
               <select
                 v-model="stepData.falseStepId"
-                class="form-control"
-              >
-                <option :value="null">-- مرحله بعدی را انتخاب کنید --</option>
+                class="w-full px-4 py-2 rounded-xl border border-gray-300
+                 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
+                 bg-white shadow-sm transition text-right">
+                <option :value="null">-- None --</option>
                 <option
                   v-for="step in availableNextSteps"
                   :key="step.id"
-                  :value="step.id"
-                >
+                  :value="step.id">
                   {{ step.stepName || `Step ${step.id.slice(0, 8)}` }}
                 </option>
               </select>
             </div>
           </template>
         </div>
-      </div>
 
-      <div class="modal-footer">
-        <button class="btn btn-secondary" @click="onClose">Cancel</button>
-        <button class="btn btn-primary" @click="onSave">
-          {{ mode === 'add' ? 'Create Step' : 'Save Changes' }}
-        </button>
+        </section>
+
       </div>
     </div>
   </div>
@@ -187,392 +166,202 @@
 
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
-import { useStepFlowStore } from '@/stores/stepFlowStore'
+import { useFlowStore } from '@/stores/flowStore'
+import serviceAggregatorClient from '@/utils/service-aggregator-client'
+import { notify } from '@kyvg/vue3-notification'
+import { faArrowUp, faSave } from '@fortawesome/free-solid-svg-icons'
 
-const props = defineProps({
-  show: Boolean,
-  step: {
-    type: Object,
-    default: () => ({
-      stepName: '',
-      condition: '',
-      nextStepId: null,
-      trueStepId: null,
-      falseStepId: null,
-      service: null,
-    })
-  },
-  mode: {
-    type: String,
-    default: 'add',
-    validator: (value) => ['add', 'edit'].includes(value)
-  }
-})
-
-const emit = defineEmits(['update:show', 'saved'])
-
-const store = useStepFlowStore()
+const store = useFlowStore()
+const availableServices = ref([])
+const isOpen = ref(false)
 
 const stepData = ref({
   stepName: '',
-  condition: '',
+  aggregateId: null,
+  serviceId: null,
   nextStepId: null,
   trueStepId: null,
   falseStepId: null,
-  service: null,
+  condition: '',
+  conditionParameters: '',
 })
 
-// Available steps that can be connected to (excluding current step and its children)
-const availableNextSteps = computed(() => {
-  return store.nodes
-    .filter(node =>
-      node.data.stepId !== stepData.value.stepId && // Not the current step
-      !isChildStep(node.data.stepId) // Not a child step of the current step
-    )
-    .map(node => ({
-      id: node.data.stepId,
-      stepName: node.data.stepName,
-    }))
-})
-
-// Check if a step is a child of the current step
-function isChildStep(stepId) {
-  if (!stepData.value.stepId) return false
-
-  // This is a simplified check - in a real app, you'd need to traverse the graph
-  return (
-    stepData.value.nextStepId === stepId ||
-    stepData.value.trueStepId === stepId ||
-    stepData.value.falseStepId === stepId
-  )
-}
-
-function addService() {
-  stepData.value.service = {
-    name: '',
-    url: '',
-    method: 'GET',
-    type: 'REST',
-    status: true
-  }
-}
-
-function removeService() {
-  if (confirm('Are you sure you want to remove the service from this step?')) {
-    stepData.value.service = null
-  }
-}
-
-function onClose() {
-  emit('update:show', false)
-  resetForm()
-}
-
-async function onSave() {
-  try {
-    await store.saveStep(stepData.value)
-    emit('update:show', false)
-    emit('saved')
-    resetForm()
-  } catch (error) {
-    console.error('Error saving step:', error)
-  }
-}
-
-function resetForm() {
+const resetForm = () => {
   stepData.value = {
     stepName: '',
-    condition: '',
+    aggregateId: null,
+    serviceId: null,
     nextStepId: null,
     trueStepId: null,
     falseStepId: null,
-    service: null,
+    condition: '',
+    conditionParameters: '',
   }
 }
 
-// Watch for prop changes and update local state
-watch(() => props.step, (newStep) => {
-  if (newStep) {
-    stepData.value = JSON.parse(JSON.stringify(newStep))
+// Load available services
+const loadServices = async () => {
+  try {
+    const data = await serviceAggregatorClient.getServices()
+    availableServices.value = Array.isArray(data) ? data : []
+  } catch (error) {
+    console.error('Error loading services:', error)
+    notify({
+      title: 'خطا',
+      text: 'خطا در بارگذاری سرویس‌ها',
+      type: 'error',
+    })
   }
-}, { immediate: true })
+}
+
+// Available steps that can be connected
+const availableNextSteps = computed(() => {
+  return store.nodes
+    .filter(node => node.type !== 'combinedServiceNode')
+    .map(node => ({
+      id: node.data.aggregateStepId || node.data.stepId || node.id,
+      stepName: node.data.stepName || node.data.label || node.data.serviceName,
+    }))
+})
+
+// Expose open/close methods
+const openModal = (mode = 'add', initialData = null) => {
+  // First, reset the form to clear any previous state
+  resetForm()
+
+  // Then load services
+  loadServices()
+
+  // Set the initial data after reset
+  if (initialData && Object.keys(initialData).length > 0) {
+    // Ensure serviceId is properly typed (string or null)
+    const cleanedData = {
+      ...initialData,
+      serviceId: initialData.serviceId ? String(initialData.serviceId) : null,
+    }
+    stepData.value = Object.assign({}, stepData.value, cleanedData)
+    console.log('StepModal opened with data:', stepData.value)
+  }
+
+  // Finally, open the modal
+  isOpen.value = true
+}
+
+const closeModal = () => {
+  isOpen.value = false
+  resetForm()
+}
+
+function onClose() {
+  closeModal()
+}
+
+async function onSave() {
+  if (!stepData.value.stepName) {
+    notify({
+      title: 'خطا',
+      text: 'نام مرحله مورد نیاز است',
+      type: 'error',
+    })
+    return
+  }
+
+  try {
+    const payload = {
+      stepName: stepData.value.stepName,
+      aggregateId: stepData.value.aggregateId || store.currentAggregateId,
+      serviceId: stepData.value.serviceId || null,
+      nextStepId: stepData.value.nextStepId || null,
+      trueStepId: stepData.value.trueStepId || null,
+      falseStepId: stepData.value.falseStepId || null,
+      condition: stepData.value.condition || '',
+      conditionParameters: stepData.value.conditionParameters || '',
+    }
+
+    await store.saveConnectionStep(payload)
+    notify({
+      title: 'موفق',
+      text: 'مرحله با موفقیت ذخیره شد',
+      type: 'success',
+    })
+    closeModal()
+  } catch (error) {
+    console.error('Error saving step:', error)
+    notify({
+      title: 'خطا',
+      text: 'خطا در ذخیره مرحله',
+      type: 'error',
+    })
+  }
+}
+
+// Auto-load services when modal opens
+watch(isOpen, (newVal) => {
+  if (newVal) {
+    loadServices()
+  }
+})
+
+// Watch availableServices to ensure dropdown selection is properly synchronized
+watch(availableServices, () => {
+  // Validate that the selected serviceId exists in availableServices
+  if (stepData.value.serviceId && availableServices.value.length > 0) {
+    const serviceExists = availableServices.value.some(s => String(s.id) === String(stepData.value.serviceId))
+    if (!serviceExists) {
+      console.warn(`Selected service ${stepData.value.serviceId} not found in available services`)
+      // Don't clear it, just log - the service might load later
+    }
+  }
+}, { deep: true })
+
+// Export methods for parent component to use
+defineExpose({
+  openModal,
+  closeModal,
+})
+
+onMounted(() => {
+  loadServices()
+})
 </script>
 
 <style scoped>
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1050;
-}
-
-.modal-content {
-  background: white;
-  border-radius: 8px;
-  width: 90%;
-  max-width: 700px;
-  max-height: 90vh;
-  overflow-y: auto;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-}
-
-.modal-header {
-  padding: 1rem 1.5rem;
-  border-bottom: 1px solid #e9ecef;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.modal-header h3 {
-  margin: 0;
-  font-size: 1.25rem;
-}
-
-.close-button {
-  background: none;
-  border: none;
-  font-size: 1.5rem;
-  font-weight: bold;
-  cursor: pointer;
-  opacity: 0.7;
-  padding: 0.25rem 0.5rem;
-  line-height: 1;
-}
-
-.close-button:hover {
-  opacity: 1;
-}
-
-.modal-body {
-  padding: 1.5rem;
-}
-
-.modal-footer {
-  padding: 1rem 1.5rem;
-  border-top: 1px solid #e9ecef;
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.5rem;
-}
-
-.form-section {
-  margin-bottom: 1.5rem;
-  padding-bottom: 1.5rem;
-  border-bottom: 1px solid #f0f0f0;
-}
-
-.form-section:last-child {
-  border-bottom: none;
-  margin-bottom: 0;
-  padding-bottom: 0;
-}
-
-.form-section h4 {
-  margin-top: 0;
-  margin-bottom: 1rem;
-  font-size: 1rem;
-  font-weight: 600;
-  color: #495057;
-}
-
-.form-group {
-  margin-bottom: 1rem;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 0.5rem;
-  font-weight: 500;
-  font-size: 0.875rem;
-}
-
-.form-control {
-  display: block;
-  width: 100%;
-  padding: 0.5rem 0.75rem;
-  font-size: 0.875rem;
-  line-height: 1.5;
-  color: #495057;
-  background-color: #fff;
-  background-clip: padding-box;
-  border: 1px solid #ced4da;
-  border-radius: 0.25rem;
-  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
-}
-
-.form-control:focus {
-  border-color: #80bdff;
-  outline: 0;
-  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
-}
-
-.btn {
-  display: inline-block;
-  font-weight: 400;
-  text-align: center;
-  white-space: nowrap;
-  vertical-align: middle;
-  user-select: none;
-  border: 1px solid transparent;
-  padding: 0.375rem 0.75rem;
-  font-size: 0.875rem;
-  line-height: 1.5;
-  border-radius: 0.25rem;
-  transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out,
-    border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
-  cursor: pointer;
-}
-
-.btn-primary {
-  color: #fff;
-  background-color: #007bff;
-  border-color: #007bff;
-}
-
-.btn-primary:hover {
-  background-color: #0069d9;
-  border-color: #0062cc;
-}
-
-.btn-secondary {
-  color: #fff;
-  background-color: #6c757d;
-  border-color: #6c757d;
-}
-
-.btn-secondary:hover {
-  background-color: #5a6268;
-  border-color: #545b62;
-}
-
-.btn-outline-primary {
-  color: #007bff;
-  border-color: #007bff;
-  background-color: transparent;
-}
-
-.btn-outline-primary:hover {
-  color: #fff;
-  background-color: #007bff;
-  border-color: #007bff;
-}
-
-.btn-outline-danger {
-  color: #dc3545;
-  border-color: #dc3545;
-  background-color: transparent;
-}
-
-.btn-outline-danger:hover {
-  color: #fff;
-  background-color: #dc3545;
-  border-color: #dc3545;
-}
-
-.btn-sm {
-  padding: 0.25rem 0.5rem;
-  font-size: 0.75rem;
-  line-height: 1.5;
-  border-radius: 0.2rem;
-}
-
-.service-details {
-  padding: 1rem;
-  background-color: #f8f9fa;
-  border-radius: 0.25rem;
-  margin-top: 1rem;
-}
-
-.no-service {
-  padding: 1.5rem;
-  text-align: center;
-  background-color: #f8f9fa;
-  border: 1px dashed #dee2e6;
-  border-radius: 0.25rem;
-  margin-top: 1rem;
-}
-
-.text-muted {
-  color: #6c757d !important;
-}
-
-.form-text {
-  display: block;
-  margin-top: 0.25rem;
-  font-size: 0.75rem;
-  color: #6c757d;
-}
-
-.form-check {
-  position: relative;
-  display: block;
-  padding-left: 1.5rem;
-}
-
-.form-check-input {
-  position: absolute;
-  margin-top: 0.3rem;
-  margin-left: -1.5rem;
-}
-
-.form-check-label {
-  margin-bottom: 0;
-  font-size: 0.875rem;
-}
-
-.row {
-  display: flex;
-  flex-wrap: wrap;
-  margin-right: -0.75rem;
-  margin-left: -0.75rem;
-}
-
-.col-md-6 {
-  position: relative;
-  width: 100%;
-  padding-right: 0.75rem;
-  padding-left: 0.75rem;
-}
-
-@media (min-width: 768px) {
-  .col-md-6 {
-    flex: 0 0 50%;
-    max-width: 50%;
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
   }
 }
 
-.d-flex {
-  display: flex !important;
+@keyframes scaleIn {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
-.justify-content-between {
-  justify-content: space-between !important;
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-in-out;
 }
 
-.align-items-center {
-  align-items: center !important;
+.animate-scaleIn {
+  animation: scaleIn 0.3s ease-in-out;
 }
 
-.mb-3 {
-  margin-bottom: 1rem !important;
+.header-btn-text {
+  display: inline;
+  white-space: nowrap;
 }
 
-.mt-3 {
-  margin-top: 1rem !important;
-}
-
-.mr-2 {
-  margin-right: 0.5rem !important;
-}
-
-.ml-2 {
-  margin-left: 0.5rem !important;
+@media (max-width: 768px) {
+  .header-btn-text {
+    display: none;
+  }
 }
 </style>

@@ -26,6 +26,8 @@ export const useFlowStore = defineStore('flow', () => {
   const showConnectionModal = ref(false)
   const pendingConnection = ref(null)
   const connectionStepData = ref(null)
+  const stepModalOpen = ref(false)
+  const stepModalInitialData = ref(null)
 
   watch(autoSave, (newVal) => {
     localStorage.setItem('AutoSave', newVal)
@@ -196,6 +198,7 @@ export const useFlowStore = defineStore('flow', () => {
               id: nodeId,
               aggregateStepId: step.id,
               aggregateId: aggregate.id,
+              label: step.stepName || service?.name || 'Step',
               stepName: step.stepName || '',
               condition: step.condition || '',
               conditionParameters: step.conditionParameters || '',
@@ -757,6 +760,44 @@ export const useFlowStore = defineStore('flow', () => {
   }
 
   function setSelectedNode(nodeId, mode = 'view') {
+    const node = nodes.value.find((n) => n.id === nodeId)
+    if (!node) return
+
+    // Ensure all required fields are populated before opening modal
+    if (node.data) {
+      // For nodes loaded from aggregate flow, fetch service data if missing
+      if (node.data.serviceId && !node.data.fields) {
+        // Try to load service details
+        serviceAggregatorClient.getServices()
+          .then((services) => {
+            const service = Array.isArray(services)
+              ? services.find((s) => s.id === node.data.serviceId)
+              : null
+            if (service) {
+              node.data.fields = service.fields || []
+              node.data.url = node.data.url || service.url || ''
+              node.data.method = node.data.method || service.method || 'GET'
+              node.data.type = node.data.type || service.type || 'REST'
+              node.data.serviceName = node.data.serviceName || service.name || ''
+              // Trigger reactivity
+              nodes.value = [...nodes.value]
+            }
+          })
+          .catch((error) => {
+            console.error('Failed to load service details:', error)
+          })
+      }
+
+      // Ensure all fields have default values
+      if (!node.data.label) node.data.label = node.data.stepName || 'Unnamed'
+      if (!node.data.serviceName) node.data.serviceName = ''
+      if (!node.data.url) node.data.url = ''
+      if (!node.data.method) node.data.method = 'GET'
+      if (!node.data.type) node.data.type = 'REST'
+      if (!node.data.fields) node.data.fields = []
+      if (!node.data.status && node.data.status !== false) node.data.status = true
+    }
+
     selectedNode.value = nodeId
     modalMode.value = mode
     showModal.value = !!nodeId
@@ -920,132 +961,139 @@ export const useFlowStore = defineStore('flow', () => {
     // Store the pending connection and step data
     pendingConnection.value = { source, target, nodeA, nodeB }
     connectionStepData.value = stepData
-    showConnectionModal.value = true
+
+    // Open StepModal with the initial data
+    openStepModal(stepData)
   }
 
   /**
    * Save the connection step after user input from modal
    * This is called after the user confirms the step details in the connection modal
+   * Handles two scenarios:
+   * 1. Drag-connect: pendingConnection exists, merge nodes
+   * 2. Button-click: no pendingConnection, just create step
    */
   async function saveConnectionStep(updatedStepData) {
-    if (!pendingConnection.value || !connectionStepData.value) {
-      console.error('No pending connection')
-      return
-    }
-
     try {
-      const { source, target, nodeA, nodeB } = pendingConnection.value
-
       // Call backend API to create the aggregate step
       const createdStep = await serviceAggregatorClient.addAggregateStep(updatedStepData)
 
-      // Update the target node with the created step data
-      const targetNodeIdx = nodes.value.findIndex((n) => n.id === target)
-      if (targetNodeIdx !== -1) {
-        nodes.value[targetNodeIdx] = {
-          ...nodes.value[targetNodeIdx],
+      // If there's a pending connection (drag-connect scenario), handle node/edge creation
+      if (pendingConnection.value) {
+        const { source, target, nodeA, nodeB } = pendingConnection.value
+
+        // Update the target node with the created step data
+        const targetNodeIdx = nodes.value.findIndex((n) => n.id === target)
+        if (targetNodeIdx !== -1) {
+          nodes.value[targetNodeIdx] = {
+            ...nodes.value[targetNodeIdx],
+            data: {
+              ...nodes.value[targetNodeIdx].data,
+              stepId: createdStep.id,
+              stepName: createdStep.stepName,
+              serviceId: createdStep.serviceId,
+              condition: createdStep.condition || '',
+              conditionParameters: createdStep.conditionParameters || '',
+            },
+          }
+        }
+
+        // Create the edge with the returned step data
+        const edgeId = `e_${source}-${target}_${Date.now()}`
+        const newEdge = {
+          id: edgeId,
+          source,
+          target,
+          animated: true,
+          type: 'default',
+          markerEnd: {
+            type: MarkerType.ArrowClosed,
+            width: 20,
+            height: 20,
+            color: '#FF0072',
+          },
           data: {
-            ...nodes.value[targetNodeIdx].data,
-            stepId: createdStep.id,
-            stepName: createdStep.stepName,
-            serviceId: createdStep.serviceId,
+            aggregateStepId: createdStep.id,
+            aggregateId: currentAggregateId.value,
             condition: createdStep.condition || '',
             conditionParameters: createdStep.conditionParameters || '',
+            mappings: createdStep.mappings || [],
           },
         }
-      }
 
-      // Create the edge with the returned step data
-      const edgeId = `e_${source}-${target}_${Date.now()}`
-      const newEdge = {
-        id: edgeId,
-        source,
-        target,
-        animated: true,
-        type: 'default',
-        markerEnd: {
-          type: MarkerType.ArrowClosed,
-          width: 20,
-          height: 20,
-          color: '#FF0072',
-        },
-        data: {
-          aggregateStepId: createdStep.id,
-          aggregateId: currentAggregateId.value,
-          condition: createdStep.condition || '',
-          conditionParameters: createdStep.conditionParameters || '',
-          mappings: createdStep.mappings || [],
-        },
-      }
+        addEdge(newEdge)
 
-      addEdge(newEdge)
+        // Create combined node for the two services
+        const connectedGroup = [nodeA, nodeB]
+        const combinedNode = mergeNodeGroup(connectedGroup)
+
+        // Get all node IDs in the group
+        const nodeIdsToMerge = new Set(connectedGroup.map((n) => n.id))
+        // Find outgoing edges (from merged nodes to outside)
+        const outgoingEdges = edges.value.filter(
+          (e) => nodeIdsToMerge.has(e.source) && !nodeIdsToMerge.has(e.target),
+        )
+        // Find incoming edges (from outside to merged nodes)
+        const incomingEdges = edges.value.filter(
+          (e) => !nodeIdsToMerge.has(e.source) && nodeIdsToMerge.has(e.target),
+        )
+
+        // Calculate a position for the new combined node that doesn't overlap
+        let avgPosition = calculateAveragePosition(connectedGroup)
+        // Check for position overlap with existing nodes
+        const GRID_OFFSET = 60
+        let pos = { ...avgPosition }
+        let isOverlapping
+        do {
+          isOverlapping = nodes.value.some(
+            (n) =>
+              Math.abs(n.position.x - pos.x) < GRID_OFFSET &&
+              Math.abs(n.position.y - pos.y) < GRID_OFFSET,
+          )
+          if (isOverlapping) {
+            pos.x += GRID_OFFSET
+            pos.y += GRID_OFFSET
+          }
+        } while (isOverlapping)
+
+        // Add the new combined node
+        nodes.value.push({
+          id: combinedNode.id,
+          type: 'combinedServiceNode',
+          position: pos,
+          data: combinedNode.data,
+        })
+
+        // Replicate outgoing edges for combined node
+        outgoingEdges.forEach((edge) => {
+          addEdge({
+            id: `e_${combinedNode.id}-${edge.target}_${Date.now()}`,
+            source: combinedNode.id,
+            target: edge.target,
+            animated: edge.animated || true,
+            type: edge.type || 'default',
+          })
+        })
+        // Replicate incoming edges for combined node
+        incomingEdges.forEach((edge) => {
+          addEdge({
+            id: `e_${edge.source}-${combinedNode.id}_${Date.now()}`,
+            source: edge.source,
+            target: combinedNode.id,
+            animated: edge.animated || true,
+            type: edge.type || 'default',
+          })
+        })
+      } else {
+        // Button-click scenario: no pending connection, just load the updated flow
+        // Reload the aggregate to show the new step
+        await loadAggregateFlow(currentAggregateId.value)
+      }
 
       // Close the modal and reset connection state
       showConnectionModal.value = false
       pendingConnection.value = null
       connectionStepData.value = null
-
-      // Create combined node for the two services
-      const connectedGroup = [nodeA, nodeB]
-      const combinedNode = mergeNodeGroup(connectedGroup)
-
-      // Get all node IDs in the group
-      const nodeIdsToMerge = new Set(connectedGroup.map((n) => n.id))
-      // Find outgoing edges (from merged nodes to outside)
-      const outgoingEdges = edges.value.filter(
-        (e) => nodeIdsToMerge.has(e.source) && !nodeIdsToMerge.has(e.target),
-      )
-      // Find incoming edges (from outside to merged nodes)
-      const incomingEdges = edges.value.filter(
-        (e) => !nodeIdsToMerge.has(e.source) && nodeIdsToMerge.has(e.target),
-      )
-
-      // Calculate a position for the new combined node that doesn't overlap
-      let avgPosition = calculateAveragePosition(connectedGroup)
-      // Check for position overlap with existing nodes
-      const GRID_OFFSET = 60
-      let pos = { ...avgPosition }
-      let isOverlapping
-      do {
-        isOverlapping = nodes.value.some(
-          (n) =>
-            Math.abs(n.position.x - pos.x) < GRID_OFFSET &&
-            Math.abs(n.position.y - pos.y) < GRID_OFFSET,
-        )
-        if (isOverlapping) {
-          pos.x += GRID_OFFSET
-          pos.y += GRID_OFFSET
-        }
-      } while (isOverlapping)
-
-      // Add the new combined node
-      nodes.value.push({
-        id: combinedNode.id,
-        type: 'combinedServiceNode',
-        position: pos,
-        data: combinedNode.data,
-      })
-
-      // Replicate outgoing edges for combined node
-      outgoingEdges.forEach((edge) => {
-        addEdge({
-          id: `e_${combinedNode.id}-${edge.target}_${Date.now()}`,
-          source: combinedNode.id,
-          target: edge.target,
-          animated: edge.animated || true,
-          type: edge.type || 'default',
-        })
-      })
-      // Replicate incoming edges for combined node
-      incomingEdges.forEach((edge) => {
-        addEdge({
-          id: `e_${edge.source}-${combinedNode.id}_${Date.now()}`,
-          source: edge.source,
-          target: combinedNode.id,
-          animated: edge.animated || true,
-          type: edge.type || 'default',
-        })
-      })
       // Force reactivity
       nodes.value = [...nodes.value]
       edges.value = [...edges.value]
@@ -1055,8 +1103,6 @@ export const useFlowStore = defineStore('flow', () => {
         text: 'Step و ترکیب سرویس ایجاد شد',
         type: 'success',
       })
-
-      return combinedNode
     } catch (error) {
       console.error('Failed to save connection step:', error)
       showConnectionModal.value = false
@@ -1074,6 +1120,21 @@ export const useFlowStore = defineStore('flow', () => {
     showConnectionModal.value = false
     pendingConnection.value = null
     connectionStepData.value = null
+  }
+
+  /**
+   * Open step modal from connection or button click
+   * Called when user connects two nodes or clicks Add Step button
+   */
+  function openStepModal(initialData = null) {
+    stepModalInitialData.value = initialData
+    stepModalOpen.value = true
+  }
+
+  function closeStepModal() {
+    stepModalOpen.value = false
+    stepModalInitialData.value = null
+    closeConnectionModal()
   }
   /**
    * Finds all nodes in the connected component that includes both startNodeId and endNodeId
@@ -1465,6 +1526,8 @@ export const useFlowStore = defineStore('flow', () => {
     showConnectionModal,
     pendingConnection,
     connectionStepData,
+    stepModalOpen,
+    stepModalInitialData,
     loadAggregates,
     loadAggregateFlow,
     addNode,
@@ -1483,6 +1546,8 @@ export const useFlowStore = defineStore('flow', () => {
     handleConnect,
     saveConnectionStep,
     closeConnectionModal,
+    openStepModal,
+    closeStepModal,
     setSelectedNode,
     clearSelected,
     exportFlow,

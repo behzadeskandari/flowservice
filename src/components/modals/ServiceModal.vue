@@ -194,14 +194,14 @@ const title = computed(() => {
   return isCombined.value ? ` ترکیب سرویس: ${label}` : ` ویرایش: ${label}`
 })
 
-// local copy for edits
+// local copy for edits - always initialize with defaults first
 const local = reactive({
-  label: nodeData.value ? nodeData.value.label : '',
-  serviceName: nodeData.value ? nodeData.value.serviceName : '',
-  url: nodeData.value ? nodeData.value.url : '',
-  method: nodeData.value ? nodeData.value.method : 'GET',
-  type: nodeData.value ? nodeData.value.type : 'REST',
-  fields: nodeData.value ? JSON.parse(JSON.stringify(nodeData.value.fields || [])) : [],
+  label: '',
+  serviceName: '',
+  url: '',
+  method: 'GET',
+  type: 'REST',
+  fields: [],
 })
 
 const localLabel = reactive({ value: nodeData.value ? nodeData.value.label : '' })

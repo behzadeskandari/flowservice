@@ -1,5 +1,5 @@
 <template>
-  <div class="services-page">
+  <div class="services-page min-h-screen fullscreen flex items-center justify-center bg-gradient-to-br from-orange-50 to-amber-500">
     <!-- Header -->
     <div class="page-header">
       <div class="header-content">
@@ -7,10 +7,14 @@
         <p>ایجاد و ویرایش سرویس‌های خود</p>
       </div>
       <div class="header-actions">
-        <router-link to="/home" class="btn btn-secondary">
+        <router-link to="/home" class="w-full h-15 text-sm leading-7 mt-4 rounded-lg text-white font-bold text-lg shadow-lg hover:shadow-xl
+          bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600
+          hover:to-amber-700 active:scale-98 transition-all duration-200">
           <i class="fas fa-arrow-left"></i> بازگشت به Flow
         </router-link>
-        <button class="btn btn-primary" @click="openAddModal">
+        <button class="w-full h-12 mt-4 rounded-lg text-white text-sm  leading-7 font-bold text-lg shadow-lg hover:shadow-xl
+          bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600
+          hover:to-amber-700 active:scale-98 transition-all duration-200" @click="openAddModal">
           <i class="fas fa-plus"></i> سرویس جدید
         </button>
       </div>
@@ -131,8 +135,12 @@
         </div>
 
         <div class="modal-footer">
-          <button class="btn btn-secondary" @click="closeModal">لغو</button>
-          <button class="btn btn-primary" @click="saveService" :disabled="!isFormValid">
+          <button class="w-full h-12 mt-4 rounded-lg text-white font-bold text-lg shadow-lg hover:shadow-xl
+          bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600
+          hover:to-amber-700 active:scale-98 transition-all duration-200" @click="closeModal">لغو</button>
+          <button class="w-full h-12 mt-4 rounded-lg text-white font-bold text-lg shadow-lg hover:shadow-xl
+          bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600
+          hover:to-amber-700 active:scale-98 transition-all duration-200" @click="saveService" :disabled="!isFormValid">
             {{ isEditMode ? 'بروزرسانی' : 'ایجاد' }}
           </button>
         </div>
@@ -303,14 +311,18 @@ onMounted(() => {
 <style scoped>
 .services-page {
   min-height: 100vh;
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  width: 99.2vw;
   padding: 30px;
+  margin: 0 auto;
+  display: flex;
+  flex-flow: column;
 }
 
 .page-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  width: 90vw;
   margin-bottom: 30px;
   background: white;
   padding: 25px 30px;
@@ -366,6 +378,7 @@ onMounted(() => {
   border-radius: 12px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
   overflow: hidden;
+  width: 90vw;
 }
 
 .empty-state {
