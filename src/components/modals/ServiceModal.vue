@@ -88,29 +88,31 @@
 
             <div>
               <label class="block font-medium text-gray-500 mb-1 text-right px-1 py-1 text-xl">Method</label>
-              <select v-model="local.method" class="w-full px-4 py-2 rounded-xl border text-right text-xl border-gray-300
-         focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
-         bg-white shadow-sm transition">
-                <option value="GET">GET</option>
-                <option value="POST">POST</option>
-                <option value="PUT">PUT</option>
-                <option value="DELETE">DELETE</option>
-                <option value="PATCH">PATCH</option>
+              <select
+                v-model="local.method"
+                class="w-full px-4 py-2 rounded-xl border text-right text-xl border-gray-300
+           focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
+           bg-white shadow-sm transition">
+                <option v-for="method in httpMethods" :key="method.value" :value="method.value">
+                  {{ method.label }}
+                </option>
               </select>
             </div>
 
             <div>
               <label class="block font-medium text-gray-500 mb-1 text-right px-1 py-1 text-xl">Type</label>
-              <select v-model="local.type" class="w-full px-4 py-2 rounded-xl border text-right text-xl border-gray-300
-         focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
-         bg-white shadow-sm transition">
-                <option value="REST">REST</option>
-                <option value="SOAP">SOAP</option>
-                <option value="GRAPHQL">GRAPHQL</option>
+              <select
+                v-model="local.type"
+                class="w-full px-4 py-2 rounded-xl border text-right text-xl border-gray-300
+           focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
+           bg-white shadow-sm transition">
+                <option v-for="type in serviceTypes" :key="type.value" :value="type.value">
+                  {{ type.label }}
+                </option>
               </select>
             </div>
 
-            <h4 class="text-lg font-semibold text-gray-400 dark:text-gray-200">جزییات فیلدها</h4>
+            <!-- <h4 class="text-lg font-semibold text-gray-400 dark:text-gray-200">جزییات فیلدها</h4>
 
             <div class="space-y-3">
               <div v-for="(f, idx) in local.fields" :key="f.idx"
@@ -139,7 +141,6 @@
                   @click="removeField(idx)">
                   <font-awesome-icon :icon="['fas', 'trash']"
                     style="color: var(--color-white-400); margin-top:4px;font-size:larger" />
-                  <!-- پاک کردن -->
                 </button>
               </div>
             </div>
@@ -151,7 +152,7 @@
               <span class="responsive-btn-text text-white-300">
                 اضافه کردن فیلد
               </span>
-            </button>
+            </button> -->
 
           </div>
 
@@ -165,13 +166,34 @@
 
 
 <script setup>
-import { reactive, computed, ref } from 'vue'
+import { reactive, computed, ref,watch } from 'vue'
 import { useFlowStore } from '../../stores/flowStore'
 import { faTrash, faSave, faArrowUp } from '@fortawesome/free-solid-svg-icons'
 import ConfirmModal from './ConfirmModal.vue'
-
+/* Watch for node changes to refresh local copy */
+import { notify } from '@kyvg/vue3-notification'
 const store = useFlowStore()
 const showConfirm = ref(false)
+
+// Dynamic dropdown options
+const httpMethods = [
+  { label: 'GET', value: 'GET' },
+  { label: 'POST', value: 'POST' },
+  { label: 'PUT', value: 'PUT' },
+  { label: 'DELETE', value: 'DELETE' },
+  { label: 'PATCH', value: 'PATCH' },
+  { label: 'HEAD', value: 'HEAD' },
+  { label: 'OPTIONS', value: 'OPTIONS' },
+]
+
+const serviceTypes = [
+  { label: 'REST', value: 'REST' },
+  { label: 'SOAP', value: 'SOAP' },
+  { label: 'GRAPHQL', value: 'GRAPHQL' },
+  { label: 'gRPC', value: 'gRPC' },
+  { label: 'WebSocket', value: 'WebSocket' },
+]
+
 // derive selected node
 const selectedId = computed(() => store.selectedNode)
 const node = computed(() => store.nodes.find((n) => n.id === selectedId.value) || null)
@@ -206,20 +228,17 @@ const local = reactive({
 
 const localLabel = reactive({ value: nodeData.value ? nodeData.value.label : '' })
 
-/* Watch for node changes to refresh local copy */
-import { watch } from 'vue'
-import { notify } from '@kyvg/vue3-notification'
 watch(
-  node,
-  (n) => {
-    if (n && n.data) {
-      local.label = n.data.label || ''
-      local.serviceName = n.data.serviceName || ''
-      local.url = n.data.url || ''
-      local.method = n.data.method || 'GET'
-      local.type = n.data.type || 'REST'
-      local.fields = JSON.parse(JSON.stringify(n.data.fields || []))
-      localLabel.value = n.data.label || ''
+  () => node.value?.data,
+  (data) => {
+    if (data) {
+      local.label = data.label || ''
+      local.serviceName = data.serviceName || ''
+      local.url = data.url || ''
+      local.method = String(data.method || 'GET').toUpperCase()
+      local.type = String(data.type || 'REST').toUpperCase()
+      local.fields = JSON.parse(JSON.stringify(data.fields || []))
+      localLabel.value = data.label || ''
     } else {
       local.label = ''
       local.serviceName = ''
@@ -230,7 +249,7 @@ watch(
       localLabel.value = ''
     }
   },
-  { immediate: true },
+  { immediate: true, deep: true, flush: 'sync' },
 )
 
 /**
