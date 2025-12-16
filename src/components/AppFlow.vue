@@ -36,7 +36,7 @@
         class="px-3 py-2 bg-gradient-to-r from-grey-400 via-gray-400 to-gray-400 text-white font-semibold rounded-xl shadow-lg hover:from-grey-400 hover:via-gray-400 hover:to-gray-400 transition duration-300 ease-in-out">
         <font-awesome-icon v-if="store.autoSaveEnabled()" :icon="faSave" style="color: black;" />
         <font-awesome-icon v-else :icon="faSave" style="color: red;" />
-        <span class="toolbar-tex text-black">ذخیره خودکار: {{ store.autoSaveEnabled() ? 'فعال' : 'غیرفعال' }}</span>
+        <span class="toolbar-text text-black">ذخیره خودکار: {{ store.autoSaveEnabled() ? 'فعال' : 'غیرفعال' }}</span>
       </span>
       <button
         class="px-3 py-2 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 text-white font-semibold rounded-xl shadow-lg hover:from-orange-500 hover:via-orange-600 hover:to-orange-700 transition duration-300 ease-in-out"
