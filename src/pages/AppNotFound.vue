@@ -5,9 +5,11 @@
     <p class="mt-3 text-lg text-gray-600">
       متأسفانه صفحه‌ای که دنبالش بودید وجود ندارد.
     </p>
+    <LogOutButton confirmLogout="true" variant="false" showIcon="true" label="خروج" showLabel="true"/>
+
     <router-link
       to="/"
-      class="mt-8 rounded-lg bg-orange-600 px-8 py-4 text-white hover:bg-blue-700 transition text-xl"
+      class="mt-8 rounded-lg bg-orange-600 px-8 py-4 text-white hover:bg-orange-700 transition text-xl"
     >
       بازگشت به خانه
     </router-link>
@@ -15,4 +17,6 @@
 </template>
 
 <script setup>
+import LogOutButton  from '@/components/LogoutButton.vue'
+
 </script>

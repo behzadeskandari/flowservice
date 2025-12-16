@@ -3,6 +3,8 @@
     <!-- Header -->
     <div class="page-header">
       <div class="header-content">
+         <LogoutButton confirmLogout="true" variant="true" showIcon="true" label="خروج" showLabel="true"/>
+
         <h1>مدیریت سرویس‌ها</h1>
         <p>ایجاد و ویرایش سرویس‌های خود</p>
       </div>
@@ -198,6 +200,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { notify } from '@kyvg/vue3-notification'
 import serviceAggregatorClient from '@/utils/service-aggregator-client'
+import LogoutButton from '@/components/LogoutButton.vue'
 
 const services = ref([])
 const isLoading = ref(false)

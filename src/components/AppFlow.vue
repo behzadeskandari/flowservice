@@ -33,8 +33,8 @@
         <span class="toolbar-text">Export</span>
       </button>
       <span
-        class="px-3 py-2 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 text-white font-semibold rounded-xl shadow-lg hover:from-orange-500 hover:via-orange-600 hover:to-orange-700 transition duration-300 ease-in-out">
-        <font-awesome-icon v-if="store.autoSaveEnabled()" :icon="faSave" style="color: white;" />
+        class="px-3 py-2 bg-gradient-to-r from-grey-400 via-gray-500 to-gray-600 text-white font-semibold rounded-xl shadow-lg hover:from-grey-500 hover:via-gray-600 hover:to-gray-700 transition duration-300 ease-in-out">
+        <font-awesome-icon v-if="store.autoSaveEnabled()" :icon="faSave" style="color: black;" />
         <font-awesome-icon v-else :icon="faSave" style="color: red;" />
         <span class="toolbar-text">ذخیره خودکار: {{ store.autoSaveEnabled() ? 'فعال' : 'غیرفعال' }}</span>
       </span>

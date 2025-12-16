@@ -4,6 +4,7 @@
 @import 'https://cdn.jsdelivr.net/npm/@vue-flow/minimap@latest/dist/style.css';
 @import 'https://cdn.jsdelivr.net/npm/@vue-flow/node-resizer@latest/dist/style.css';
 @import 'tailwindcss';
+@import './assets/css/fonts.css';
 :root {
   --icon-color: black;
   --background-color: white;
@@ -21,7 +22,7 @@ body {
 }
 #app {
   text-transform: uppercase;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'Vazir', 'Yekan', 'JetBrains Mono', monospace;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-align: center;
@@ -123,7 +124,7 @@ svg {
     background: white;
     box-shadow: 0 1px 6px rgba(0, 0, 0, 0.12);
     border: 1px solid #e2e8f0;
-    font-family: Inter, system-ui, sans-serif;
+    font-family: 'Vazir', Inter, system-ui, sans-serif;
 }
 .control-button {
   cursor: pointer;
