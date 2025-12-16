@@ -59,7 +59,7 @@ const props = defineProps({
 const authStore = useAuthStore()
 const router = useRouter()
 
-const handleLogout = async () => {
+const handleLogout = () => {
   if (props.confirmLogout) {
     const confirmed = confirm('آیا می‌خواهید از سیستم خارج شوید؟')
     if (!confirmed) return
@@ -82,10 +82,8 @@ const handleLogout = async () => {
     duration: 2000,
   })
 
-  // Redirect to login
-  setTimeout(() => {
-    router.push('/Login')
-  }, 500)
+  // Redirect to login immediately
+  router.push('/Login')
 }
 </script>
 

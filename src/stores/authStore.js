@@ -59,8 +59,13 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  function logout() {
-    user.value = null
+ async function logout() {
+    let response = await createHttpClient().post('/Auth/logout').catch((error) => {
+      console.error('Logout error:', error);
+    });
+    if(response && response.status === StatusCode.OK){
+      user.value = null
+    }
   }
 
   return { logout, login, isAuthenticated, user }

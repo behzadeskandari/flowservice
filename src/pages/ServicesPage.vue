@@ -3,7 +3,7 @@
     <!-- Header -->
     <div class="page-header">
       <div class="header-content">
-         <LogoutButton confirmLogout="true" variant="true" showIcon="true" label="خروج" showLabel="true"/>
+         <LogoutButton />
 
         <h1>مدیریت سرویس‌ها</h1>
         <p>ایجاد و ویرایش سرویس‌های خود</p>
