@@ -214,7 +214,8 @@ const formData = ref({
 })
 
 const isFormValid = computed(() => {
-  return formData.value.name && formData.value.url && formData.value.method && formData.value.type
+  //&& formData.value.url
+  return formData.value.name  && formData.value.method && formData.value.type
 })
 
 const truncateUrl = (url) => {
@@ -829,9 +830,7 @@ onMounted(() => {
   .services-page {
     padding: 15px;
   }
-.l-hight{
-  line-height: 4.4;
-}
+
   .page-header {
     flex-direction: column;
     align-items: center;
@@ -895,9 +894,7 @@ onMounted(() => {
   .services-page {
     padding: 10px;
   }
-.l-hight{
-  line-height: 4.4;
-}
+
   .page-header {
     padding: 15px 10px;
   }
@@ -946,9 +943,7 @@ onMounted(() => {
     .header-actions {
       flex-direction: column-reverse;
     }
-.l-hight{
-  line-height: 4.4;
-}
+
     .services-table th,
     .services-table td {
       text-align: center;
@@ -956,6 +951,7 @@ onMounted(() => {
 
     .actions-cell {
       flex-direction: row;
+      height: 18vh;
     }
   }
 }
