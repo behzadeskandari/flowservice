@@ -10,7 +10,10 @@
         <router-link to="/home" class="w-full h-15 text-sm leading-7 mt-4 rounded-lg text-white font-bold text-lg shadow-lg hover:shadow-xl
           bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600
           hover:to-amber-700 active:scale-98 transition-all duration-200">
-          <i class="fas fa-arrow-left"></i> بازگشت به Flow
+          <i class="fas fa-arrow-left"></i>
+         <span class="l-hight">
+         بازگشت به Flow
+         </span>
         </router-link>
         <button class="w-full h-12 mt-4 rounded-lg text-white text-sm  leading-7 font-bold text-lg shadow-lg hover:shadow-xl
           bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600
@@ -76,73 +79,112 @@
     </div>
 
     <!-- Service Modal -->
-    <div v-if="showModal" class="modal-overlay" @click.self="closeModal">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3>{{ isEditMode ? 'ویرایش سرویس' : 'سرویس جدید' }}</h3>
-          <button class="close-btn" @click="closeModal">&times;</button>
-        </div>
+    <div v-if="showModal"
+      class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 animate-fadeIn p-4"
+      @click.self="closeModal">
+      <div class="bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 p-[2px] rounded-3xl w-full max-w-2xl">
+        <div class="bg-white dark:bg-gray-900 shadow-2xl rounded-3xl w-full animate-scaleIn"
+          style="padding:20px">
 
-        <div class="modal-body">
-          <div class="form-group">
-            <label>نام سرویس *</label>
-            <input
-              v-model="formData.name"
-              type="text"
-              class="form-control"
-              placeholder="نام سرویس را وارد کنید"
-            >
-          </div>
-
-          <div class="form-group">
-            <label>URL *</label>
-            <input
-              v-model="formData.url"
-              type="text"
-              class="form-control"
-              placeholder="https://api.example.com/endpoint"
-            >
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label>متد HTTP *</label>
-              <select v-model="formData.method" class="form-control">
-                <option value="GET">GET</option>
-                <option value="POST">POST</option>
-                <option value="PUT">PUT</option>
-                <option value="DELETE">DELETE</option>
-                <option value="PATCH">PATCH</option>
-              </select>
+          <!-- Header -->
+          <header class="flex flex-col sm:flex-row items-center justify-between border-b border-gray-200 pb-4 mb-6 gap-4">
+            <h3 class="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-orange-500 to-amber-600 bg-clip-text text-transparent text-center sm:text-right order-first sm:order-last">
+              {{ isEditMode ? 'ویرایش سرویس' : 'سرویس جدید' }}
+            </h3>
+            <div class="flex gap-2 w-full sm:w-auto">
+              <button
+                class="flex-1 sm:flex-none px-4 sm:px-6 py-3 bg-gradient-to-r from-gray-400 via-gray-500 to-gray-600 text-white font-semibold rounded-xl shadow-lg hover:from-gray-500 hover:via-gray-600 hover:to-gray-700 transition duration-300 ease-in-out flex items-center justify-center gap-2"
+                @click="closeModal">
+                <i class="fas fa-times"></i>
+                <span class="hidden sm:inline">لغو</span>
+              </button>
+              <button
+                class="flex-1 sm:flex-none px-4 sm:px-6 py-3 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 text-white font-semibold rounded-xl shadow-lg hover:from-orange-500 hover:via-orange-600 hover:to-orange-700 transition duration-300 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                @click="saveService"
+                :disabled="!isFormValid">
+                <i class="fas fa-save"></i>
+                <span class="hidden sm:inline">{{ isEditMode ? 'بروزرسانی' : 'ایجاد' }}</span>
+              </button>
             </div>
+          </header>
 
-            <div class="form-group">
-              <label>نوع سرویس *</label>
-              <select v-model="formData.type" class="form-control">
-                <option value="REST">REST</option>
-                <option value="GRAPHQL">GraphQL</option>
-                <option value="SOAP">SOAP</option>
-              </select>
+          <!-- Body -->
+          <section class="space-y-5 max-h-[70vh] overflow-y-auto pr-2">
+            <!-- Service Information Section -->
+            <div class="space-y-5">
+              <h4 class="text-lg sm:text-xl font-bold text-gray-800 dark:text-gray-100 pb-3 border-b border-orange-200">📋 اطلاعات سرویس</h4>
+
+              <!-- Service Name -->
+              <div class="space-y-2">
+                <label class="block font-semibold text-gray-700 dark:text-gray-200 text-right">نام سرویس <span class="text-red-500">*</span></label>
+                <input
+                  v-model="formData.name"
+                  type="text"
+                  placeholder="مثال: Shahkar Service"
+                  class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700
+                   focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
+                   bg-white dark:bg-gray-800 dark:text-white shadow-sm transition duration-200 text-right" />
+              </div>
+
+              <!-- URL -->
+              <div class="space-y-2">
+                <label class="block font-semibold text-gray-700 dark:text-gray-200 text-right">URL <span class="text-red-500">*</span></label>
+                <input
+                  v-model="formData.url"
+                  type="text"
+                  placeholder="https://api.example.com/endpoint"
+                  class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700
+                   focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
+                   bg-white dark:bg-gray-800 dark:text-white shadow-sm transition duration-200 text-right text-sm" />
+              </div>
+
+              <!-- Method and Type -->
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="space-y-2">
+                  <label class="block font-semibold text-gray-700 dark:text-gray-200 text-right">متد HTTP <span class="text-red-500">*</span></label>
+                  <select
+                    v-model="formData.method"
+                    class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700
+                     focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
+                     bg-white dark:bg-gray-800 dark:text-white shadow-sm transition duration-200 text-right font-medium">
+                    <option value="GET">🔵 GET</option>
+                    <option value="POST">🟢 POST</option>
+                    <option value="PUT">🟡 PUT</option>
+                    <option value="DELETE">🔴 DELETE</option>
+                    <option value="PATCH">🟣 PATCH</option>
+                  </select>
+                </div>
+
+                <div class="space-y-2">
+                  <label class="block font-semibold text-gray-700 dark:text-gray-200 text-right">نوع سرویس <span class="text-red-500">*</span></label>
+                  <select
+                    v-model="formData.type"
+                    class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700
+                     focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
+                     bg-white dark:bg-gray-800 dark:text-white shadow-sm transition duration-200 text-right font-medium">
+                    <option value="REST">🌐 REST</option>
+                    <option value="GRAPHQL">📊 GraphQL</option>
+                    <option value="SOAP">📦 SOAP</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Status -->
+              <div class="bg-gradient-to-r from-orange-50 to-amber-50 dark:from-gray-800 dark:to-gray-700 rounded-xl p-4 flex items-center justify-between border-2 border-orange-100 dark:border-orange-800">
+                <div class="flex items-center gap-3">
+                  <input
+                    v-model="formData.status"
+                    type="checkbox"
+                    id="statusCheckbox"
+                    class="w-6 h-6 rounded-lg border-2 border-orange-400 accent-orange-500 cursor-pointer" />
+                  <label for="statusCheckbox" class="font-semibold text-gray-700 dark:text-gray-200 cursor-pointer">وضعیت سرویس</label>
+                </div>
+                <span :class="formData.status ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'" class="font-bold text-sm">
+                  {{ formData.status ? '✓ فعال' : '✗ غیرفعال' }}
+                </span>
+              </div>
             </div>
-          </div>
-
-          <div class="form-group">
-            <label class="checkbox-label">
-              <input v-model="formData.status" type="checkbox">
-              <span>فعال</span>
-            </label>
-          </div>
-        </div>
-
-        <div class="modal-footer">
-          <button class="w-full h-12 mt-4 rounded-lg text-white font-bold text-lg shadow-lg hover:shadow-xl
-          bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600
-          hover:to-amber-700 active:scale-98 transition-all duration-200" @click="closeModal">لغو</button>
-          <button class="w-full h-12 mt-4 rounded-lg text-white font-bold text-lg shadow-lg hover:shadow-xl
-          bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600
-          hover:to-amber-700 active:scale-98 transition-all duration-200" @click="saveService" :disabled="!isFormValid">
-            {{ isEditMode ? 'بروزرسانی' : 'ایجاد' }}
-          </button>
+          </section>
         </div>
       </div>
     </div>
@@ -311,23 +353,26 @@ onMounted(() => {
 <style scoped>
 .services-page {
   min-height: 100vh;
-  width: 99.2vw;
+  width: 100%;
   padding: 30px;
   margin: 0 auto;
   display: flex;
   flex-flow: column;
+  box-sizing: border-box;
 }
 
 .page-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  width: 90vw;
-  margin-bottom: 30px;
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto 30px;
   background: white;
   padding: 25px 30px;
   border-radius: 12px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+  box-sizing: border-box;
 }
 
 .header-content h1 {
@@ -335,12 +380,15 @@ onMounted(() => {
   font-size: 28px;
   color: #2c3e50;
   margin-bottom: 5px;
+  text-align: center;
+  flex: 1;
 }
 
 .header-content p {
   margin: 0;
   color: #7f8c8d;
   font-size: 14px;
+  text-align: center;
 }
 
 .header-actions {
@@ -357,6 +405,9 @@ onMounted(() => {
   background: white;
   border-radius: 12px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
 .spinner {
@@ -378,7 +429,10 @@ onMounted(() => {
   border-radius: 12px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
   overflow: hidden;
-  width: 90vw;
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  box-sizing: border-box;
 }
 
 .empty-state {
@@ -408,6 +462,7 @@ onMounted(() => {
 .services-table {
   width: 100%;
   border-collapse: collapse;
+  table-layout: fixed;
 }
 
 .services-table thead {
@@ -417,15 +472,18 @@ onMounted(() => {
 
 .services-table th {
   padding: 16px;
-  text-align: right;
+  text-align: center;
   font-weight: 600;
   color: #2c3e50;
   font-size: 14px;
+  word-break: break-word;
 }
 
 .services-table td {
   padding: 16px;
   border-bottom: 1px solid #dee2e6;
+  text-align: center;
+  word-break: break-word;
 }
 
 .services-table tbody tr:hover {
@@ -435,6 +493,11 @@ onMounted(() => {
 .name-cell {
   font-weight: 500;
   color: #2c3e50;
+  text-align: center;
+}
+
+.url-cell {
+  text-align: center;
 }
 
 .url-cell code {
@@ -442,7 +505,9 @@ onMounted(() => {
   padding: 4px 8px;
   border-radius: 4px;
   color: #d63384;
-  font-size: 12px;
+  font-size: 11px;
+  display: inline-block;
+  word-break: break-all;
 }
 
 .method-cell {
@@ -450,12 +515,15 @@ onMounted(() => {
 }
 
 .method-badge {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   padding: 6px 12px;
   border-radius: 4px;
   font-size: 12px;
   font-weight: 600;
   color: white;
+  min-height: 30px;
 }
 
 .method-badge.get {
@@ -482,6 +550,7 @@ onMounted(() => {
 .type-cell {
   color: #555;
   font-size: 14px;
+  text-align: center;
 }
 
 .status-cell {
@@ -489,11 +558,14 @@ onMounted(() => {
 }
 
 .status-badge {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   padding: 6px 12px;
   border-radius: 4px;
   font-size: 12px;
   font-weight: 600;
+  min-height: 30px;
 }
 
 .status-badge.active {
@@ -510,6 +582,7 @@ onMounted(() => {
   display: flex;
   gap: 8px;
   justify-content: center;
+  align-items: center;
 }
 
 .btn-icon {
@@ -523,6 +596,7 @@ onMounted(() => {
   cursor: pointer;
   font-size: 16px;
   transition: all 0.3s ease;
+  flex-shrink: 0;
 }
 
 .btn-edit {
@@ -729,15 +803,179 @@ onMounted(() => {
 
   .services-table th,
   .services-table td {
-    text-align: right;
+    text-align: center;
   }
 
   .actions-cell {
-    flex-direction: row-reverse;
+    flex-direction: row;
   }
 
   .modal-footer {
     flex-direction: row-reverse;
   }
+}
+
+/* Responsive Styles */
+@media (max-width: 768px) {
+  .services-page {
+    padding: 15px;
+  }
+.l-hight{
+  line-height: 4.4;
+}
+  .page-header {
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    gap: 20px;
+    padding: 20px 15px;
+  }
+
+  .header-content h1 {
+    font-size: 24px;
+    text-align: center;
+  }
+
+  .header-content p {
+    font-size: 12px;
+    text-align: center;
+  }
+
+  .header-actions {
+    width: 100%;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .header-actions > * {
+    width: 100%;
+  }
+
+  .services-container {
+    width: 100%;
+  }
+
+  .services-table {
+    font-size: 12px;
+  }
+
+  .services-table th,
+  .services-table td {
+    padding: 12px 8px;
+    font-size: 12px;
+  }
+
+  .btn-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
+  }
+
+  .url-cell code {
+    font-size: 10px;
+  }
+
+  .method-badge,
+  .status-badge {
+    padding: 4px 8px;
+    font-size: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .services-page {
+    padding: 10px;
+  }
+.l-hight{
+  line-height: 4.4;
+}
+  .page-header {
+    padding: 15px 10px;
+  }
+
+  .header-content h1 {
+    font-size: 20px;
+  }
+
+  .header-actions {
+    gap: 8px;
+  }
+
+  .services-table th,
+  .services-table td {
+    padding: 10px 6px;
+    font-size: 11px;
+  }
+
+  .btn-icon {
+    width: 30px;
+    height: 30px;
+    font-size: 12px;
+  }
+
+  .method-badge,
+  .status-badge {
+    padding: 4px 8px;
+    font-size: 10px;
+    min-height: 26px;
+  }
+
+  .url-cell code {
+    padding: 2px 4px;
+    font-size: 9px;
+  }
+}
+
+/* RTL Responsive */
+@supports (direction: rtl) {
+  @media (max-width: 768px) {
+    .page-header {
+      flex-direction: column-reverse;
+      align-items: center;
+    }
+
+    .header-actions {
+      flex-direction: column-reverse;
+    }
+.l-hight{
+  line-height: 4.4;
+}
+    .services-table th,
+    .services-table td {
+      text-align: center;
+    }
+
+    .actions-cell {
+      flex-direction: row;
+    }
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.animate-scaleIn {
+  animation: scaleIn 0.3s ease-in-out;
 }
 </style>
