@@ -69,7 +69,7 @@
             </td>
             <td class="actions-cell">
               <button class="btn-icon btn-edit" @click="openEditModal(service)" title="ویرایش">
-                <font-awesome-icon :icon="['fas', 'pen-to-square']" style="color: #ff9900;" />
+                <font-awesome-icon :icon="['fas', 'pen-to-square']" style="color: orange;" class="pen" />
               </button>
               <button class="btn-icon btn-delete" @click="deleteService(service.id)" title="حذف">
                 <font-awesome-icon :icon="['fas', 'trash']" style="color: red;" />
@@ -354,7 +354,7 @@ onMounted(() => {
 })
 </script>
 
-<style scoped>
+<style scoped lang="postcss">
 .services-page {
   min-height: 100vh;
   width: 100%;
@@ -614,12 +614,15 @@ onMounted(() => {
 
 .btn-edit {
   background: #e7f3ff;
-  color: #007bff;
+  color: #ffa600;
 }
 
 .btn-edit:hover {
-  background: #007bff;
+  background: #ffa600;
   color: white;
+  .pen{
+    color: white !important;
+  }
 }
 
 .btn-delete {
@@ -644,7 +647,13 @@ onMounted(() => {
   align-items: center;
   gap: 8px;
 }
-
+.pen{
+  color: orange !important;
+  transition: color 0.3s ease;
+}
+.pen:hover{
+  color: white !important;
+}
 .btn-primary {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
