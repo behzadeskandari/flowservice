@@ -1,5 +1,6 @@
 <template>
-  <div class="decision-node" @dblclick="openEdit">
+  <!-- @dblclick="openEdit" -->
+  <div class="decision-node" >
     <div class="diamond">
       <div class="diamond-content">
         <strong class="title">{{ data.stepName || 'شرط' }}</strong>
@@ -21,9 +22,9 @@ const props = defineProps({
   data: { type: Object, required: true },
 })
 const store = useFlowStore()
-function openEdit() {
-  store.setSelectedNode(props.id, 'edit')
-}
+// function openEdit() {
+//   store.setSelectedNode(props.id, 'edit')
+// }
 </script>
 
 <style scoped>
