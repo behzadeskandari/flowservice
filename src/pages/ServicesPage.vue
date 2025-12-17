@@ -6,7 +6,7 @@
          <LogoutButton />
 
         <h1>مدیریت سرویس‌ها</h1>
-        <p>ایجاد و ویرایش سرویس‌های خود</p>
+        <p>ایجاد و ویرایش سرویس‌ها</p>
       </div>
       <div class="header-actions">
         <router-link to="/home" class="w-full h-15 text-sm leading-7 mt-4 rounded-lg text-white font-bold text-lg shadow-lg hover:shadow-xl
