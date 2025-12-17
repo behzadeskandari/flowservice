@@ -150,15 +150,12 @@ export const useFlowStore = defineStore('flow', () => {
         const stepIdToNodeIdMap = new Map()
         const steps = aggregate.steps || []
 
-        let xPos = 100
-        let yPos = 100 + (aggregatesToLoad.indexOf(aggregate) * 300) // Offset each aggregate vertically
-        const stepPositions = new Map()
-
-        // Add an aggregate header node above its steps so it can be clicked/edited
+        // Add aggregate header node
+        const aggregateYPos = 100 + (aggregatesToLoad.indexOf(aggregate) * 280)
         flowNodes.push({
           id: `aggregate-${aggregate.id}`,
           type: 'aggregateNode',
-          position: { x: 80, y: yPos - 80 },
+          position: { x: 50, y: aggregateYPos },
           data: {
             aggregateId: aggregate.id,
             name: aggregate.name || aggregate.id || 'Aggregate',
@@ -166,47 +163,84 @@ export const useFlowStore = defineStore('flow', () => {
           },
         })
 
+        // Build node connection map first
+        const nodeConnections = new Map()
+        for (const step of steps) {
+          nodeConnections.set(step.id, [])
+        }
 
         for (const step of steps) {
-          if (!stepPositions.has(step.id)) {
-            stepPositions.set(step.id, { x: xPos, y: yPos })
-            xPos += 300
-            if (xPos > 1500) {
-              xPos = 100
-              yPos += 200
-            }
+          if (step.nextStepId) {
+            if (!nodeConnections.has(step.id)) nodeConnections.set(step.id, [])
+            nodeConnections.get(step.id).push(step.nextStepId)
           }
+          if (step.trueStepId) {
+            if (!nodeConnections.has(step.id)) nodeConnections.set(step.id, [])
+            nodeConnections.get(step.id).push(step.trueStepId)
+          }
+          if (step.falseStepId) {
+            if (!nodeConnections.has(step.id)) nodeConnections.set(step.id, [])
+            nodeConnections.get(step.id).push(step.falseStepId)
+          }
+        }
 
+        // Find all targeted nodes to identify entry points
+        const allTargets = new Set()
+        for (const targets of nodeConnections.values()) {
+          targets.forEach(t => allTargets.add(t))
+        }
+
+        // Find entry steps
+        const entrySteps = steps.filter(s => !allTargets.has(s.id))
+
+        // Topological sort from entry points
+        const visited = new Set()
+        const orderedSteps = []
+
+        function dfs(stepId) {
+          if (visited.has(stepId)) return
+          visited.add(stepId)
+
+          const step = steps.find(s => s.id === stepId)
+          if (step) orderedSteps.push(step)
+
+          const nextStepIds = nodeConnections.get(stepId) || []
+          for (const nextId of nextStepIds) {
+            dfs(nextId)
+          }
+        }
+
+        for (const entryStep of entrySteps) {
+          dfs(entryStep.id)
+        }
+
+        // Separate steps by type
+        const serviceSteps = orderedSteps.filter(s => {
+          const hasCondition = s.condition !== null && s.condition !== undefined && `${s.condition}`.trim() !== ''
+          const isEndNode = !s.nextStepId && !s.trueStepId && !s.falseStepId && !hasCondition && !s.serviceId
+          return !isEndNode && !hasCondition
+        })
+        const decisionSteps = orderedSteps.filter(s => s.condition !== null && s.condition !== undefined && `${s.condition}`.trim() !== '')
+        const endSteps = orderedSteps.filter(s => {
+          const hasCondition = s.condition !== null && s.condition !== undefined && `${s.condition}`.trim() !== ''
+          const isEndNode = !s.nextStepId && !s.trueStepId && !s.falseStepId && !hasCondition && !s.serviceId
+          return isEndNode
+        })
+
+        // Position nodes left-to-right: aggregate → service → decision → end
+        const stepYPos = aggregateYPos + 80
+        let xPos = 100
+
+        // Position service nodes
+        for (const step of serviceSteps) {
           const nodeId = `node-${step.id}`
           stepIdToNodeIdMap.set(step.id, nodeId)
-
-          const hasCondition =
-            step.condition !== null &&
-            step.condition !== undefined &&
-            `${step.condition}`.trim() !== ''
-
           const service = step.service
-          const isDecision = hasCondition
-
-          // Check if this is an end node (no next steps, no condition, no service)
-          const isEndNode =
-            !step.nextStepId &&
-            !step.trueStepId &&
-            !step.falseStepId &&
-            !hasCondition &&
-            !step.serviceId
-
-          let nodeType = 'serviceNode'
-          if (isEndNode) {
-            nodeType = 'endNode'
-          } else if (isDecision) {
-            nodeType = 'decisionNode'
-          }
 
           flowNodes.push({
             id: nodeId,
-            type: nodeType,
-            position: stepPositions.get(step.id),
+            type: 'serviceNode',
+            position: { x: xPos, y: stepYPos },
             data: {
               id: nodeId,
               aggregateStepId: step.id,
@@ -219,19 +253,65 @@ export const useFlowStore = defineStore('flow', () => {
               serviceName: service?.name || '',
               url: service?.url || '',
               method: service?.method || 'GET',
-              type: service?.type || (isDecision ? 'DECISION' : 'REST'),
-              status:
-                service?.status !== undefined
-                  ? service.status
-                  : step.status !== undefined
-                    ? step.status
-                    : true,
+              type: service?.type || 'REST',
+              status: service?.status !== undefined ? service.status : step.status !== undefined ? step.status : true,
               mappings: step.mappings || [],
               fields: service?.fields ? [...service.fields] : [],
             },
           })
+          xPos += 300
         }
 
+        // Position decision nodes
+        for (const step of decisionSteps) {
+          const nodeId = `node-${step.id}`
+          stepIdToNodeIdMap.set(step.id, nodeId)
+
+          flowNodes.push({
+            id: nodeId,
+            type: 'decisionNode',
+            position: { x: xPos, y: stepYPos },
+            data: {
+              id: nodeId,
+              aggregateStepId: step.id,
+              aggregateId: aggregate.id,
+              label: step.stepName || 'Decision',
+              stepName: step.stepName || '',
+              condition: step.condition || '',
+              conditionParameters: step.conditionParameters || '',
+              status: step.status !== undefined ? step.status : true,
+              mappings: step.mappings || [],
+              fields: [],
+            },
+          })
+          xPos += 300
+        }
+
+        // Position end nodes
+        if (endSteps.length > 0) {
+          xPos += 100
+          for (const step of endSteps) {
+            const nodeId = `node-${step.id}`
+            stepIdToNodeIdMap.set(step.id, nodeId)
+
+            flowNodes.push({
+              id: nodeId,
+              type: 'endNode',
+              position: { x: xPos, y: stepYPos },
+              data: {
+                id: nodeId,
+                aggregateStepId: step.id,
+                aggregateId: aggregate.id,
+                label: step.stepName || 'End',
+                stepName: step.stepName || '',
+                status: true,
+              },
+            })
+            xPos += 300
+          }
+        }
+
+        // Create edges between steps
         for (const step of steps) {
           const sourceNodeId = stepIdToNodeIdMap.get(step.id)
           if (!sourceNodeId) continue
@@ -322,17 +402,7 @@ export const useFlowStore = defineStore('flow', () => {
           }
         }
 
-        // Add edge from aggregate header to first step(s)
-        // First step is one that is not referenced by any other step's nextStepId, trueStepId, or falseStepId
-        const referencedStepIds = new Set()
-        for (const step of steps) {
-          if (step.nextStepId) referencedStepIds.add(step.nextStepId)
-          if (step.trueStepId) referencedStepIds.add(step.trueStepId)
-          if (step.falseStepId) referencedStepIds.add(step.falseStepId)
-        }
-
-        // Find all entry steps (steps not referenced by others)
-        const entrySteps = steps.filter(s => !referencedStepIds.has(s.id))
+        // Add edges from aggregate to entry steps
         for (const entryStep of entrySteps) {
           const targetNodeId = stepIdToNodeIdMap.get(entryStep.id)
           if (targetNodeId) {
@@ -366,6 +436,9 @@ export const useFlowStore = defineStore('flow', () => {
       edges.value = flowEdges
       nodes.value = [...nodes.value]
       edges.value = [...edges.value]
+
+      // Apply connection-order sorting on load
+      applyConnectionOrderLayout()
     } catch (error) {
       console.error('Failed to load aggregate flow:', error)
       notify({
@@ -373,6 +446,147 @@ export const useFlowStore = defineStore('flow', () => {
         text: 'خطا در بارگذاری flow',
         type: 'error',
       })
+    }
+  }
+
+  /**
+   * Apply connection-order layout: position nodes by aggregate and connection order
+   * Aggregates first, then service/decision nodes in connection order, then end nodes
+   */
+  function applyConnectionOrderLayout() {
+    try {
+      // Group nodes by aggregate
+      const nodesByAggregate = new Map()
+      const aggregateNodes = []
+      const orphanNodes = []
+
+      for (const node of nodes.value) {
+        if (node.type === 'aggregateNode') {
+          aggregateNodes.push(node)
+        } else if (node.data?.aggregateId) {
+          if (!nodesByAggregate.has(node.data.aggregateId)) {
+            nodesByAggregate.set(node.data.aggregateId, [])
+          }
+          nodesByAggregate.get(node.data.aggregateId).push(node)
+        } else {
+          orphanNodes.push(node)
+        }
+      }
+
+      const updatedNodes = []
+      let currentYPos = 50
+
+      // Process each aggregate in order
+      for (const aggregateNode of aggregateNodes) {
+        const aggregateId = aggregateNode.data.aggregateId
+        const stepsInAggregate = nodesByAggregate.get(aggregateId) || []
+
+        // Position aggregate header
+        aggregateNode.position = { x: 50, y: currentYPos }
+        updatedNodes.push(aggregateNode)
+        currentYPos += 100
+
+        // Build a map of step connections within this aggregate
+        const stepConnections = new Map()
+        const endNodes = []
+        const serviceAndDecisionNodes = []
+
+        for (const step of stepsInAggregate) {
+          stepConnections.set(step.id, [])
+          if (step.type === 'endNode') {
+            endNodes.push(step)
+          } else {
+            serviceAndDecisionNodes.push(step)
+          }
+        }
+
+        // Map edges to connections
+        for (const edge of edges.value) {
+          if (edge.data?.aggregateId === aggregateId && !edge.data?.isAggregateConnection) {
+            const sourceNode = nodes.value.find(n => n.id === edge.source)
+            const targetNode = nodes.value.find(n => n.id === edge.target)
+
+            if (sourceNode && targetNode && sourceNode.data?.aggregateId === aggregateId) {
+              if (!stepConnections.has(sourceNode.id)) {
+                stepConnections.set(sourceNode.id, [])
+              }
+              stepConnections.get(sourceNode.id).push(targetNode.id)
+            }
+          }
+        }
+
+        // Find entry nodes
+        const allTargets = new Set()
+        for (const targets of stepConnections.values()) {
+          for (const target of targets) {
+            allTargets.add(target)
+          }
+        }
+
+        const entryNodes = serviceAndDecisionNodes.filter(n => !allTargets.has(n.id))
+
+        // Traverse and position service/decision nodes in connection order
+        const visited = new Set()
+        const orderedSteps = []
+
+        function traverse(nodeId) {
+          if (visited.has(nodeId)) return
+          visited.add(nodeId)
+
+          const node = nodes.value.find(n => n.id === nodeId)
+          if (node && node.type !== 'endNode') {
+            orderedSteps.push(node)
+          }
+
+          const nextNodeIds = stepConnections.get(nodeId) || []
+          for (const nextId of nextNodeIds) {
+            traverse(nextId)
+          }
+        }
+
+        // Start traversal from entry nodes
+        for (const entryNode of entryNodes) {
+          traverse(entryNode.id)
+        }
+
+        // Position service and decision nodes in order
+        let currentXPos = 100
+        let currentYOffset = currentYPos
+        for (const node of orderedSteps) {
+          node.position = { x: currentXPos, y: currentYOffset }
+          updatedNodes.push(node)
+          currentXPos += 350
+
+          if (currentXPos > 1500) {
+            currentXPos = 100
+            currentYOffset += 200
+          }
+        }
+
+        // Position end nodes
+        currentYOffset += 250
+        currentXPos = 100
+        for (const endNode of endNodes) {
+          endNode.position = { x: currentXPos, y: currentYOffset }
+          updatedNodes.push(endNode)
+          currentXPos += 350
+        }
+
+        currentYPos = currentYOffset + 300
+      }
+
+      // Position orphan nodes at the bottom
+      let orphanXPos = 50
+      let orphanYPos = currentYPos
+      for (const orphan of orphanNodes) {
+        orphan.position = { x: orphanXPos, y: orphanYPos }
+        updatedNodes.push(orphan)
+        orphanXPos += 300
+      }
+
+      nodes.value = [...updatedNodes]
+    } catch (error) {
+      console.error('Failed to apply connection order layout:', error)
     }
   }
 

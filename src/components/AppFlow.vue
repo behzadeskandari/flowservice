@@ -1,6 +1,7 @@
 <template>
   <div class="flow-wrapper">
     <div class="toolbar">
+<LogoutButton />
       <router-link to="/services" class="px-3 py-2 bg-gradient-to-r from-blue-400 via-blue-500 to-blue-600 text-white font-semibold rounded-xl shadow-lg hover:from-blue-500 hover:via-blue-600 hover:to-blue-700 transition duration-300 ease-in-out" title="مدیریت سرویس‌ها">
         <font-awesome-icon :icon="faTools" style="color: white" />
         <span class="toolbar-text">مدیریت سرویس‌ها</span>
@@ -121,6 +122,7 @@ import CombinedServiceNode from './nodes/CombinedServiceNode.vue'
 import DecisionNode from './nodes/DecisionNode.vue'
 import EndNode from './nodes/EndNode.vue'
 import AggregateNode from './nodes/AggregateNode.vue'
+import LogoutButton from '@/components/LogoutButton.vue'
 // Modal
 import ServiceModal from './modals/ServiceModal.vue'
 import ConnectionStepModal from './modals/ConnectionStepModal.vue'
@@ -205,27 +207,141 @@ function toggleAutoSave() {
 }
 
 function sortByConnectionOrder() {
-  function getLastNumber(id) {
-    const parts = id.split('-')
-    return Number(parts[parts.length - 1]) || 0
+  // Group nodes by aggregate
+  const nodesByAggregate = new Map()
+  const aggregateNodes = []
+  const orphanNodes = []
+
+  for (const node of store.nodes) {
+    if (node.type === 'aggregateNode') {
+      aggregateNodes.push(node)
+    } else if (node.data?.aggregateId) {
+      if (!nodesByAggregate.has(node.data.aggregateId)) {
+        nodesByAggregate.set(node.data.aggregateId, [])
+      }
+      nodesByAggregate.get(node.data.aggregateId).push(node)
+    } else {
+      orphanNodes.push(node)
+    }
   }
 
-  // Sort nodes by last number of their ID
-  const sortedNodes = [...store.nodes].sort((a, b) => {
-    return getLastNumber(a.id) - getLastNumber(b.id)
-  })
+  const updatedNodes = []
+  let globalYPos = 50
 
-  // Layout parameters for horizontal layout
-  const startX = 100
-  const startY = 200
-  const gapX = 250
+  // Process each aggregate in order
+  for (const aggregateNode of aggregateNodes) {
+    const aggregateId = aggregateNode.data.aggregateId
+    const stepsInAggregate = nodesByAggregate.get(aggregateId) || []
 
-  sortedNodes.forEach((node, index) => {
-    node.position = { x: startX + index * gapX, y: startY }
-  })
+    // Position aggregate header at the start
+    aggregateNode.position = { x: 50, y: globalYPos }
+    updatedNodes.push(aggregateNode)
 
-  // Update the store nodes reactively with new order & positions
-  store.nodes = [...sortedNodes]
+    if (stepsInAggregate.length === 0) {
+      globalYPos += 100
+      continue
+    }
+
+    // Build node connection map
+    const nodeConnections = new Map()
+    for (const step of stepsInAggregate) {
+      nodeConnections.set(step.id, [])
+    }
+
+    // Map edges to connections (only non-aggregate edges)
+    for (const edge of store.edges) {
+      if (edge.data?.aggregateId === aggregateId && !edge.data?.isAggregateConnection) {
+        const sourceNode = store.nodes.find(n => n.id === edge.source)
+        const targetNode = store.nodes.find(n => n.id === edge.target)
+
+        if (sourceNode && targetNode && sourceNode.data?.aggregateId === aggregateId) {
+          if (!nodeConnections.has(sourceNode.id)) {
+            nodeConnections.set(sourceNode.id, [])
+          }
+          nodeConnections.get(sourceNode.id).push(targetNode.id)
+        }
+      }
+    }
+
+    // Find all targeted nodes
+    const allTargets = new Set()
+    for (const targets of nodeConnections.values()) {
+      targets.forEach(t => allTargets.add(t))
+    }
+
+    // Find entry points (nodes not targeted by any edge)
+    const entryNodes = stepsInAggregate.filter(n => !allTargets.has(n.id))
+
+    // Topological traversal from entry nodes
+    const visited = new Set()
+    const orderedSequence = []
+
+    function dfs(nodeId) {
+      if (visited.has(nodeId)) return
+      visited.add(nodeId)
+
+      const node = stepsInAggregate.find(n => n.id === nodeId)
+      if (node) {
+        orderedSequence.push(node)
+      }
+
+      const nextNodeIds = nodeConnections.get(nodeId) || []
+      for (const nextId of nextNodeIds) {
+        dfs(nextId)
+      }
+    }
+
+    // Start DFS from all entry nodes
+    for (const entryNode of entryNodes) {
+      dfs(entryNode.id)
+    }
+
+    // Separate nodes by type
+    const serviceSteps = orderedSequence.filter(n => n.type === 'serviceNode')
+    const decisionSteps = orderedSequence.filter(n => n.type === 'decisionNode')
+    const endSteps = orderedSequence.filter(n => n.type === 'endNode')
+
+    // Position aggregate steps left-to-right: service → decision → end
+    const aggregateYPos = globalYPos + 80
+    let xPos = 100
+
+    // Position service nodes
+    for (const node of serviceSteps) {
+      node.position = { x: xPos, y: aggregateYPos }
+      updatedNodes.push(node)
+      xPos += 300
+    }
+
+    // Position decision nodes next
+    for (const node of decisionSteps) {
+      node.position = { x: xPos, y: aggregateYPos }
+      updatedNodes.push(node)
+      xPos += 300
+    }
+
+    // Position end nodes last
+    if (endSteps.length > 0) {
+      xPos += 100 // Extra space before end nodes
+      for (const node of endSteps) {
+        node.position = { x: xPos, y: aggregateYPos }
+        updatedNodes.push(node)
+        xPos += 300
+      }
+    }
+
+    globalYPos += 280
+  }
+
+  // Position orphan nodes
+  let orphanXPos = 50
+  let orphanYPos = globalYPos + 50
+  for (const orphan of orphanNodes) {
+    orphan.position = { x: orphanXPos, y: orphanYPos }
+    updatedNodes.push(orphan)
+    orphanXPos += 300
+  }
+
+  store.nodes = [...updatedNodes]
 }
 function toggleTheme() {
   isDark.value = !isDark.value

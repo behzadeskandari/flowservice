@@ -2,7 +2,7 @@
   <button
     @click="handleLogout"
     :class="[
-      ' h-12 mt-4 rounded-lg text-white font-bold text-lg shadow-lg hover:shadow-xl bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 active:scale-98 transition-all duration-200',
+      ' h-12 rounded-lg text-white font-bold text-lg shadow-lg hover:shadow-xl bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 active:scale-98 transition-all duration-200',
       'logout-btn',
       variant === 'icon' ? 'logout-btn--icon' : '',
       variant === 'text' ? 'logout-btn--text' : '',
