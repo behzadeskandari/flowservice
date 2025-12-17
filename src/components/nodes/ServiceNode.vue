@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div class="service-node" @contextmenu.prevent="onRightClick" @touchstart="onTouchStart" @touchend="onTouchEnd" @touchmove="onTouchCancel">
+    <div class="service-node" @contextmenu.prevent="onRightClick" @touchstart.passive="onTouchStart" @touchend.passive="onTouchEnd" @touchmove.passive="onTouchCancel">
       <div class="node-header" @dblclick="openEdit">
         <strong>{{ data.stepName || data.label }}</strong>
       </div>

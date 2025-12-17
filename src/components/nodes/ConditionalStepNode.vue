@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div class="conditional-node" :class="{ 'has-condition': hasCondition }" @contextmenu.prevent="onRightClick" @touchstart="onTouchStart" @touchend="onTouchEnd" @touchmove="onTouchCancel">
+    <div class="conditional-node" :class="{ 'has-condition': hasCondition }" @contextmenu.prevent="onRightClick" @touchstart.passive="onTouchStart" @touchend.passive="onTouchEnd" @touchmove.passive="onTouchCancel">
       <div class="node-header" @dblclick="openEdit">
         <strong>{{ data.stepName || 'Conditional Step' }}</strong>
       </div>

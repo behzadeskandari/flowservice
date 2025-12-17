@@ -34,6 +34,7 @@ class ServiceAggregatorClient {
   }
 
   async addAggregateStep(data) {
+    console.log('Adding aggregate step with data:', data);
     const response = await httpClient.post('/aggregate/add-aggregate-step', {
       addAggregateStep: data
     })

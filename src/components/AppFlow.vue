@@ -10,14 +10,14 @@
         class="px-3 py-2 bg-gradient-to-r from-green-400 via-green-500 to-green-600 text-white font-semibold rounded-xl shadow-lg hover:from-green-500 hover:via-green-600 hover:to-green-700 transition duration-300 ease-in-out"
         @click="onAddStep">
         <font-awesome-icon :icon="faPlus" style="color: white" />
-        <span class="toolbar-text">اضافه کردن Step</span>
+        <span class="toolbar-text">Step ایجاد </span>
       </button>
       <button
         class="px-3 py-2 bg-gradient-to-r from-indigo-500 via-indigo-600 to-indigo-700 text-white font-semibold rounded-xl shadow-lg hover:from-indigo-600 hover:via-indigo-700 hover:to-indigo-800 transition duration-300 ease-in-out"
         @click="onCreateAggregate"
         title="ایجاد Aggregate جدید">
         <font-awesome-icon :icon="faPlus" style="color: white" />
-        <span class="toolbar-text">ایجاد Aggregate</span>
+        <span class="toolbar-text">Aggregate ایجاد </span>
       </button>
       <!-- <button
         class="px-3 py-2 bg-gradient-to-r from-purple-400 via-purple-500 to-purple-600 text-white font-semibold rounded-xl shadow-lg hover:from-purple-500 hover:via-purple-600 hover:to-purple-700 transition duration-300 ease-in-out"
