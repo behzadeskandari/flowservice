@@ -154,6 +154,19 @@ export const useFlowStore = defineStore('flow', () => {
         let yPos = 100 + (aggregatesToLoad.indexOf(aggregate) * 300) // Offset each aggregate vertically
         const stepPositions = new Map()
 
+        // Add an aggregate header node above its steps so it can be clicked/edited
+        flowNodes.push({
+          id: `aggregate-${aggregate.id}`,
+          type: 'aggregateNode',
+          position: { x: 80, y: yPos - 80 },
+          data: {
+            aggregateId: aggregate.id,
+            name: aggregate.name || aggregate.id || 'Aggregate',
+            label: aggregate.name || 'Aggregate',
+          },
+        })
+
+
         for (const step of steps) {
           if (!stepPositions.has(step.id)) {
             stepPositions.set(step.id, { x: xPos, y: yPos })
@@ -306,6 +319,45 @@ export const useFlowStore = defineStore('flow', () => {
                 },
               })
             }
+          }
+        }
+
+        // Add edge from aggregate header to first step(s)
+        // First step is one that is not referenced by any other step's nextStepId, trueStepId, or falseStepId
+        const referencedStepIds = new Set()
+        for (const step of steps) {
+          if (step.nextStepId) referencedStepIds.add(step.nextStepId)
+          if (step.trueStepId) referencedStepIds.add(step.trueStepId)
+          if (step.falseStepId) referencedStepIds.add(step.falseStepId)
+        }
+
+        // Find all entry steps (steps not referenced by others)
+        const entrySteps = steps.filter(s => !referencedStepIds.has(s.id))
+        for (const entryStep of entrySteps) {
+          const targetNodeId = stepIdToNodeIdMap.get(entryStep.id)
+          if (targetNodeId) {
+            flowEdges.push({
+              id: `edge-aggregate-${aggregate.id}-to-${entryStep.id}`,
+              source: `aggregate-${aggregate.id}`,
+              target: targetNodeId,
+              animated: false,
+              type: 'smoothstep',
+              style: {
+                stroke: '#f59e0b',
+                strokeWidth: 2.5,
+                strokeDasharray: '5 5',
+              },
+              markerEnd: {
+                type: MarkerType.ArrowClosed,
+                width: 20,
+                height: 20,
+                color: '#f59e0b',
+              },
+              data: {
+                aggregateId: aggregate.id,
+                isAggregateConnection: true,
+              },
+            })
           }
         }
       }

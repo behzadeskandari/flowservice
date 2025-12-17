@@ -141,15 +141,26 @@ const onSave = async () => {
   }
 }
 
-watch(() => props.show, (newVal) => {
+watch(() => props.show, async (newVal) => {
   if (newVal) {
     isEditMode.value = props.mode === 'edit'
 
     if (isEditMode.value && store.currentAggregateId) {
       // Load current aggregate data for editing
-      const aggregates = store.nodes.map(n => n.data.aggregateId)
-      // In real implementation, fetch aggregate by ID
-      // For now, we'll keep form empty for new aggregates
+      try {
+        const aggregates = await serviceAggregatorClient.getAggregates()
+        const agg = Array.isArray(aggregates)
+          ? aggregates.find(a => a.id === store.currentAggregateId)
+          : (aggregates.id === store.currentAggregateId ? aggregates : null)
+        if (agg) {
+          formData.value.id = agg.id
+          formData.value.name = agg.name || ''
+          formData.value.description = agg.description || ''
+          formData.value.status = agg.status !== undefined ? agg.status : true
+        }
+      } catch (error) {
+        console.error('Failed to load aggregate data for edit:', error)
+      }
     }
   } else {
     resetForm()

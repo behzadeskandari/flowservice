@@ -11,6 +11,13 @@
         <font-awesome-icon :icon="faPlus" style="color: white" />
         <span class="toolbar-text">اضافه کردن Step</span>
       </button>
+      <button
+        class="px-3 py-2 bg-gradient-to-r from-indigo-500 via-indigo-600 to-indigo-700 text-white font-semibold rounded-xl shadow-lg hover:from-indigo-600 hover:via-indigo-700 hover:to-indigo-800 transition duration-300 ease-in-out"
+        @click="onCreateAggregate"
+        title="ایجاد Aggregate جدید">
+        <font-awesome-icon :icon="faPlus" style="color: white" />
+        <span class="toolbar-text">ایجاد Aggregate</span>
+      </button>
       <!-- <button
         class="px-3 py-2 bg-gradient-to-r from-purple-400 via-purple-500 to-purple-600 text-white font-semibold rounded-xl shadow-lg hover:from-purple-500 hover:via-purple-600 hover:to-purple-700 transition duration-300 ease-in-out"
         @click="onAddServiceStep"
@@ -113,6 +120,7 @@ import ServiceNode from './nodes/ServiceNode.vue'
 import CombinedServiceNode from './nodes/CombinedServiceNode.vue'
 import DecisionNode from './nodes/DecisionNode.vue'
 import EndNode from './nodes/EndNode.vue'
+import AggregateNode from './nodes/AggregateNode.vue'
 // Modal
 import ServiceModal from './modals/ServiceModal.vue'
 import ConnectionStepModal from './modals/ConnectionStepModal.vue'
@@ -134,6 +142,8 @@ const nodeTypes = {
   combinedServiceNode: markRaw(CombinedServiceNode),
   decisionNode: markRaw(DecisionNode),
   endNode: markRaw(EndNode),
+  // Aggregate node to show aggregate header and allow editing
+  aggregateNode: markRaw(AggregateNode),
 }
 import { notify } from "@kyvg/vue3-notification";
 
@@ -261,6 +271,11 @@ function onAddServiceStep() {
   }
 }
 
+function onCreateAggregate() {
+  aggregateModalMode.value = 'add'
+  showAggregateModal.value = true
+}
+
 function handleAggregateSaved() {
   showAggregateModal.value = false
   // Load the newly created aggregate
@@ -323,8 +338,19 @@ async function onEdgesChange(changes) {
 }
 
 function onNodeDblClick({ id }) {
-  // Check if it's a combined node (don't edit combined nodes)
+  // Find clicked node
   const node = store.nodes.find(n => n.id === id)
+  if (!node) return
+
+  // If it's an aggregate node, open AggregateModal in edit mode
+  if (node.type === 'aggregateNode') {
+    store.currentAggregateId = node.data.aggregateId
+    aggregateModalMode.value = 'edit'
+    showAggregateModal.value = true
+    return
+  }
+
+  // Check if it's a combined node (don't edit combined nodes)
   if (node && node.type === 'combinedServiceNode') {
     notify({
       title: 'اطلاع',
