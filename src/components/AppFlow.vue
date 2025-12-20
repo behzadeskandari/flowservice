@@ -591,6 +591,8 @@ function doScreenshot() {
     bottom: 10px;
     right: 10px;
     padding: 6px 8px;
+    display: flex;
+    flex-flow: column;
   }
 
   .toolbar button {
