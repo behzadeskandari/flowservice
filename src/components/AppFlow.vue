@@ -1,7 +1,23 @@
 <template>
   <div class="flow-wrapper">
     <div class="toolbar">
-<LogoutButton />
+      <LogoutButton />
+      <select
+        style="direction: rtl"
+        v-model="store.currentAggregateId"
+        class="px-3 py-2 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 text-black font-semibold rounded-xl shadow-lg hover:from-orange-500 hover:via-orange-600 hover:to-orange-700 transition duration-300 ease-in-out"
+        @change="onAggregateChange"
+      >
+        <option value="" disabled  class="bg-white text-gray-800">انتخاب Aggregate</option>
+        <option
+          v-for="aggregate in store.aggregates"
+          :key="aggregate.id"
+          :value="aggregate.id"
+           class="bg-white text-gray-800  from-orange-400"
+        >
+          {{ aggregate.name || `Aggregate ${aggregate.id}` }}
+        </option>
+      </select>
       <router-link to="/services" class="px-3 py-2 bg-gradient-to-r from-blue-400 via-blue-500 to-blue-600 text-white font-semibold rounded-xl shadow-lg hover:from-blue-500 hover:via-blue-600 hover:to-blue-700 transition duration-300 ease-in-out" title="مدیریت سرویس‌ها">
         <font-awesome-icon :icon="faTools" style="color: white" />
         <span class="toolbar-text">مدیریت سرویس‌ها</span>
@@ -355,16 +371,22 @@ function toggleTheme() {
  * After aggregate is created/exists, opens StepModal for new step
  */
 function onAddStep() {
-  if (!store.currentAggregateId) {
-    // No aggregate exists, open modal to create one
+  if (!store.aggregates || store.aggregates.length === 0) {
+    // No aggregates exist, open modal to create one
     aggregateModalMode.value = 'add'
     showAggregateModal.value = true
-  } else {
-    // Aggregate exists, open StepModal for step creation
-    stepModalRef.value?.openModal('add', {
-      aggregateId: store.currentAggregateId
-    })
+    return
   }
+
+  if (!store.currentAggregateId) {
+    // If no aggregate is selected, select the first one
+    store.currentAggregateId = store.aggregates[0].id
+  }
+
+  // Open StepModal for step creation with the selected aggregate
+  stepModalRef.value?.openModal('add', {
+    aggregateId: store.currentAggregateId
+  })
 }
 
 /**
