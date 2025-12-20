@@ -8,22 +8,22 @@
 
       <div class="modal-body">
         <div class="form-group">
-          <label>Aggregate Name *</label>
+          <label>* Aggregate نام </label>
           <input
             v-model="formData.name"
             type="text"
             class="form-control"
-            placeholder="e.g., User Registration Flow"
+            placeholder="Aggregate نام"
             required
           >
         </div>
 
         <div class="form-group">
-          <label>Description (optional)</label>
+          <label> (اختیاری) توضیحات </label>
           <textarea
             v-model="formData.description"
             class="form-control"
-            placeholder="Describe what this aggregate/flow does"
+            placeholder="شرح دهید که این مجموع/جریان چه کاری انجام می‌دهد"
             rows="4"
           ></textarea>
         </div>
@@ -31,15 +31,17 @@
         <div v-if="isEditMode" class="form-group">
           <label class="checkbox-label">
             <input v-model="formData.status" type="checkbox">
-            <span>Active</span>
+            <span>فعال</span>
           </label>
         </div>
       </div>
 
       <div class="modal-footer">
-        <button class="btn btn-secondary" @click="onClose">Cancel</button>
-        <button class="btn btn-primary" @click="onSave" :disabled="!formData.name">
-          {{ isEditMode ? 'Update' : 'Create' }} Aggregate
+        <button  class="px-3 py-2 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 text-white font-semibold rounded-xl shadow-lg hover:from-orange-500 hover:via-orange-600 hover:to-orange-700 transition duration-300 ease-in-out"
+         @click="onClose">بازگشت</button>
+        <button  class="px-3 py-2 bg-gradient-to-r from-green-400 via-green-500 to-green-600 text-white font-semibold rounded-xl shadow-lg hover:from-green-500 hover:via-green-600 hover:to-green-700 transition duration-300 ease-in-out"
+         @click="onSave" :disabled="!formData.name">
+          {{ isEditMode ? 'بروزرسانی' : 'ایجاد' }} Aggregate
         </button>
       </div>
     </div>
