@@ -1,48 +1,96 @@
 <template>
-  <div v-if="show" class="modal-overlay" @click.self="onClose">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h3>{{ isEditMode ? 'Edit Aggregate' : 'Create New Aggregate' }}</h3>
-        <button class="close-button" @click="onClose">&times;</button>
-      </div>
+  <div
+    v-if="show"
+    class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 animate-fadeIn"
+    @click.self="onClose"
+  >
+    <div class="bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 p-[2px] rounded-3xl">
+      <div class="bg-white dark:bg-gray-900 shadow-2xl rounded-3xl w-full max-w-2xl animate-scaleIn"
+           style="width: 90vw; padding: 17px">
 
-      <div class="modal-body">
-        <div class="form-group">
-          <label>* Aggregate نام </label>
-          <input
-            v-model="formData.name"
-            type="text"
-            class="form-control"
-            placeholder="Aggregate نام"
-            required
-          >
-        </div>
+        <!-- Header -->
+        <header class="flex items-center justify-between border-b pb-3 mb-4">
+          <div class="flex gap-2">
+            <button
+              class="px-6 py-3 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 text-white font-semibold rounded-xl shadow-lg hover:from-orange-500 hover:via-orange-600 hover:to-orange-700 transition duration-300 ease-in-out"
+              @click="onClose"
+            >
+              <font-awesome-icon :icon="faArrowUp" style="color: white;" />
+              <span class="header-btn-text">خروج</span>
+            </button>
+            <button
+              class="px-6 py-3 bg-gradient-to-r from-green-400 via-green-500 to-green-600 text-white font-semibold rounded-xl shadow-lg hover:from-green-500 hover:via-green-600 hover:to-green-700 transition duration-300 ease-in-out"
+              @click="onSave"
+              :disabled="!formData.name"
+            >
+              <font-awesome-icon :icon="faSave" style="color: white;" />
+              <span class="header-btn-text">ذخیره</span>
+            </button>
+          </div>
+          <h3 class="text-xl font-bold text-gray-800 dark:text-gray-100 p-3">
+            {{ isEditMode ? 'ویرایش Aggregate' : 'ایجاد Aggregate جدید' }}
+          </h3>
+        </header>
 
-        <div class="form-group">
-          <label> (اختیاری) توضیحات </label>
-          <textarea
-            v-model="formData.description"
-            class="form-control"
-            placeholder="شرح دهید که این مجموع/جریان چه کاری انجام می‌دهد"
-            rows="4"
-          ></textarea>
-        </div>
+        <!-- Body -->
+        <section class="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
+          <!-- Aggregate Information Section -->
+          <div class="space-y-4">
+            <h4 class="text-lg font-semibold text-gray-700 dark:text-gray-200">اطلاعات Aggregate</h4>
 
-        <div v-if="isEditMode" class="form-group">
-          <label class="checkbox-label">
-            <input v-model="formData.status" type="checkbox">
-            <span>فعال</span>
-          </label>
-        </div>
-      </div>
+            <!-- Name Field -->
+            <div>
+              <label class="block font-medium text-gray-500 mb-1 text-right px-1 py-1">نام *</label>
+              <input
+                v-model="formData.name"
+                type="text"
+                placeholder="نام Aggregate را وارد کنید"
+                class="w-full px-4 py-2 rounded-xl border border-gray-300
+                       focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
+                       bg-white shadow-sm transition text-right"
+                required
+              />
+            </div>
 
-      <div class="modal-footer">
-        <button  class="px-3 py-2 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 text-white font-semibold rounded-xl shadow-lg hover:from-orange-500 hover:via-orange-600 hover:to-orange-700 transition duration-300 ease-in-out"
-         @click="onClose">بازگشت</button>
-        <button  class="px-3 py-2 bg-gradient-to-r from-green-400 via-green-500 to-green-600 text-white font-semibold rounded-xl shadow-lg hover:from-green-500 hover:via-green-600 hover:to-green-700 transition duration-300 ease-in-out"
-         @click="onSave" :disabled="!formData.name">
-          {{ isEditMode ? 'بروزرسانی' : 'ایجاد' }} Aggregate
-        </button>
+            <!-- Description Field -->
+            <div>
+              <label class="block font-medium text-gray-500 mb-1 text-right px-1 py-1">توضیحات (اختیاری)</label>
+              <textarea
+                v-model="formData.description"
+                placeholder="شرح دهید که این مجموع/جریان چه کاری انجام می‌دهد"
+                class="w-full px-4 py-2 rounded-xl border border-gray-300
+                       focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
+                       bg-white shadow-sm transition text-right"
+                rows="4"
+              ></textarea>
+            </div>
+
+            <!-- Status Toggle (Edit mode only) -->
+            <div v-if="isEditMode" class="flex items-center justify-end">
+              <label class="flex items-center cursor-pointer">
+                <span class="mr-2 font-medium text-gray-700">وضعیت:</span>
+                <div class="relative">
+                  <input
+                    type="checkbox"
+                    class="sr-only"
+                    v-model="formData.status"
+                  >
+                  <div
+                    class="block bg-gray-300 w-14 h-8 rounded-full transition-colors duration-300"
+                    :class="{'bg-green-500': formData.status}"
+                  ></div>
+                  <div
+                    class="dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform duration-300"
+                    :class="{'transform translate-x-6': formData.status}"
+                  ></div>
+                </div>
+                <span class="mr-2 text-sm font-medium text-gray-700">
+                  {{ formData.status ? 'فعال' : 'غیرفعال' }}
+                </span>
+              </label>
+            </div>
+          </div>
+        </section>
       </div>
     </div>
   </div>
@@ -53,6 +101,7 @@ import { ref, watch } from 'vue'
 import { useFlowStore } from '@/stores/flowStore'
 import serviceAggregatorClient from '@/utils/service-aggregator-client'
 import { notify } from '@kyvg/vue3-notification'
+import { faArrowUp, faSave } from '@fortawesome/free-solid-svg-icons'
 
 const props = defineProps({
   show: Boolean,
@@ -92,8 +141,8 @@ const onClose = () => {
 const onSave = async () => {
   if (!formData.value.name) {
     notify({
-      title: 'Error',
-      text: 'Aggregate name is required',
+      title: 'خطا',
+      text: 'نام Aggregate مورد نیاز است',
       type: 'error',
     })
     return
@@ -109,8 +158,8 @@ const onSave = async () => {
         status: formData.value.status,
       })
       notify({
-        title: 'Success',
-        text: 'Aggregate updated successfully',
+        title: 'موفق',
+        text: 'Aggregate با موفقیت به‌روزرسانی شد',
         type: 'success',
       })
     } else {
@@ -124,8 +173,8 @@ const onSave = async () => {
       store.currentAggregateId = response.id
 
       notify({
-        title: 'Success',
-        text: 'Aggregate created successfully',
+        title: 'موفق',
+        text: 'Aggregate با موفقیت ایجاد شد',
         type: 'success',
       })
     }
@@ -136,8 +185,8 @@ const onSave = async () => {
   } catch (error) {
     console.error('Error saving aggregate:', error)
     notify({
-      title: 'Error',
-      text: isEditMode.value ? 'Failed to update aggregate' : 'Failed to create aggregate',
+      title: 'خطا',
+      text: isEditMode.value ? 'خطا در به‌روزرسانی Aggregate' : 'خطا در ایجاد Aggregate',
       type: 'error',
     })
   }
@@ -171,156 +220,58 @@ watch(() => props.show, async (newVal) => {
 </script>
 
 <style scoped>
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1100;
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
-.modal-content {
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-  max-width: 500px;
-  width: 90%;
-  max-height: 80vh;
-  overflow-y: auto;
+@keyframes scaleIn {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 20px;
-  border-bottom: 1px solid #e0e0e0;
-  position: sticky;
-  top: 0;
-  background: white;
-  z-index: 10;
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-in-out;
 }
 
-.modal-header h3 {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 600;
-  color: #333;
+.animate-scaleIn {
+  animation: scaleIn 0.3s ease-in-out;
 }
 
-.close-button {
-  background: none;
-  border: none;
-  font-size: 24px;
-  cursor: pointer;
-  color: #666;
-  padding: 0;
-  width: 30px;
-  height: 30px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 4px;
-  transition: background 0.2s;
+.header-btn-text {
+  display: inline;
+  white-space: nowrap;
 }
 
-.close-button:hover {
-  background: #f0f0f0;
+/* Toggle Switch Styles */
+input:checked + .dot {
+  transform: translateX(100%);
+  background-color: #48bb78;
 }
 
-.modal-body {
-  padding: 20px;
-}
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .header-btn-text {
+    display: none;
+  }
 
-.form-group {
-  margin-bottom: 16px;
-}
+  .modal-content {
+    width: 95vw !important;
+    padding: 10px !important;
+  }
 
-.form-group label {
-  display: block;
-  margin-bottom: 8px;
-  font-weight: 500;
-  color: #333;
-  font-size: 14px;
-}
-
-.form-control {
-  width: 100%;
-  padding: 10px 12px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  font-size: 14px;
-  font-family: inherit;
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-
-.form-control:focus {
-  outline: none;
-  border-color: #007bff;
-  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
-}
-
-.checkbox-label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  font-weight: 500;
-}
-
-.checkbox-label input {
-  width: 18px;
-  height: 18px;
-  cursor: pointer;
-}
-
-.modal-footer {
-  padding: 16px 20px;
-  border-top: 1px solid #e0e0e0;
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  position: sticky;
-  bottom: 0;
-  background: white;
-  z-index: 10;
-}
-
-.btn {
-  padding: 10px 20px;
-  border: none;
-  border-radius: 4px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-secondary {
-  background: #f0f0f0;
-  color: #333;
-}
-
-.btn-secondary:hover {
-  background: #e0e0e0;
-}
-
-.btn-primary {
-  background: #007bff;
-  color: white;
-}
-
-.btn-primary:hover:not(:disabled) {
-  background: #0056b3;
-}
-
-.btn-primary:disabled {
-  background: #ccc;
-  cursor: not-allowed;
+  .btn {
+    padding: 0.5rem 1rem;
+  }
 }
 </style>
