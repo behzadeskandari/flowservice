@@ -447,8 +447,8 @@ export const useFlowStore = defineStore('flow', () => {
   }
 
   /**
-   * Apply connection-order layout: position nodes by aggregate and connection order
-   * Aggregates first, then service/decision nodes in connection order, then end nodes
+   * Apply hierarchical level-based layout: position nodes by depth in the graph
+   * Nodes flow from top to bottom, with nodes at the same level arranged horizontally
    */
   function applyConnectionOrderLayout() {
     try {
@@ -483,18 +483,18 @@ export const useFlowStore = defineStore('flow', () => {
         updatedNodes.push(aggregateNode)
         currentYPos += 100
 
-        // Build a map of step connections within this aggregate
+        if (stepsInAggregate.length === 0) {
+          currentYPos += 100
+          continue
+        }
+
+        // Build connection maps
         const stepConnections = new Map()
-        const endNodes = []
-        const serviceAndDecisionNodes = []
+        const reverseConnections = new Map() // For finding parents
 
         for (const step of stepsInAggregate) {
           stepConnections.set(step.id, [])
-          if (step.type === 'endNode') {
-            endNodes.push(step)
-          } else {
-            serviceAndDecisionNodes.push(step)
-          }
+          reverseConnections.set(step.id, [])
         }
 
         // Map edges to connections
@@ -507,69 +507,102 @@ export const useFlowStore = defineStore('flow', () => {
               if (!stepConnections.has(sourceNode.id)) {
                 stepConnections.set(sourceNode.id, [])
               }
+              if (!reverseConnections.has(targetNode.id)) {
+                reverseConnections.set(targetNode.id, [])
+              }
               stepConnections.get(sourceNode.id).push(targetNode.id)
+              reverseConnections.get(targetNode.id).push(sourceNode.id)
             }
           }
         }
 
-        // Find entry nodes
-        const allTargets = new Set()
-        for (const targets of stepConnections.values()) {
-          for (const target of targets) {
-            allTargets.add(target)
-          }
-        }
+        // Find entry nodes (nodes with no incoming edges)
+        const entryNodes = stepsInAggregate.filter(n => reverseConnections.get(n.id)?.length === 0)
 
-        const entryNodes = serviceAndDecisionNodes.filter(n => !allTargets.has(n.id))
-
-        // Traverse and position service/decision nodes in connection order
+        // Calculate levels using BFS
+        const nodeLevels = new Map()
+        const queue = []
         const visited = new Set()
-        const orderedSteps = []
 
-        function traverse(nodeId) {
-          if (visited.has(nodeId)) return
-          visited.add(nodeId)
-
-          const node = nodes.value.find(n => n.id === nodeId)
-          if (node && node.type !== 'endNode') {
-            orderedSteps.push(node)
-          }
-
-          const nextNodeIds = stepConnections.get(nodeId) || []
-          for (const nextId of nextNodeIds) {
-            traverse(nextId)
-          }
-        }
-
-        // Start traversal from entry nodes
+        // Initialize entry nodes at level 0
         for (const entryNode of entryNodes) {
-          traverse(entryNode.id)
+          nodeLevels.set(entryNode.id, 0)
+          queue.push(entryNode.id)
+          visited.add(entryNode.id)
         }
 
-        // Position service and decision nodes in order
-        let currentXPos = 100
-        let currentYOffset = currentYPos
-        for (const node of orderedSteps) {
-          node.position = { x: currentXPos, y: currentYOffset }
-          updatedNodes.push(node)
-          currentXPos += 350
+        // BFS to assign levels
+        while (queue.length > 0) {
+          const currentNodeId = queue.shift()
+          const currentLevel = nodeLevels.get(currentNodeId) || 0
+          const nextNodes = stepConnections.get(currentNodeId) || []
 
-          if (currentXPos > 1500) {
-            currentXPos = 100
-            currentYOffset += 200
+          for (const nextNodeId of nextNodes) {
+            if (!visited.has(nextNodeId)) {
+              nodeLevels.set(nextNodeId, currentLevel + 1)
+              visited.add(nextNodeId)
+              queue.push(nextNodeId)
+            } else {
+              // If already visited, update level if this path is longer
+              const existingLevel = nodeLevels.get(nextNodeId) || 0
+              if (currentLevel + 1 > existingLevel) {
+                nodeLevels.set(nextNodeId, currentLevel + 1)
+              }
+            }
           }
         }
 
-        // Position end nodes
-        currentYOffset += 250
-        currentXPos = 100
-        for (const endNode of endNodes) {
-          endNode.position = { x: currentXPos, y: currentYOffset }
-          updatedNodes.push(endNode)
-          currentXPos += 350
+        // Group nodes by level
+        const nodesByLevel = new Map()
+        let maxLevel = 0
+        for (const [nodeId, level] of nodeLevels.entries()) {
+          if (!nodesByLevel.has(level)) {
+            nodesByLevel.set(level, [])
+          }
+          nodesByLevel.get(level).push(nodeId)
+          maxLevel = Math.max(maxLevel, level)
         }
 
-        currentYPos = currentYOffset + 300
+        // Add nodes without levels (orphans in this aggregate)
+        for (const step of stepsInAggregate) {
+          if (!nodeLevels.has(step.id)) {
+            if (!nodesByLevel.has(maxLevel + 1)) {
+              nodesByLevel.set(maxLevel + 1, [])
+            }
+            nodesByLevel.get(maxLevel + 1).push(step.id)
+            maxLevel = maxLevel + 1
+          }
+        }
+
+        // Position nodes by level (top to bottom)
+        const VERTICAL_SPACING = 200
+        const HORIZONTAL_SPACING = 300
+        const START_X = 100
+
+        for (let level = 0; level <= maxLevel; level++) {
+          const nodesAtLevel = nodesByLevel.get(level) || []
+          if (nodesAtLevel.length === 0) continue
+
+          // Calculate total width needed
+          const totalWidth = nodesAtLevel.length * HORIZONTAL_SPACING
+          const startX = START_X
+
+          // Position nodes horizontally at this level
+          nodesAtLevel.forEach((nodeId, index) => {
+            const node = stepsInAggregate.find(n => n.id === nodeId)
+            if (node) {
+              node.position = {
+                x: startX + (index * HORIZONTAL_SPACING),
+                y: currentYPos
+              }
+              updatedNodes.push(node)
+            }
+          })
+
+          currentYPos += VERTICAL_SPACING
+        }
+
+        currentYPos += 100 // Extra space after aggregate
       }
 
       // Position orphan nodes at the bottom
@@ -1233,7 +1266,7 @@ export const useFlowStore = defineStore('flow', () => {
    * Save the connection step after user input from modal
    * This is called after the user confirms the step details in the connection modal
    * Handles two scenarios:
-   * 1. Drag-connect: pendingConnection exists, merge nodes
+   * 1. Drag-connect: pendingConnection exists, create edge between nodes
    * 2. Button-click: no pendingConnection, just create step
    */
   async function saveConnectionStep(updatedStepData) {
@@ -1243,7 +1276,7 @@ export const useFlowStore = defineStore('flow', () => {
 
       // If there's a pending connection (drag-connect scenario), handle node/edge creation
       if (pendingConnection.value) {
-        const { source, target, nodeA, nodeB } = pendingConnection.value
+        const { source, target } = pendingConnection.value
 
         // Update the target node with the created step data
         const targetNodeIdx = nodes.value.findIndex((n) => n.id === target)
@@ -1285,68 +1318,6 @@ export const useFlowStore = defineStore('flow', () => {
         }
 
         addEdge(newEdge)
-
-        // Create combined node for the two services
-        const connectedGroup = [nodeA, nodeB]
-        const combinedNode = mergeNodeGroup(connectedGroup)
-
-        // Get all node IDs in the group
-        const nodeIdsToMerge = new Set(connectedGroup.map((n) => n.id))
-        // Find outgoing edges (from merged nodes to outside)
-        const outgoingEdges = edges.value.filter(
-          (e) => nodeIdsToMerge.has(e.source) && !nodeIdsToMerge.has(e.target),
-        )
-        // Find incoming edges (from outside to merged nodes)
-        const incomingEdges = edges.value.filter(
-          (e) => !nodeIdsToMerge.has(e.source) && nodeIdsToMerge.has(e.target),
-        )
-
-        // Calculate a position for the new combined node that doesn't overlap
-        let avgPosition = calculateAveragePosition(connectedGroup)
-        // Check for position overlap with existing nodes
-        const GRID_OFFSET = 60
-        let pos = { ...avgPosition }
-        let isOverlapping
-        do {
-          isOverlapping = nodes.value.some(
-            (n) =>
-              Math.abs(n.position.x - pos.x) < GRID_OFFSET &&
-              Math.abs(n.position.y - pos.y) < GRID_OFFSET,
-          )
-          if (isOverlapping) {
-            pos.x += GRID_OFFSET
-            pos.y += GRID_OFFSET
-          }
-        } while (isOverlapping)
-
-        // Add the new combined node
-        nodes.value.push({
-          id: combinedNode.id,
-          type: 'combinedServiceNode',
-          position: pos,
-          data: combinedNode.data,
-        })
-
-        // Replicate outgoing edges for combined node
-        outgoingEdges.forEach((edge) => {
-          addEdge({
-            id: `e_${combinedNode.id}-${edge.target}_${Date.now()}`,
-            source: combinedNode.id,
-            target: edge.target,
-            animated: edge.animated || true,
-            type: edge.type || 'default',
-          })
-        })
-        // Replicate incoming edges for combined node
-        incomingEdges.forEach((edge) => {
-          addEdge({
-            id: `e_${edge.source}-${combinedNode.id}_${Date.now()}`,
-            source: edge.source,
-            target: combinedNode.id,
-            animated: edge.animated || true,
-            type: edge.type || 'default',
-          })
-        })
       } else {
         // Button-click scenario: no pending connection, just load the updated flow
         // Reload the aggregate to show the new step
@@ -1991,6 +1962,7 @@ export const useFlowStore = defineStore('flow', () => {
     stepModalInitialData,
     loadAggregates,
     loadAggregateFlow,
+    applyConnectionOrderLayout,
     addNode,
     addNodeLocal,
     createServiceForNode,
