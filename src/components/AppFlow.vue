@@ -114,6 +114,13 @@
 
     <ServiceModal />
     <StepModal ref="stepModalRef" />
+    <StepEditModal
+      :show="store.showModal && store.modalMode === 'edit'"
+      :step-id="store.selectedNode"
+      mode="edit"
+      @update:show="(val) => { if (!val) store.clearSelected() }"
+      @saved="handleStepSaved"
+    />
     <ConnectionStepModal />
     <AggregateModal
       :show="showAggregateModal"
@@ -143,6 +150,7 @@ import LogoutButton from '@/components/LogoutButton.vue'
 import ServiceModal from './modals/ServiceModal.vue'
 import ConnectionStepModal from './modals/ConnectionStepModal.vue'
 import StepModal from './modals/StepModal.vue'
+import StepEditModal from './modals/StepEditModal.vue'
 import AggregateModal from './modals/AggregateModal.vue'
 
 // Store
@@ -412,6 +420,13 @@ function onAddServiceStep() {
 function onCreateAggregate() {
   aggregateModalMode.value = 'add'
   showAggregateModal.value = true
+}
+
+function handleStepSaved() {
+  // Reload the flow to reflect any changes
+  if (store.currentAggregateId) {
+    store.loadAggregateFlow(store.currentAggregateId)
+  }
 }
 
 function handleAggregateSaved() {

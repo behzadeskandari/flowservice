@@ -6,9 +6,6 @@ import { uniqueId } from '@/utils/modalUtils'
 import { MarkerType } from '@vue-flow/core'
 import serviceAggregatorClient from '@/utils/service-aggregator-client'
 import { notify } from '@kyvg/vue3-notification'
-import { createHttpClient } from '@/utils/httpClient'
-
-const httpClient = createHttpClient()
 
 const LOCAL_STORAGE_KEY = 'flowservice-flow'
 
@@ -1776,6 +1773,204 @@ export const useFlowStore = defineStore('flow', () => {
     }
   }
 
+  /**
+   * Add a mapping to an aggregate step (not edge-based)
+   * @param {string} aggregateStepId - The aggregate step ID
+   * @param {Object} mappingData - Mapping data
+   * @returns {Promise<Object>} Created mapping
+   */
+  async function addStepMapping(aggregateStepId, mappingData) {
+    if (!aggregateStepId) {
+      notify({
+        title: 'خطا',
+        text: 'aggregateStepId مورد نیاز است',
+        type: 'error',
+      })
+      return null
+    }
+
+    try {
+      // Find the node with this aggregateStepId
+      const node = nodes.value.find((n) => n.data?.aggregateStepId === aggregateStepId)
+
+      // Find input step ID from incoming edges
+      let inputStepId = null
+      if (node) {
+        inputStepId = edges.value
+          .filter((e) => e.target === node.id)
+          .map((e) => e.data?.aggregateStepId)
+          .find((id) => id) || null
+      }
+
+      const mapping = await serviceAggregatorClient.addAggregateStepMapping({
+        aggregateStepId: aggregateStepId,
+        inputStepId: inputStepId,
+        source: mappingData.source || 'response',
+        targetField: mappingData.targetField || '',
+        sourceField: mappingData.sourceField || null,
+        value: mappingData.value || null,
+        valueType: mappingData.valueType || 'string',
+        status: mappingData.status !== undefined ? mappingData.status : true,
+      })
+
+      // Update node data with the new mapping
+      if (node) {
+        if (!node.data.mappings) {
+          node.data.mappings = []
+        }
+        node.data.mappings.push(mapping)
+        nodes.value = [...nodes.value]
+      }
+
+      notify({
+        title: 'موفقیت',
+        text: 'Mapping ایجاد شد',
+        type: 'success',
+      })
+
+      return mapping
+    } catch (error) {
+      console.error('Failed to add step mapping:', error)
+      notify({
+        title: 'خطا',
+        text: 'خطا در ایجاد mapping',
+        type: 'error',
+      })
+      return null
+    }
+  }
+
+  /**
+   * Update a mapping for an aggregate step
+   * @param {string} aggregateStepId - The aggregate step ID
+   * @param {string} mappingId - The mapping ID
+   * @param {Object} mappingData - Updated mapping data
+   * @returns {Promise<Object>} Updated mapping
+   */
+  async function updateStepMapping(aggregateStepId, mappingId, mappingData) {
+    if (!aggregateStepId || !mappingId) {
+      notify({
+        title: 'خطا',
+        text: 'aggregateStepId و mappingId مورد نیاز است',
+        type: 'error',
+      })
+      return null
+    }
+
+    try {
+      const node = nodes.value.find((n) => n.data?.aggregateStepId === aggregateStepId)
+
+      let inputStepId = null
+      if (node) {
+        inputStepId = edges.value
+          .filter((e) => e.target === node.id)
+          .map((e) => e.data?.aggregateStepId)
+          .find((id) => id) || null
+      }
+
+      const updatedMapping = await serviceAggregatorClient.updateAggregateStepMapping({
+        id: mappingId,
+        aggregateStepId: aggregateStepId,
+        inputStepId: inputStepId,
+        source: mappingData.source || 'response',
+        targetField: mappingData.targetField || '',
+        sourceField: mappingData.sourceField || null,
+        value: mappingData.value || null,
+        valueType: mappingData.valueType || 'string',
+        status: mappingData.status !== undefined ? mappingData.status : true,
+      })
+
+      // Update node data
+      if (node && node.data.mappings) {
+        const mappingIndex = node.data.mappings.findIndex((m) => m.id === mappingId)
+        if (mappingIndex !== -1) {
+          node.data.mappings[mappingIndex] = updatedMapping
+          nodes.value = [...nodes.value]
+        }
+      }
+
+      notify({
+        title: 'موفقیت',
+        text: 'Mapping بروزرسانی شد',
+        type: 'success',
+      })
+
+      return updatedMapping
+    } catch (error) {
+      console.error('Failed to update step mapping:', error)
+      notify({
+        title: 'خطا',
+        text: 'خطا در بروزرسانی mapping',
+        type: 'error',
+      })
+      return null
+    }
+  }
+
+  /**
+   * Delete a mapping from an aggregate step
+   * @param {string} aggregateStepId - The aggregate step ID
+   * @param {string} mappingId - The mapping ID
+   * @returns {Promise<boolean>} Success status
+   */
+  async function deleteStepMapping(aggregateStepId, mappingId) {
+    if (!aggregateStepId || !mappingId) {
+      notify({
+        title: 'خطا',
+        text: 'aggregateStepId و mappingId مورد نیاز است',
+        type: 'error',
+      })
+      return false
+    }
+
+    try {
+      // Update mapping status to false (soft delete)
+      const node = nodes.value.find((n) => n.data?.aggregateStepId === aggregateStepId)
+
+      let inputStepId = null
+      if (node) {
+        inputStepId = edges.value
+          .filter((e) => e.target === node.id)
+          .map((e) => e.data?.aggregateStepId)
+          .find((id) => id) || null
+      }
+
+      await serviceAggregatorClient.updateAggregateStepMapping({
+        id: mappingId,
+        aggregateStepId: aggregateStepId,
+        inputStepId: inputStepId,
+        source: 'response',
+        targetField: '',
+        sourceField: null,
+        value: null,
+        valueType: 'string',
+        status: false,
+      })
+
+      // Remove from node data
+      if (node && node.data.mappings) {
+        node.data.mappings = node.data.mappings.filter((m) => m.id !== mappingId)
+        nodes.value = [...nodes.value]
+      }
+
+      notify({
+        title: 'موفقیت',
+        text: 'Mapping حذف شد',
+        type: 'success',
+      })
+
+      return true
+    } catch (error) {
+      console.error('Failed to delete step mapping:', error)
+      notify({
+        title: 'خطا',
+        text: 'خطا در حذف mapping',
+        type: 'error',
+      })
+      return false
+    }
+  }
+
   return {
     enableAutoSave,
     disableAutoSave,
@@ -1808,6 +2003,9 @@ export const useFlowStore = defineStore('flow', () => {
     deleteEdge,
     addMapping,
     updateMapping,
+    addStepMapping,
+    updateStepMapping,
+    deleteStepMapping,
     getNodes,
     handleConnect,
     saveConnectionStep,
