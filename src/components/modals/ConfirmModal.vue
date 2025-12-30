@@ -34,7 +34,7 @@
 </template>
 
 <script setup>
-import { defineEmits, defineProps } from 'vue'
+import {  defineProps } from 'vue'
 
 const props = defineProps({
   visible: Boolean,
