@@ -73,6 +73,8 @@ import AppFlowView from '../pages/AppFlowView.vue'
 import AppLogin from '../pages/AppLogin.vue'
 import AppNotFound from '@/pages/AppNotFound.vue'
 import ServicesPage from '@/pages/ServicesPage.vue'
+import AggregatesList from '@/pages/AggregatesList.vue'
+import AggregateFlowEditor from '@/pages/AggregateFlowEditor.vue'
 import { useAuthStore } from '@/stores/authStore'
 
 const routes = [
@@ -104,6 +106,28 @@ const routes = [
       public: false,
     },
     component: ServicesPage,
+  },
+  {
+    path: '/aggregates',
+    name: 'aggregates',
+    meta: {
+      title: 'Aggregates',
+      breadCrumb: 'Aggregates',
+      requiresAuth: true,
+      public: false,
+    },
+    component: AggregatesList,
+  },
+  {
+    path: '/aggregates/:id',
+    name: 'aggregate-editor',
+    meta: {
+      title: 'ویرایش Aggregate',
+      breadCrumb: 'ویرایش Aggregate',
+      requiresAuth: true,
+      public: false,
+    },
+    component: AggregateFlowEditor,
   },
   {
     path: '/Login',
