@@ -450,8 +450,10 @@ export const useFlowStore = defineStore('flow', () => {
    * Load a single aggregate by ID and build flow graph starting from firstStepId
    * Uses GET /api/aggregate/get-aggregate/{id} endpoint
    * Traverses steps using nextStepId, trueStepId, falseStepId
+   * @param {string} aggregateId - The aggregate ID to load
+   * @param {Record<string, {x: number, y: number}>} savedPositions - Optional saved node positions
    */
-  async function loadSingleAggregateFlow(aggregateId) {
+  async function loadSingleAggregateFlow(aggregateId, savedPositions = {}) {
     try {
       // Fetch single aggregate with full details
       const aggregate = await serviceAggregatorClient.getAggregate(aggregateId)
@@ -530,7 +532,9 @@ export const useFlowStore = defineStore('flow', () => {
           }
         }
 
-        const position = getPositionForStep(stepId)
+        // Use saved position if available (by nodeId), otherwise use default position
+        const savedPosition = savedPositions[nodeId]
+        const position = savedPosition || getPositionForStep(stepId)
         
         // Create node
         const node = {
@@ -599,8 +603,8 @@ export const useFlowStore = defineStore('flow', () => {
         if (!visitedSteps.has(step.id)) {
           console.log('Adding orphaned step:', step.id, step.stepName)
           visitedSteps.add(step.id)
-          const nodeId = `node-${step.id}`
-          stepIdToNodeIdMap.set(step.id, nodeId)
+          const orphanNodeId = `node-${step.id}`
+          stepIdToNodeIdMap.set(step.id, orphanNodeId)
 
           // Determine node type: diamond for conditional, rectangular for normal
           const hasCondition = step.condition !== null && step.condition !== undefined && `${step.condition}`.trim() !== ''
@@ -618,15 +622,17 @@ export const useFlowStore = defineStore('flow', () => {
             }
           }
 
-          const position = getPositionForStep(step.id)
+          // Use saved position if available (by nodeId), otherwise use default position
+          const savedPosition = savedPositions[orphanNodeId]
+          const position = savedPosition || getPositionForStep(step.id)
           
           // Create node
           const node = {
-            id: nodeId,
+            id: orphanNodeId,
             type: nodeType,
             position: position,
             data: {
-              id: nodeId,
+              id: orphanNodeId,
               aggregateStepId: step.id,
               aggregateId: aggregateId,
               label: nodeLabel,
@@ -750,9 +756,10 @@ export const useFlowStore = defineStore('flow', () => {
       console.log('Edges created:', flowEdges.length)
       console.log('Final nodes:', flowNodes.length, 'Final edges:', flowEdges.length)
 
-      // Update store
+      // Update store with nodes and edges
       nodes.value = flowNodes
       edges.value = flowEdges
+      // Trigger reactivity
       nodes.value = [...nodes.value]
       edges.value = [...edges.value]
 

@@ -158,7 +158,7 @@ const router = useRouter()
 const store = useFlowStore()
 const vueFlowRef = ref<any>(null)
 const stepModalRef = ref<InstanceType<typeof StepModal> | null>(null)
-const { fitView: fitViewFlow } = useVueFlow()
+const { fitView: fitViewFlow, onNodeDragStop, getNodes } = useVueFlow()
 
 const services = ref<any[]>([])
 const isLoadingServices = ref(false)
@@ -208,12 +208,34 @@ const loadServices = async () => {
 const loadAggregateFlow = async (aggregateId: string) => {
   try {
     store.currentAggregateId = aggregateId
-    await store.loadSingleAggregateFlow(aggregateId)
-    // Fit view after loading
+    
+    // Load saved positions from localStorage
+    const savedPositions = loadNodePositions(aggregateId)
+    
+    // Load the aggregate flow (with saved positions passed to store)
+    await store.loadSingleAggregateFlow(aggregateId, savedPositions)
+    
+    // After nodes are loaded, apply saved positions if they exist
     await nextTick()
-    setTimeout(() => {
-      fitView()
-    }, 300)
+    if (Object.keys(savedPositions).length > 0) {
+      // Apply saved positions to nodes using Vue Flow's node IDs
+      store.nodes.forEach(node => {
+        if (savedPositions[node.id] && node.position) {
+          node.position.x = savedPositions[node.id].x
+          node.position.y = savedPositions[node.id].y
+        }
+      })
+      // Trigger reactivity update
+      store.nodes = [...store.nodes]
+    }
+    
+    // Fit view after loading (only if no saved positions to maintain custom layout)
+    await nextTick()
+    if (Object.keys(savedPositions).length === 0) {
+      setTimeout(() => {
+        fitView()
+      }, 300)
+    }
   } catch (error) {
     console.error('Error loading aggregate flow:', error)
     notify({
@@ -295,8 +317,48 @@ const onAddStep = () => {
   }
 }
 
+// Save node positions to localStorage using Vue Flow node IDs
+const saveNodePositions = (aggregateId: string) => {
+  try {
+    const updatedPositions: Record<string, { x: number; y: number }> = {}
+    getNodes.value.forEach(node => {
+      if (node.position) {
+        // Use node.id as the key (matches Vue Flow's node ID system)
+        updatedPositions[node.id] = {
+          x: node.position.x,
+          y: node.position.y
+        }
+      }
+    })
+    localStorage.setItem(`flow-positions-${aggregateId}`, JSON.stringify(updatedPositions))
+  } catch (error) {
+    console.error('Failed to save node positions:', error)
+  }
+}
+
+// Load saved node positions from localStorage
+const loadNodePositions = (aggregateId: string): Record<string, { x: number; y: number }> => {
+  try {
+    const saved = localStorage.getItem(`flow-positions-${aggregateId}`)
+    if (saved) {
+      return JSON.parse(saved)
+    }
+  } catch (error) {
+    console.error('Failed to load node positions:', error)
+  }
+  return {}
+}
+
+// Listen to node drag stop event to save positions
+onNodeDragStop(() => {
+  const aggregateId = route.params.id as string
+  if (aggregateId) {
+    saveNodePositions(aggregateId)
+  }
+})
+
 const onNodesChange = (changes: any[]) => {
-  // Handle node changes if needed
+  // Handle node changes if needed (for other operations)
 }
 
 const onEdgesChange = (changes: any[]) => {
@@ -336,7 +398,11 @@ const handleStepSaved = async () => {
 // Watch for step modal open signal from store
 watch(() => store.stepModalOpen, (newVal) => {
   if (newVal && stepModalRef.value) {
-    const initialData = structuredClone(store.stepModalInitialData || {})
+    // Clone initial data - use JSON method because structuredClone fails with some objects
+    // eslint-disable-next-line prefer-structured-clone
+    const initialData = store.stepModalInitialData 
+      ? JSON.parse(JSON.stringify(store.stepModalInitialData))
+      : {}
     store.stepModalOpen = false
     stepModalRef.value.openModal('add', initialData)
   }
