@@ -73,7 +73,7 @@ import { useAuthStore } from '@/stores/authStore'
 import { ref } from 'vue'
 import { notify } from '@kyvg/vue3-notification'
 import { useRouter } from 'vue-router'
-import { faExclamationCircle } from '@fortawesome/free-solid-svg-icons'
+import { faExclamationCircle} from '@fortawesome/free-solid-svg-icons'
 const router = useRouter()
 const username = ref('')
 const password = ref('')
@@ -100,7 +100,7 @@ async function hanldeLogin() {
       })
       // Navigate after showing the success message
       setTimeout(() => {
-        router.push('/home')
+        router.push('/aggregates')
       }, 1000)
     } else {
       errorMessage.value = 'نام کاربری یا رمز عبور اشتباه است.'

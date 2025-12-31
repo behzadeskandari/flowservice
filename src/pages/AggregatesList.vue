@@ -60,6 +60,10 @@
               </span>
             </td>
             <td class="actions-cell" @click.stop>
+               <button class="btn-icon btn-view" @click.stop="navigateToEditor(aggregate.id)" title="مشاهده Flow">
+                <FontAwesomeIcon :icon="['fa','play']" />
+                <font-awesome-icon :icon="['fas', 'eye']" style="color: red;" />
+               </button>
               <button class="btn-icon btn-edit" @click.stop="openEditModal(aggregate)" title="ویرایش">
                 <font-awesome-icon :icon="['fas', 'pen-to-square']" style="color: orange;" class="pen" />
               </button>
@@ -370,6 +374,25 @@ onMounted(() => {
 
 .pen {
   color: orange !important;
+  transition: color 0.3s ease;
+}
+
+.btn-view {
+  background: #e7f3ff;
+  color: orange !important;
+}
+
+.btn-view:hover {
+  background: orange;
+  color: white;
+}
+
+.btn-view:hover .view-icon {
+  color: black !important;
+}
+
+.view-icon {
+  color: black !important;
   transition: color 0.3s ease;
 }
 

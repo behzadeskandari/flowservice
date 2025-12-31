@@ -23,11 +23,31 @@
 
     <!-- Main Content Area -->
     <div class="editor-container">
+      <!-- Mobile Sidebar Toggle Button -->
+      <button 
+        v-if="showMobileSidebarToggle"
+        class="sidebar-toggle-btn"
+        @click="isSidebarOpen = !isSidebarOpen"
+        :aria-label="isSidebarOpen ? 'بستن منو' : 'باز کردن منو'"
+      >
+        <font-awesome-icon :icon="faBars" />
+      </button>
+
+      <!-- Sidebar Overlay (Mobile only) -->
+      <div 
+        v-if="isSidebarOpen && showMobileSidebarToggle"
+        class="sidebar-overlay"
+        @click="isSidebarOpen = false"
+      ></div>
+
       <!-- Left Sidebar: Available Services -->
-      <div class="sidebar">
+      <div class="sidebar" :class="{ 'sidebar-open': isSidebarOpen, 'sidebar-hidden': !isSidebarOpen && showMobileSidebarToggle }">
         <div class="sidebar-header">
           <h3>سرویس‌های موجود</h3>
-          <p class="sidebar-subtitle">برای اضافه کردن، سرویس را به Canvas بکشید</p>
+          <p class="sidebar-subtitle">
+            <span class="desktop-hint">برای اضافه کردن، سرویس را به Canvas بکشید</span>
+            <span class="mobile-hint">برای اضافه کردن، روی سرویس دوبار کلیک کنید</span>
+          </p>
         </div>
         <div v-if="isLoadingServices" class="loading-services">
           <div class="spinner-small"></div>
@@ -44,6 +64,7 @@
             :draggable="true"
             @dragstart="onDragStart($event, service)"
             @dragend="onDragEnd"
+            @dblclick="onServiceDoubleClick(service)"
           >
             <div class="service-card-header">
               <strong>{{ service.name }}</strong>
@@ -115,13 +136,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch, markRaw, nextTick } from 'vue'
+import { ref, onMounted, onBeforeUnmount, watch, markRaw, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { VueFlow, useVueFlow } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
 import { Controls, ControlButton } from '@vue-flow/controls'
 import { MiniMap } from '@vue-flow/minimap'
-import { faArrowLeft, faPlus, faExpand, faSortAmountDown } from '@fortawesome/free-solid-svg-icons'
+import { faArrowLeft, faPlus, faExpand, faSortAmountDown, faBars } from '@fortawesome/free-solid-svg-icons'
 import { notify } from '@kyvg/vue3-notification'
 import { useFlowStore } from '@/stores/flowStore'
 import serviceAggregatorClient from '@/utils/service-aggregator-client'
@@ -142,6 +163,18 @@ const { fitView: fitViewFlow } = useVueFlow()
 const services = ref<any[]>([])
 const isLoadingServices = ref(false)
 const draggedService = ref<any>(null)
+const isSidebarOpen = ref(true) // Default to open
+const showMobileSidebarToggle = ref(false)
+
+// Check screen size on mount and resize
+const checkScreenSize = () => {
+  const isMobile = window.innerWidth < 1024
+  showMobileSidebarToggle.value = isMobile
+  // On mobile, start with sidebar closed; on desktop, always open
+  if (!isMobile) {
+    isSidebarOpen.value = true // Always show on desktop
+  }
+}
 
 // Register node types
 const nodeTypes = {
@@ -175,7 +208,7 @@ const loadServices = async () => {
 const loadAggregateFlow = async (aggregateId: string) => {
   try {
     store.currentAggregateId = aggregateId
-    await store.loadAggregateFlow(aggregateId)
+    await store.loadSingleAggregateFlow(aggregateId)
     // Fit view after loading
     await nextTick()
     setTimeout(() => {
@@ -241,6 +274,18 @@ const onDrop = async (event: DragEvent) => {
   draggedService.value = null
 }
 
+const onServiceDoubleClick = (service: any) => {
+  // Open StepModal with pre-filled service (useful for mobile where drag-drop is difficult)
+  const aggregateId = route.params.id as string
+  if (stepModalRef.value) {
+    stepModalRef.value.openModal('add', {
+      aggregateId: aggregateId,
+      serviceId: service.id,
+      stepName: service.name || 'New Step',
+    })
+  }
+}
+
 const onAddStep = () => {
   const aggregateId = route.params.id as string
   if (stepModalRef.value) {
@@ -298,6 +343,9 @@ watch(() => store.stepModalOpen, (newVal) => {
 })
 
 onMounted(async () => {
+  checkScreenSize()
+  window.addEventListener('resize', checkScreenSize)
+  
   const aggregateId = route.params.id as string
   if (!aggregateId) {
     notify({
@@ -313,6 +361,11 @@ onMounted(async () => {
     loadServices(),
     loadAggregateFlow(aggregateId),
   ])
+})
+
+// Cleanup resize listener
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', checkScreenSize)
 })
 </script>
 
@@ -373,6 +426,24 @@ onMounted(async () => {
   color: #7f8c8d;
 }
 
+.desktop-hint {
+  display: inline;
+}
+
+.mobile-hint {
+  display: none;
+}
+
+@media (max-width: 1024px) {
+  .desktop-hint {
+    display: none;
+  }
+  
+  .mobile-hint {
+    display: inline;
+  }
+}
+
 .loading-services,
 .empty-services {
   padding: 40px 20px;
@@ -409,10 +480,24 @@ onMounted(async () => {
   margin-bottom: 10px;
   cursor: grab;
   transition: all 0.2s ease;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .service-card:active {
   cursor: grabbing;
+}
+
+/* Show visual feedback on mobile for double-click */
+@media (max-width: 1024px) {
+  .service-card {
+    cursor: pointer;
+  }
+  
+  .service-card:active {
+    background: #e0e7ff;
+    transform: scale(0.98);
+  }
 }
 
 .service-card:hover {
@@ -506,19 +591,175 @@ onMounted(async () => {
   height: 100%;
 }
 
-/* Responsive */
-@media (max-width: 768px) {
+/* Sidebar Toggle Button (Mobile) */
+.sidebar-toggle-btn {
+  position: fixed;
+  top: 70px;
+  left: 10px;
+  z-index: 1001;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  background: white;
+  color: #2c3e50;
+  cursor: pointer;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.sidebar-toggle-btn:hover {
+  background: #f8f9fa;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Sidebar Overlay (Mobile) */
+.sidebar-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+  display: none;
+}
+
+/* Responsive Styles */
+/* Tablet */
+@media (max-width: 1024px) {
   .sidebar {
-    width: 250px;
+    width: 280px;
+  }
+
+  .sidebar-header {
+    padding: 16px;
+  }
+
+  .sidebar-header h3 {
+    font-size: 16px;
+  }
+
+  .service-card {
+    padding: 10px;
+  }
+
+  .service-card-header strong {
+    font-size: 13px;
+  }
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .sidebar-toggle-btn {
+    display: flex;
+  }
+
+  .sidebar-overlay {
+    display: block;
+  }
+
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    width: 280px;
+    max-width: 85vw;
+    z-index: 1000;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+  }
+
+  .sidebar.sidebar-open {
+    transform: translateX(0);
+  }
+
+  .sidebar.sidebar-hidden {
+    transform: translateX(-100%);
   }
 
   .toolbar {
     flex-wrap: wrap;
     padding: 8px 10px;
+    gap: 8px;
   }
 
   .toolbar-text {
     display: none;
+  }
+
+  .toolbar button,
+  .toolbar a {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+
+  .sidebar-header {
+    padding: 16px;
+  }
+
+  .sidebar-header h3 {
+    font-size: 16px;
+    margin-bottom: 6px;
+  }
+
+  .sidebar-subtitle {
+    font-size: 11px;
+  }
+
+  .service-card {
+    padding: 10px;
+    margin-bottom: 8px;
+  }
+
+  .service-card-header strong {
+    font-size: 13px;
+  }
+
+  .method-badge,
+  .type-badge {
+    font-size: 10px;
+    padding: 3px 6px;
+  }
+
+  .service-url {
+    font-size: 10px;
+  }
+
+  .canvas-container {
+    width: 100%;
+  }
+}
+
+/* Small Mobile */
+@media (max-width: 480px) {
+  .sidebar {
+    width: 100%;
+    max-width: 100vw;
+  }
+
+  .sidebar-toggle-btn {
+    width: 36px;
+    height: 36px;
+    top: 60px;
+    left: 8px;
+  }
+
+  .toolbar {
+    padding: 6px 8px;
+  }
+
+  .toolbar button,
+  .toolbar a {
+    padding: 5px 8px;
+    font-size: 11px;
+    min-width: 32px;
+    height: 32px;
   }
 }
 </style>

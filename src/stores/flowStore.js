@@ -447,6 +447,330 @@ export const useFlowStore = defineStore('flow', () => {
   }
 
   /**
+   * Load a single aggregate by ID and build flow graph starting from firstStepId
+   * Uses GET /api/aggregate/get-aggregate/{id} endpoint
+   * Traverses steps using nextStepId, trueStepId, falseStepId
+   */
+  async function loadSingleAggregateFlow(aggregateId) {
+    try {
+      // Fetch single aggregate with full details
+      const aggregate = await serviceAggregatorClient.getAggregate(aggregateId)
+      
+      if (!aggregate) {
+        console.warn(`Aggregate ${aggregateId} not found`)
+        notify({
+          title: 'خطا',
+          text: `Aggregate با ID ${aggregateId} یافت نشد`,
+          type: 'error',
+        })
+        return
+      }
+
+      currentAggregateId.value = aggregateId
+      const flowNodes = []
+      const flowEdges = []
+      const stepIdToNodeIdMap = new Map()
+      const steps = aggregate.steps || []
+      
+      // Create a map of step IDs to step objects for quick lookup
+      const stepMap = new Map()
+      steps.forEach(step => {
+        stepMap.set(step.id, step)
+      })
+
+      // Build nodes by traversing from firstStepId
+      const visitedSteps = new Set()
+      let xPos = 100
+      let yPos = 100
+      const nodePositions = new Map()
+
+      // Helper function to get position for a node (simple horizontal layout)
+      function getPositionForStep(stepId) {
+        if (nodePositions.has(stepId)) {
+          return nodePositions.get(stepId)
+        }
+        const pos = { x: xPos, y: yPos }
+        nodePositions.set(stepId, pos)
+        xPos += 300
+        if (xPos > 1500) {
+          xPos = 100
+          yPos += 220
+        }
+        return pos
+      }
+
+      // Traverse from firstStepId
+      function traverseStep(stepId, depth = 0) {
+        if (!stepId || visitedSteps.has(stepId)) {
+          return
+        }
+
+        const step = stepMap.get(stepId)
+        if (!step) {
+          return
+        }
+
+        visitedSteps.add(stepId)
+        const nodeId = `node-${step.id}`
+        stepIdToNodeIdMap.set(step.id, nodeId)
+
+        // Determine node type: diamond for conditional, rectangular for normal
+        const hasCondition = step.condition !== null && step.condition !== undefined && `${step.condition}`.trim() !== ''
+        const nodeType = hasCondition ? 'decisionNode' : 'serviceNode'
+
+        // Get service info if available
+        const service = step.service || {}
+        
+        // Build node label: stepName + service.name + (method)
+        let nodeLabel = step.stepName || 'Step'
+        if (service.name) {
+          nodeLabel += ` - ${service.name}`
+          if (service.method) {
+            nodeLabel += ` (${service.method})`
+          }
+        }
+
+        const position = getPositionForStep(stepId)
+        
+        // Create node
+        const node = {
+          id: nodeId,
+          type: nodeType,
+          position: position,
+          data: {
+            id: nodeId,
+            aggregateStepId: step.id,
+            aggregateId: aggregateId,
+            label: nodeLabel,
+            stepName: step.stepName || '',
+            condition: step.condition || '',
+            conditionParameters: step.conditionParameters || '',
+            serviceId: service.id || null,
+            serviceName: service.name || '',
+            url: service.url || '',
+            method: service.method || 'GET',
+            type: service.type || 'REST',
+            status: service.status !== undefined ? service.status : step.status !== undefined ? step.status : true,
+            mappings: step.mappings || [],
+            fields: service.fields ? [...service.fields] : [],
+          },
+        }
+
+        flowNodes.push(node)
+
+        // Traverse connections: nextStepId, trueStepId, falseStepId
+        if (step.nextStepId) {
+          traverseStep(step.nextStepId, depth + 1)
+        }
+        if (step.trueStepId) {
+          traverseStep(step.trueStepId, depth + 1)
+        }
+        if (step.falseStepId) {
+          traverseStep(step.falseStepId, depth + 1)
+        }
+      }
+
+      // Start traversal from firstStepId if available, otherwise from all entry steps
+      if (aggregate.firstStepId) {
+        console.log('Starting traversal from firstStepId:', aggregate.firstStepId)
+        traverseStep(aggregate.firstStepId)
+      } else {
+        console.log('No firstStepId, finding entry steps')
+        // Fallback: find entry steps (steps that are not targets of any other step)
+        const allTargets = new Set()
+        steps.forEach(step => {
+          if (step.nextStepId) allTargets.add(step.nextStepId)
+          if (step.trueStepId) allTargets.add(step.trueStepId)
+          if (step.falseStepId) allTargets.add(step.falseStepId)
+        })
+        
+        const entrySteps = steps.filter(s => !allTargets.has(s.id))
+        console.log('Entry steps found:', entrySteps.length)
+        entrySteps.forEach(entryStep => {
+          if (!visitedSteps.has(entryStep.id)) {
+            traverseStep(entryStep.id)
+          }
+        })
+      }
+
+      // Create nodes for any steps that weren't visited during traversal
+      // This ensures all steps are shown, even if they're not connected to the main flow
+      steps.forEach(step => {
+        if (!visitedSteps.has(step.id)) {
+          console.log('Adding orphaned step:', step.id, step.stepName)
+          visitedSteps.add(step.id)
+          const nodeId = `node-${step.id}`
+          stepIdToNodeIdMap.set(step.id, nodeId)
+
+          // Determine node type: diamond for conditional, rectangular for normal
+          const hasCondition = step.condition !== null && step.condition !== undefined && `${step.condition}`.trim() !== ''
+          const nodeType = hasCondition ? 'decisionNode' : 'serviceNode'
+
+          // Get service info if available
+          const service = step.service || {}
+          
+          // Build node label: stepName + service.name + (method)
+          let nodeLabel = step.stepName || 'Step'
+          if (service.name) {
+            nodeLabel += ` - ${service.name}`
+            if (service.method) {
+              nodeLabel += ` (${service.method})`
+            }
+          }
+
+          const position = getPositionForStep(step.id)
+          
+          // Create node
+          const node = {
+            id: nodeId,
+            type: nodeType,
+            position: position,
+            data: {
+              id: nodeId,
+              aggregateStepId: step.id,
+              aggregateId: aggregateId,
+              label: nodeLabel,
+              stepName: step.stepName || '',
+              condition: step.condition || '',
+              conditionParameters: step.conditionParameters || '',
+              serviceId: service.id || null,
+              serviceName: service.name || '',
+              url: service.url || '',
+              method: service.method || 'GET',
+              type: service.type || 'REST',
+              status: service.status !== undefined ? service.status : step.status !== undefined ? step.status : true,
+              mappings: step.mappings || [],
+              fields: service.fields ? [...service.fields] : [],
+            },
+          }
+
+          flowNodes.push(node)
+        }
+      })
+
+      console.log('Nodes created:', flowNodes.length, 'Total steps:', steps.length)
+      console.log('Visited steps:', Array.from(visitedSteps))
+      console.log('Aggregate data:', { id: aggregate.id, name: aggregate.name, firstStepId: aggregate.firstStepId, stepsCount: steps.length })
+
+      // Create edges only for steps that were visited (have nodes)
+      steps.forEach(step => {
+        const sourceNodeId = stepIdToNodeIdMap.get(step.id)
+        if (!sourceNodeId) return // Skip if this step wasn't traversed
+
+        const stepMappings = step.mappings || []
+
+        // Next edge (default flow)
+        if (step.nextStepId) {
+          const targetNodeId = stepIdToNodeIdMap.get(step.nextStepId)
+          if (targetNodeId) {
+            flowEdges.push({
+              id: `edge-${step.id}-next-${step.nextStepId}`,
+              source: sourceNodeId,
+              target: targetNodeId,
+              animated: true,
+              type: 'default',
+              markerEnd: {
+                type: MarkerType.ArrowClosed,
+                width: 20,
+                height: 20,
+                color: '#FF0072',
+              },
+              label: 'Next',
+              style: {},
+              data: {
+                aggregateStepId: step.id,
+                aggregateId: aggregateId,
+                condition: step.condition || '',
+                conditionParameters: step.conditionParameters || '',
+                mappings: stepMappings,
+              },
+            })
+          }
+        }
+
+        // True edge (green)
+        if (step.trueStepId) {
+          const targetNodeId = stepIdToNodeIdMap.get(step.trueStepId)
+          if (targetNodeId) {
+            flowEdges.push({
+              id: `edge-${step.id}-true-${step.trueStepId}`,
+              source: sourceNodeId,
+              target: targetNodeId,
+              animated: true,
+              type: 'default',
+              markerEnd: {
+                type: MarkerType.ArrowClosed,
+                width: 20,
+                height: 20,
+                color: '#10B981',
+              },
+              label: 'True',
+              style: { stroke: '#10B981' },
+              data: {
+                aggregateStepId: step.id,
+                aggregateId: aggregateId,
+                condition: step.condition || '',
+                conditionParameters: step.conditionParameters || '',
+                mappings: [],
+              },
+            })
+          }
+        }
+
+        // False edge (red)
+        if (step.falseStepId) {
+          const targetNodeId = stepIdToNodeIdMap.get(step.falseStepId)
+          if (targetNodeId) {
+            flowEdges.push({
+              id: `edge-${step.id}-false-${step.falseStepId}`,
+              source: sourceNodeId,
+              target: targetNodeId,
+              animated: true,
+              type: 'default',
+              style: { stroke: '#EF4444', strokeDasharray: '6 4' },
+              markerEnd: {
+                type: MarkerType.ArrowClosed,
+                width: 20,
+                height: 20,
+                color: '#EF4444',
+              },
+              label: 'False',
+              data: {
+                aggregateStepId: step.id,
+                aggregateId: aggregateId,
+                condition: step.condition || '',
+                conditionParameters: step.conditionParameters || '',
+                mappings: [],
+              },
+            })
+          }
+        }
+      })
+
+      console.log('Edges created:', flowEdges.length)
+      console.log('Final nodes:', flowNodes.length, 'Final edges:', flowEdges.length)
+
+      // Update store
+      nodes.value = flowNodes
+      edges.value = flowEdges
+      nodes.value = [...nodes.value]
+      edges.value = [...edges.value]
+
+      console.log('Store updated - nodes:', nodes.value.length, 'edges:', edges.value.length)
+
+      // Skip layout for single aggregate flow - nodes are already positioned
+      // applyConnectionOrderLayout() expects aggregate nodes which we don't create here
+    } catch (error) {
+      console.error('Failed to load single aggregate flow:', error)
+      notify({
+        title: 'خطا',
+        text: 'خطا در بارگذاری flow',
+        type: 'error',
+      })
+    }
+  }
+
+  /**
    * Apply hierarchical level-based layout: position nodes by depth in the graph
    * Nodes flow from top to bottom, with nodes at the same level arranged horizontally
    */
@@ -1962,6 +2286,7 @@ export const useFlowStore = defineStore('flow', () => {
     stepModalInitialData,
     loadAggregates,
     loadAggregateFlow,
+    loadSingleAggregateFlow,
     applyConnectionOrderLayout,
     addNode,
     addNodeLocal,

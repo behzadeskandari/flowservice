@@ -4,7 +4,12 @@ const httpClient = createHttpClient()
 
 class ServiceAggregatorClient {
   async getAggregates() {
-    const response = await httpClient.get('/aggregate')
+    const response = await httpClient.get('/aggregate/get-aggregates')
+    return response.data
+  }
+
+  async getAggregate(id) {
+    const response = await httpClient.get(`/aggregate/get-aggregate/${id}`)
     return response.data
   }
 

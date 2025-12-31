@@ -82,7 +82,7 @@ const routes = [
     path: '/',
     redirect: (to) => {
       const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true'
-      return isAuthenticated ? '/home' : '/Login'
+      return isAuthenticated ? '/aggregates' : '/Login'
     }
   },
   {
@@ -166,7 +166,7 @@ router.beforeEach((to, from, next) => {
 
   // Redirect to home if user is authenticated and tries to access public route (like login)
   if (isAuthenticated && isPublicRoute) {
-    return next('/home')
+    return next('/aggregates')
   }
 
   // Redirect to login if route requires authentication and user is not authenticated
