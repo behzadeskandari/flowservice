@@ -591,6 +591,9 @@ const onSave = async () => {
       if (node && node.data.aggregateStepId) {
         payload.id = node.data.aggregateStepId
         payload.status = true
+        // Include current node position when updating
+        payload.positionX = node.position?.x ?? 100
+        payload.positionY = node.position?.y ?? 100
         await serviceAggregatorClient.updateAggregateStep(payload)
 
         // Update node in store

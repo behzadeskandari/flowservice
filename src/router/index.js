@@ -74,7 +74,7 @@ import AppLogin from '../pages/AppLogin.vue'
 import AppNotFound from '@/pages/AppNotFound.vue'
 import ServicesPage from '@/pages/ServicesPage.vue'
 import AggregatesList from '@/pages/AggregatesList.vue'
-import AggregateFlowEditor from '@/pages/AggregateFlowEditor.vue'
+import AppFlow from '@/components/AppFlow.vue'
 import { useAuthStore } from '@/stores/authStore'
 
 const routes = [
@@ -127,7 +127,7 @@ const routes = [
       requiresAuth: true,
       public: false,
     },
-    component: AggregateFlowEditor,
+    component: AppFlow,
   },
   {
     path: '/Login',

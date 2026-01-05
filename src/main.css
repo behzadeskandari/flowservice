@@ -9,6 +9,19 @@
   --icon-color: black;
   --background-color: white;
   --text-color: black;
+  --scrollbar-color: orange; /* red */
+}
+::-webkit-scrollbar {
+
+  -webkit-appearance: none;
+  width: 10px;
+  background-color: lightgrey;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb {
+  border-radius: 3px;
+  background-color: var(--scrollbar-color);
+  -webkit-box-shadow: 0 0 1px rgba(255, 255, 255, .5);
 }
 html,
 body,

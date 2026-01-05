@@ -267,7 +267,7 @@ const onDragOver = (event: DragEvent) => {
 
 const onDrop = async (event: DragEvent) => {
   event.preventDefault()
-  
+
   if (!draggedService.value) {
     // Try to get from dataTransfer
     try {
@@ -283,13 +283,39 @@ const onDrop = async (event: DragEvent) => {
 
   if (!draggedService.value) return
 
-  // Open StepModal with pre-filled service
   const aggregateId = route.params.id as string
+
+  // Get drop position from event
+  const rect = (event.target as HTMLElement)?.getBoundingClientRect()
+  const position = vueFlowRef.value?.$el ? vueFlowRef.value.$el.getBoundingClientRect() : { left: 0, top: 0 }
+  const dropPosition = {
+    x: event.clientX - position.left,
+    y: event.clientY - position.top
+  }
+
+  // Add node locally first (so it appears immediately on canvas)
+  const nodeData = {
+    position: dropPosition,
+    label: draggedService.value.name || 'New Service',
+    serviceName: draggedService.value.name || '',
+    url: draggedService.value.url || '',
+    method: draggedService.value.method || 'GET',
+    type: draggedService.value.type || 'REST',
+    serviceId: draggedService.value.id,
+    aggregateId: aggregateId,
+    status: draggedService.value.status !== undefined ? draggedService.value.status : true,
+    fields: draggedService.value.fields || [],
+  }
+
+  const newNode = await store.addNodeLocal(nodeData)
+
+  // Open StepModal with pre-filled service and the new node ID
   if (stepModalRef.value) {
     stepModalRef.value.openModal('add', {
       aggregateId: aggregateId,
       serviceId: draggedService.value.id,
       stepName: draggedService.value.name || 'New Step',
+      nodeId: newNode.id, // Pass the node ID so the modal can update it
     })
   }
 
@@ -390,9 +416,12 @@ const applyLayout = () => {
 }
 
 const handleStepSaved = async () => {
-  const aggregateId = route.params.id as string
-  // Reload the flow to show the new step
-  await loadAggregateFlow(aggregateId)
+  // No need to reload the entire flow since we add nodes locally
+  // Just refresh the services list to ensure it's up to date
+  await loadServices()
+
+  // The node should already be on the canvas from the local add
+  // and the modal should have updated its data via the backend
 }
 
 // Watch for step modal open signal from store

@@ -184,6 +184,9 @@ const stepData = ref({
   falseStepId: null,
   condition: '',
   conditionParameters: '',
+  positionX: null,
+  positionY: null,
+  nodeId: null, // For updating existing local node
 })
 
 const resetForm = () => {
@@ -196,6 +199,9 @@ const resetForm = () => {
     falseStepId: null,
     condition: '',
     conditionParameters: '',
+    positionX: null,
+    positionY: null,
+    nodeId: null,
   }
 }
 
@@ -276,9 +282,36 @@ async function onSave() {
       falseStepId: stepData.value.falseStepId || null,
       condition: stepData.value.condition || '',
       conditionParameters: stepData.value.conditionParameters || '',
+      positionX: stepData.value.positionX ?? 100,
+      positionY: stepData.value.positionY ?? 100,
     }
 
-    await store.saveConnectionStep(payload)
+    // If we have a nodeId, this means we added a local node and need to update it with backend data
+    if (stepData.value.nodeId) {
+      const stepResult = await serviceAggregatorClient.addAggregateStep(payload)
+
+      // Update the local node with the backend step data
+      const nodeIndex = store.nodes.findIndex((n) => n.id === stepData.value.nodeId)
+      if (nodeIndex !== -1) {
+        store.nodes[nodeIndex] = {
+          ...store.nodes[nodeIndex],
+          data: {
+            ...store.nodes[nodeIndex].data,
+            aggregateStepId: stepResult.id,
+            stepName: stepResult.stepName,
+            serviceId: stepResult.serviceId,
+            condition: stepResult.condition || '',
+            conditionParameters: stepResult.conditionParameters || '',
+          },
+        }
+        // Trigger reactivity
+        store.nodes = [...store.nodes]
+      }
+    } else {
+      // Normal case: use the store's saveConnectionStep
+      await store.saveConnectionStep(payload)
+    }
+
     notify({
       title: 'موفق',
       text: 'مرحله با موفقیت ذخیره شد',

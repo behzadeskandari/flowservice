@@ -450,14 +450,14 @@ export const useFlowStore = defineStore('flow', () => {
    * Load a single aggregate by ID and build flow graph starting from firstStepId
    * Uses GET /api/aggregate/get-aggregate/{id} endpoint
    * Traverses steps using nextStepId, trueStepId, falseStepId
+   * Positions are loaded from backend (step.positionX, step.positionY)
    * @param {string} aggregateId - The aggregate ID to load
-   * @param {Record<string, {x: number, y: number}>} savedPositions - Optional saved node positions
    */
-  async function loadSingleAggregateFlow(aggregateId, savedPositions = {}) {
+  async function loadSingleAggregateFlow(aggregateId) {
     try {
       // Fetch single aggregate with full details
       const aggregate = await serviceAggregatorClient.getAggregate(aggregateId)
-      
+
       if (!aggregate) {
         console.warn(`Aggregate ${aggregateId} not found`)
         notify({
@@ -473,7 +473,7 @@ export const useFlowStore = defineStore('flow', () => {
       const flowEdges = []
       const stepIdToNodeIdMap = new Map()
       const steps = aggregate.steps || []
-      
+
       // Create a map of step IDs to step objects for quick lookup
       const stepMap = new Map()
       steps.forEach(step => {
@@ -522,7 +522,9 @@ export const useFlowStore = defineStore('flow', () => {
 
         // Get service info if available
         const service = step.service || {}
-        
+        // Use step.serviceId if available, otherwise fall back to service.id
+        const serviceId = step.serviceId || service.id
+
         // Build node label: stepName + service.name + (method)
         let nodeLabel = step.stepName || 'Step'
         if (service.name) {
@@ -532,10 +534,11 @@ export const useFlowStore = defineStore('flow', () => {
           }
         }
 
-        // Use saved position if available (by nodeId), otherwise use default position
-        const savedPosition = savedPositions[nodeId]
-        const position = savedPosition || getPositionForStep(stepId)
-        
+        // Use position from backend (step.positionX, step.positionY), otherwise use default position
+        const position = step.positionX !== null && step.positionX !== undefined && step.positionY !== null && step.positionY !== undefined
+          ? { x: step.positionX, y: step.positionY }
+          : getPositionForStep(stepId)
+
         // Create node
         const node = {
           id: nodeId,
@@ -549,7 +552,7 @@ export const useFlowStore = defineStore('flow', () => {
             stepName: step.stepName || '',
             condition: step.condition || '',
             conditionParameters: step.conditionParameters || '',
-            serviceId: service.id || null,
+            serviceId: serviceId,
             serviceName: service.name || '',
             url: service.url || '',
             method: service.method || 'GET',
@@ -557,6 +560,9 @@ export const useFlowStore = defineStore('flow', () => {
             status: service.status !== undefined ? service.status : step.status !== undefined ? step.status : true,
             mappings: step.mappings || [],
             fields: service.fields ? [...service.fields] : [],
+            nextStepId: step.nextStepId || null,
+            trueStepId: step.trueStepId || null,
+            falseStepId: step.falseStepId || null,
           },
         }
 
@@ -587,7 +593,7 @@ export const useFlowStore = defineStore('flow', () => {
           if (step.trueStepId) allTargets.add(step.trueStepId)
           if (step.falseStepId) allTargets.add(step.falseStepId)
         })
-        
+
         const entrySteps = steps.filter(s => !allTargets.has(s.id))
         console.log('Entry steps found:', entrySteps.length)
         entrySteps.forEach(entryStep => {
@@ -612,7 +618,9 @@ export const useFlowStore = defineStore('flow', () => {
 
           // Get service info if available
           const service = step.service || {}
-          
+          // Use step.serviceId if available, otherwise fall back to service.id
+          const serviceId = step.serviceId || service.id || null
+
           // Build node label: stepName + service.name + (method)
           let nodeLabel = step.stepName || 'Step'
           if (service.name) {
@@ -622,10 +630,11 @@ export const useFlowStore = defineStore('flow', () => {
             }
           }
 
-          // Use saved position if available (by nodeId), otherwise use default position
-          const savedPosition = savedPositions[orphanNodeId]
-          const position = savedPosition || getPositionForStep(step.id)
-          
+          // Use position from backend (step.positionX, step.positionY), otherwise use default position
+          const position = step.positionX !== null && step.positionX !== undefined && step.positionY !== null && step.positionY !== undefined
+            ? { x: step.positionX, y: step.positionY }
+            : getPositionForStep(step.id)
+
           // Create node
           const node = {
             id: orphanNodeId,
@@ -639,7 +648,7 @@ export const useFlowStore = defineStore('flow', () => {
               stepName: step.stepName || '',
               condition: step.condition || '',
               conditionParameters: step.conditionParameters || '',
-              serviceId: service.id || null,
+              serviceId: serviceId,
               serviceName: service.name || '',
               url: service.url || '',
               method: service.method || 'GET',
@@ -647,6 +656,9 @@ export const useFlowStore = defineStore('flow', () => {
               status: service.status !== undefined ? service.status : step.status !== undefined ? step.status : true,
               mappings: step.mappings || [],
               fields: service.fields ? [...service.fields] : [],
+              nextStepId: step.nextStepId || null,
+              trueStepId: step.trueStepId || null,
+              falseStepId: step.falseStepId || null,
             },
           }
 
@@ -1602,55 +1614,149 @@ export const useFlowStore = defineStore('flow', () => {
    */
   async function saveConnectionStep(updatedStepData) {
     try {
-      // Call backend API to create the aggregate step
-      const createdStep = await serviceAggregatorClient.addAggregateStep(updatedStepData)
+      let stepResult
 
       // If there's a pending connection (drag-connect scenario), handle node/edge creation
       if (pendingConnection.value) {
-        const { source, target } = pendingConnection.value
+        const { source, target, nodeA, nodeB } = pendingConnection.value
 
-        // Update the target node with the created step data
+        // Find source and target nodes
+        const sourceNodeIdx = nodes.value.findIndex((n) => n.id === source)
         const targetNodeIdx = nodes.value.findIndex((n) => n.id === target)
-        if (targetNodeIdx !== -1) {
-          nodes.value[targetNodeIdx] = {
-            ...nodes.value[targetNodeIdx],
+
+        const sourceStepId = sourceNodeIdx !== -1 ? nodes.value[sourceNodeIdx].data?.aggregateStepId : null
+        const targetStepId = targetNodeIdx !== -1 ? nodes.value[targetNodeIdx].data?.aggregateStepId : null
+
+        // If target node already has a step, update the target step with the new data
+        if (targetStepId) {
+          stepResult = await serviceAggregatorClient.updateAggregateStep({
+            id: targetStepId,
+            stepName: updatedStepData.stepName || nodeB.data.stepName || nodeB.data.serviceName || 'Step',
+            aggregateId: updatedStepData.aggregateId || currentAggregateId.value,
+            serviceId: updatedStepData.serviceId || nodeB.data.serviceId || null,
+            nextStepId: updatedStepData.nextStepId || null,
+            trueStepId: updatedStepData.trueStepId || null,
+            falseStepId: updatedStepData.falseStepId || null,
+            condition: updatedStepData.condition || '',
+            conditionParameters: updatedStepData.conditionParameters || '',
+            status: updatedStepData.status !== undefined ? updatedStepData.status : true,
+          })
+
+          // Update the target node with the updated step data
+          if (targetNodeIdx !== -1) {
+            const targetNodeId = nodes.value[targetNodeIdx].id
+            updateNode(targetNodeId, {
+              data: {
+                stepName: stepResult.stepName,
+                serviceId: stepResult.serviceId,
+                condition: stepResult.condition || '',
+                conditionParameters: stepResult.conditionParameters || '',
+              }
+            })
+          }
+
+          // Create the edge with the existing target step data
+          const edgeId = `e_${source}-${target}_${Date.now()}`
+          const newEdge = {
+            id: edgeId,
+            source,
+            target,
+            animated: true,
+            type: 'default',
+            markerEnd: {
+              type: MarkerType.ArrowClosed,
+              width: 20,
+              height: 20,
+              color: '#FF0072',
+            },
             data: {
-              ...nodes.value[targetNodeIdx].data,
-              stepId: createdStep.id,
-              stepName: createdStep.stepName,
-              serviceId: createdStep.serviceId,
-              condition: createdStep.condition || '',
-              conditionParameters: createdStep.conditionParameters || '',
+              aggregateStepId: targetStepId,
+              aggregateId: currentAggregateId.value,
+              condition: stepResult.condition || '',
+              conditionParameters: stepResult.conditionParameters || '',
+              mappings: stepResult.mappings || [],
             },
           }
-        }
 
-        // Create the edge with the returned step data
-        const edgeId = `e_${source}-${target}_${Date.now()}`
-        const newEdge = {
-          id: edgeId,
-          source,
-          target,
-          animated: true,
-          type: 'default',
-          markerEnd: {
-            type: MarkerType.ArrowClosed,
-            width: 20,
-            height: 20,
-            color: '#FF0072',
-          },
-          data: {
-            aggregateStepId: createdStep.id,
-            aggregateId: currentAggregateId.value,
-            condition: createdStep.condition || '',
-            conditionParameters: createdStep.conditionParameters || '',
-            mappings: createdStep.mappings || [],
-          },
-        }
+          addEdge(newEdge)
 
-        addEdge(newEdge)
+          // Update source node's step to point to target step (if source has a step)
+          if (sourceStepId) {
+            await serviceAggregatorClient.updateAggregateStep({
+              id: sourceStepId,
+              stepName: nodeA.data.stepName || nodeA.data.serviceName || 'Step',
+              aggregateId: currentAggregateId.value,
+              serviceId: nodeA.data.serviceId,
+              nextStepId: targetStepId, // Source points to target
+              trueStepId: null,
+              falseStepId: null,
+              condition: '',
+              conditionParameters: '',
+              status: true,
+            })
+          }
+        } else {
+          // Create new step for new service/node
+          stepResult = await serviceAggregatorClient.addAggregateStep(updatedStepData)
+
+          // Update the target node with the created step data
+          if (targetNodeIdx !== -1) {
+            const targetNodeId = nodes.value[targetNodeIdx].id
+            updateNode(targetNodeId, {
+              data: {
+                aggregateStepId: stepResult.id,
+                stepName: stepResult.stepName,
+                serviceId: stepResult.serviceId,
+                condition: stepResult.condition || '',
+                conditionParameters: stepResult.conditionParameters || '',
+              }
+            })
+          }
+
+          // Create the edge with the returned step data
+          const edgeId = `e_${source}-${target}_${Date.now()}`
+          const newEdge = {
+            id: edgeId,
+            source,
+            target,
+            animated: true,
+            type: 'default',
+            markerEnd: {
+              type: MarkerType.ArrowClosed,
+              width: 20,
+              height: 20,
+              color: '#FF0072',
+            },
+            data: {
+              aggregateStepId: stepResult.id,
+              aggregateId: currentAggregateId.value,
+              condition: stepResult.condition || '',
+              conditionParameters: stepResult.conditionParameters || '',
+              mappings: stepResult.mappings || [],
+            },
+          }
+
+          addEdge(newEdge)
+
+          // Update source node's step to point to the new target step (if source has a step)
+          if (sourceStepId) {
+            await serviceAggregatorClient.updateAggregateStep({
+              id: sourceStepId,
+              stepName: nodeA.data.stepName || nodeA.data.serviceName || 'Step',
+              aggregateId: currentAggregateId.value,
+              serviceId: nodeA.data.serviceId,
+              nextStepId: stepResult.id, // Source points to new target
+              trueStepId: null,
+              falseStepId: null,
+              condition: '',
+              conditionParameters: '',
+              status: true,
+            })
+          }
+        }
       } else {
-        // Button-click scenario: no pending connection, just load the updated flow
+        // Button-click scenario: no pending connection, create new step
+        stepResult = await serviceAggregatorClient.addAggregateStep(updatedStepData)
         // Reload the aggregate to show the new step
         await loadAggregateFlow(currentAggregateId.value)
       }
