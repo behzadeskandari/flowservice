@@ -374,16 +374,16 @@ onNodeDragStop((event) => {
 
   const node = event.node
   if (!node || !node.data?.aggregateStepId) {
+    // No step ID, skip backend save (might be a placeholder node)
     return
   }
 
-  // Update position with full node data to ensure backend validation passes
+  // Save to backend
   const updatePosition = async () => {
     try {
-      // Send complete update including position and all current node data
-      const updateData = {
+      const payload = {
         id: node.data.aggregateStepId,
-        stepName: node.data.stepName || node.data.serviceName || 'Step',
+        stepName: node.data.stepName || '',
         aggregateId: aggregateId,
         serviceId: node.data.serviceId || null,
         nextStepId: node.data.nextStepId || null,
@@ -396,21 +396,14 @@ onNodeDragStop((event) => {
         positionY: Math.round(node.position.y),
       }
 
-      await serviceAggregatorClient.updateAggregateStep(updateData)
-      console.log('Position saved:', node.position)
+      await serviceAggregatorClient.updateAggregateStep(payload)
     } catch (error) {
-      console.error('Failed to save node position:', error)
+      console.error('Failed to save node position to backend:', error)
       notify({
         title: 'خطا',
-        text: 'خطا در ذخیره موقعیت نود',
+        text: 'خطا در ذخیره موقعیت Node',
         type: 'error',
       })
-      // Revert position on failure by triggering a flow reload
-      if (store.aggregates.length === 1) {
-        store.loadSingleAggregateFlow(aggregateId)
-      } else {
-        store.loadAggregateFlow(aggregateId)
-      }
     }
   }
 

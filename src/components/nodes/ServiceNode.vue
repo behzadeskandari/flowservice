@@ -19,8 +19,9 @@
         </div>
       </div>
       <!-- connectors -->
-      <Handle type="target" position="top" id="in" class="vue-flow__handle-target" />
+        <Handle type="target" position="top" id="in" class="vue-flow__handle-target" />
       <Handle type="source" position="bottom" id="out" class="vue-flow__handle-source" />
+
 
       <!-- Context Menu -->
       <div v-if="isContextMenuOpen" ref="menuRef" class="context-menu" :style="contextMenuStyles">
@@ -250,6 +251,16 @@ function onCancelDelete() {
   /* purple-700 */
   color: white;
 }
+
+/* Handle styling */
+.vue-flow__handle {
+  width: 12px !important;
+  height: 12px !important;
+  border: 2px solid white !important;
+  border-radius: 50% !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important;
+}
+
 
 /* Handle styling */
 .vue-flow__handle {
