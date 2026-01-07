@@ -3,9 +3,15 @@
     <!-- Header Toolbar -->
     <div class="toolbar">
       <LogoutButton />
-      <router-link to="/aggregates" class="px-3 py-2 bg-gradient-to-r from-blue-400 via-blue-500 to-blue-600 text-white font-semibold rounded-xl shadow-lg hover:from-blue-500 hover:via-blue-600 hover:to-blue-700 transition duration-300 ease-in-out">
-        <font-awesome-icon :icon="faArrowLeft" style="color: white" />
+      <router-link to="/aggregates"
+        class="px-3 py-2 bg-gradient-to-r from-blue-400 via-blue-500 to-blue-600 text-white font-semibold rounded-xl shadow-lg hover:from-blue-500 hover:via-blue-600 hover:to-blue-700 transition duration-300 ease-in-out">
+        <font-awesome-icon :icon="faArrowRight" style="color: white" />
         <span class="toolbar-text">بازگشت به لیست</span>
+      </router-link>
+      <router-link to="/services"
+        class="px-3 py-2 bg-gradient-to-r from-blue-400 via-blue-500 to-blue-600 text-white font-semibold rounded-xl shadow-lg hover:from-blue-500 hover:via-blue-600 hover:to-blue-700 transition duration-300 ease-in-out">
+        <font-awesome-icon :icon="faArrowLeft" style="color: white" />
+        <span class="toolbar-text"> لیست سرویس ها</span>
       </router-link>
       <button
         class="px-3 py-2 bg-gradient-to-r from-green-400 via-green-500 to-green-600 text-white font-semibold rounded-xl shadow-lg hover:from-green-500 hover:via-green-600 hover:to-green-700 transition duration-300 ease-in-out"
@@ -13,6 +19,7 @@
         <font-awesome-icon :icon="faPlus" style="color: white" />
         <span class="toolbar-text">Step ایجاد</span>
       </button>
+
       <button
         class="px-3 py-2 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 text-white font-semibold rounded-xl shadow-lg hover:from-orange-500 hover:via-orange-600 hover:to-orange-700 transition duration-300 ease-in-out"
         @click="fitView">
@@ -24,24 +31,17 @@
     <!-- Main Content Area -->
     <div class="editor-container">
       <!-- Mobile Sidebar Toggle Button -->
-      <button
-        v-if="showMobileSidebarToggle"
-        class="sidebar-toggle-btn"
-        @click="isSidebarOpen = !isSidebarOpen"
-        :aria-label="isSidebarOpen ? 'بستن منو' : 'باز کردن منو'"
-      >
+      <button v-if="showMobileSidebarToggle" class="sidebar-toggle-btn" @click="isSidebarOpen = !isSidebarOpen"
+        :aria-label="isSidebarOpen ? 'بستن منو' : 'باز کردن منو'">
         <font-awesome-icon :icon="faBars" />
       </button>
 
       <!-- Sidebar Overlay (Mobile only) -->
-      <div
-        v-if="isSidebarOpen && showMobileSidebarToggle"
-        class="sidebar-overlay"
-        @click="isSidebarOpen = false"
-      ></div>
+      <div v-if="isSidebarOpen && showMobileSidebarToggle" class="sidebar-overlay" @click="isSidebarOpen = false"></div>
 
       <!-- Left Sidebar: Available Services -->
-      <div class="sidebar" :class="{ 'sidebar-open': isSidebarOpen, 'sidebar-hidden': !isSidebarOpen && showMobileSidebarToggle }">
+      <div class="sidebar"
+        :class="{ 'sidebar-open': isSidebarOpen, 'sidebar-hidden': !isSidebarOpen && showMobileSidebarToggle }">
         <div class="sidebar-header">
           <h3>سرویس‌های موجود</h3>
           <p class="sidebar-subtitle">
@@ -57,15 +57,8 @@
           <p>هیچ سرویسی موجود نیست</p>
         </div>
         <div v-else class="services-list">
-          <div
-            v-for="service in services"
-            :key="service.id"
-            class="service-card"
-            :draggable="true"
-            @dragstart="onDragStart($event, service)"
-            @dragend="onDragEnd"
-            @dblclick="onServiceDoubleClick(service)"
-          >
+          <div v-for="service in services" :key="service.id" class="service-card" :draggable="true"
+            @dragstart="onDragStart($event, service)" @dragend="onDragEnd" @dblclick="onServiceDoubleClick(service)">
             <div class="service-card-header">
               <strong>{{ service.name }}</strong>
             </div>
@@ -82,60 +75,38 @@
             </div>
           </div>
         </div>
-    </div>
+      </div>
 
       <!-- Main Canvas: Vue Flow -->
       <div class="canvas-container">
-      <VueFlow
-          ref="vueFlowRef"
-          :default-viewport="{ x: 0, y: 0, zoom: 0.8 }"
-        :max-zoom="2"
-          :min-zoom="0.1"
-        :nodes="store.nodes"
-        :edges="store.edges"
-        :zoom-on-scroll="true"
-        :fit-view-on-init="true"
-        :pan-on-drag="true"
-        :pan-on-scroll="true"
-        :pan-on-scroll-speed="0.8"
-        :selection-on-click="false"
-          class="vue-flow-container"
-        @nodes-change="onNodesChange"
-        @edges-change="onEdgesChange"
-        @connect="onConnect"
-        @node-dblclick="onNodeDblClick"
-          @drop="onDrop"
-          @dragover="onDragOver"
-        :node-types="nodeTypes"
-      >
-        <Background variant="dots" :gap="25" :size="3" color="#bbb" />
+        <VueFlow ref="vueFlowRef" :default-viewport="{ x: 0, y: 0, zoom: 0.8 }" :max-zoom="2" :min-zoom="0.1"
+          :nodes="store.nodes" :edges="store.edges" :zoom-on-scroll="true" :fit-view-on-init="true" :pan-on-drag="true"
+          :pan-on-scroll="true" :pan-on-scroll-speed="0.8" :selection-on-click="false" class="vue-flow-container"
+          @nodes-change="onNodesChange" @edges-change="onEdgesChange" @connect="onConnect"
+          @node-dblclick="onNodeDblClick" @drop="onDrop" @dragover="onDragOver" :node-types="nodeTypes">
+          <Background variant="dots" :gap="25" :size="3" color="#bbb" />
           <Panel position="top-center"></Panel>
-        <Controls>
-          <ControlButton @click.prevent="toggleTheme">
-            <font-awesome-icon :icon="isDark ? faSun : faMoon" />
-          </ControlButton>
-          <ControlButton @click.prevent="doScreenshot">
-            <font-awesome-icon :icon="faCamera" />
-          </ControlButton>
+          <Controls>
+            <ControlButton @click.prevent="toggleTheme">
+              <font-awesome-icon :icon="isDark ? faSun : faMoon" />
+            </ControlButton>
+            <ControlButton @click.prevent="doScreenshot">
+              <font-awesome-icon :icon="faCamera" />
+            </ControlButton>
             <!-- <ControlButton @click.prevent="sortByConnectionOrder">
             <font-awesome-icon :icon="faSortAmountDown" />
             </ControlButton> -->
-        </Controls>
-        <MiniMap />
-      </VueFlow>
+          </Controls>
+          <MiniMap />
+        </VueFlow>
       </div>
     </div>
 
     <!-- Modals -->
     <StepModal ref="stepModalRef" />
-    <StepEditModal
-      :show="store.showModal && store.modalMode === 'edit'"
-      :step-id="store.selectedNode"
-      mode="edit"
-      @update:show="(val) => { if (!val) store.clearSelected() }"
-      @saved="handleStepSaved"
-    />
-     <notifications />
+    <StepEditModal :show="store.showModal && store.modalMode === 'edit'" :step-id="store.selectedNode" mode="edit"
+      @update:show="(val) => { if (!val) store.clearSelected() }" @saved="handleStepSaved" />
+    <notifications />
   </div>
 </template>
 
@@ -155,7 +126,7 @@ import StepEditModal from '@/components/modals/StepEditModal.vue'
 import ServiceNode from '@/components/nodes/ServiceNode.vue'
 import DecisionNode from '@/components/nodes/DecisionNode.vue'
 import EndNode from '@/components/nodes/EndNode.vue'
-import { faCamera, faSun, faMoon, faPlus, faBars, faArrowLeft, faExpand } from '@fortawesome/free-solid-svg-icons'
+import { faCamera, faSun, faMoon, faPlus, faBars, faArrowLeft, faArrowRight, faExpand } from '@fortawesome/free-solid-svg-icons'
 import { useScreenshot } from '@/hooks/useScreenshot'
 const vueFlowInstance = useVueFlow()
 const { fitView: fitViewFlow, onNodeDragStop } = vueFlowInstance
@@ -428,42 +399,42 @@ onNodeDragStop((event) => {
 
   updatePosition()
 })
-  // const aggregateId = route.params.id as string
-  // if (!aggregateId) return
+// const aggregateId = route.params.id as string
+// if (!aggregateId) return
 
-  // const node = event.node
-  // if (!node || !node.data?.aggregateStepId) {
-  //   // No step ID, skip backend save (might be a placeholder node)
-  //   return
-  // }
-  // // Save to backend
-  // const updatePosition = async () => {
-  //   try {
-  //     const payload = {
-  //       id: node.data.aggregateStepId,
-  //       stepName: node.data.stepName || '',
-  //       aggregateId: aggregateId,
-  //       serviceId: node.data.serviceId || null,
-  //       nextStepId: node.data.nextStepId || null,
-  //       trueStepId: node.data.trueStepId || null,
-  //       falseStepId: node.data.falseStepId || null,
-  //       condition: node.data.condition || '',
-  //       conditionParameters: node.data.conditionParameters || '',
-  //       status: node.data.status !== undefined ? node.data.status : true,
-  //       positionX: Math.round(node.position.x),
-  //       positionY: Math.round(node.position.y),
-  //     }
-  //     await serviceAggregatorClient.updateAggregateStep(payload)
-  //   } catch (error) {
-  //     console.error('Failed to save node position to backend:', error)
-  //     notify({
-  //       title: 'خطا',
-  //       text: 'خطا در ذخیره موقعیت Node',
-  //       type: 'error',
-  //     })
-  //   }
-  // }
-  // updatePosition()
+// const node = event.node
+// if (!node || !node.data?.aggregateStepId) {
+//   // No step ID, skip backend save (might be a placeholder node)
+//   return
+// }
+// // Save to backend
+// const updatePosition = async () => {
+//   try {
+//     const payload = {
+//       id: node.data.aggregateStepId,
+//       stepName: node.data.stepName || '',
+//       aggregateId: aggregateId,
+//       serviceId: node.data.serviceId || null,
+//       nextStepId: node.data.nextStepId || null,
+//       trueStepId: node.data.trueStepId || null,
+//       falseStepId: node.data.falseStepId || null,
+//       condition: node.data.condition || '',
+//       conditionParameters: node.data.conditionParameters || '',
+//       status: node.data.status !== undefined ? node.data.status : true,
+//       positionX: Math.round(node.position.x),
+//       positionY: Math.round(node.position.y),
+//     }
+//     await serviceAggregatorClient.updateAggregateStep(payload)
+//   } catch (error) {
+//     console.error('Failed to save node position to backend:', error)
+//     notify({
+//       title: 'خطا',
+//       text: 'خطا در ذخیره موقعیت Node',
+//       type: 'error',
+//     })
+//   }
+// }
+// updatePosition()
 
 const onNodesChange = (changes: any[]) => {
   // Handle node changes if needed (for other operations)
@@ -636,8 +607,13 @@ onBeforeUnmount(() => {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .services-list {
@@ -665,7 +641,7 @@ onBeforeUnmount(() => {
 /* Show visual feedback on mobile for double-click */
 @media (max-width: 1024px) {
   .service-card {
-  cursor: pointer;
+    cursor: pointer;
   }
 
   .service-card:active {

@@ -9,14 +9,14 @@
         <p>ایجاد و ویرایش سرویس‌ها</p>
       </div>
       <div class="header-actions">
-        <router-link to="/home" class="w-full h-15 text-sm leading-7 mt-4 rounded-lg text-white font-bold text-lg shadow-lg hover:shadow-xl
+        <!-- <router-link to="/home" class="w-full h-15 text-sm leading-7 mt-4 rounded-lg text-white font-bold text-lg shadow-lg hover:shadow-xl
           bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600
           hover:to-amber-700 active:scale-98 transition-all duration-200">
           <i class="fas fa-arrow-left"></i>
          <span class="l-hight">
          بازگشت به Flow
          </span>
-        </router-link>
+        </router-link> -->
         <button class="w-full h-12 mt-4 rounded-lg text-white text-sm  leading-7 font-bold text-lg shadow-lg hover:shadow-xl
           bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600
           hover:to-amber-700 active:scale-98 transition-all duration-200" @click="openAddModal">
