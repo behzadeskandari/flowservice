@@ -108,6 +108,16 @@ export const useFlowStore = defineStore('flow', () => {
     edges.value = [...edges.value]
   }
 
+  /**
+   * Merge edges from backend load into persistentEdges
+   * Preserves user-created edges while adding any new backend edges
+   * Called after load operations to rebuild edges from both sources
+   */
+  function mergePersistedEdges() {
+    // Rebuild edges and add any missing ones from persistentEdges
+    rebuildEdgesFromPersistent()
+  }
+
   async function loadAggregates() {
     isLoading.value = true
     try {
@@ -733,10 +743,18 @@ export const useFlowStore = defineStore('flow', () => {
       // Update store with nodes and edges
       nodes.value = flowNodes
       edges.value = flowEdges
-      // Also populate persistentEdges on initial load to survive position updates
-      persistentEdges.value = flowEdges.map(e => structuredClone(e))
+      // Merge backend edges into persistentEdges (don't replace)
+      // This ensures user-created edges survive the reload
+      flowEdges.forEach(backendEdge => {
+        if (!persistentEdges.value.find(e => e.id === backendEdge.id)) {
+          persistentEdges.value.push(structuredClone(backendEdge))
+        }
+      })
       nodes.value = [...nodes.value]
       edges.value = [...edges.value]
+
+      // Rebuild edges from persistentEdges to restore user connections
+      mergePersistedEdges()
 
       console.log('Store updated - nodes:', nodes.value.length, 'edges:', edges.value.length)
 
@@ -1747,12 +1765,26 @@ export const useFlowStore = defineStore('flow', () => {
             }
           }
 
+          // Backup edges before reload
+          const edgesBeforeReload = edges.value.map(e => structuredClone(e))
+
           // Reload flow to ensure positions and data are up to date
           if (aggregates.value.length === 1) {
             await loadSingleAggregateFlow(currentAggregateId.value)
           } else {
             await loadAggregateFlow(currentAggregateId.value)
           }
+
+          // Restore any edges that were lost during reload
+          edgesBeforeReload.forEach(oldEdge => {
+            if (!edges.value.find(e => e.id === oldEdge.id)) {
+              edges.value.push(structuredClone(oldEdge))
+              // Also add to persistentEdges if not already there
+              if (!persistentEdges.value.find(e => e.id === oldEdge.id)) {
+                persistentEdges.value.push(structuredClone(oldEdge))
+              }
+            }
+          })
         }
       } else {
         // Button-click scenario: no pending connection, create new step
