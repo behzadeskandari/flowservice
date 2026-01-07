@@ -4,8 +4,10 @@
     <div class="page-header">
       <div class="header-content">
         <LogoutButton />
-        <h1>مدیریت Aggregates</h1>
-        <p>مشاهده و مدیریت تمام Aggregates</p>
+        <h1>مدیریت </h1>
+        <h3>Aggregates</h3>
+        <p>مشاهده و مدیریت تمام </p>
+        <p>Aggregates</p>
       </div>
       <div class="header-actions">
         <router-link to="/home" class="w-full h-15 text-sm leading-7 mt-4 rounded-lg text-white font-bold text-lg shadow-lg hover:shadow-xl
@@ -17,7 +19,8 @@
         <button class="w-full h-12 mt-4 rounded-lg text-white text-sm leading-7 font-bold text-lg shadow-lg hover:shadow-xl
           bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600
           hover:to-amber-700 active:scale-98 transition-all duration-200" @click="openAddModal">
-          <i class="fas fa-plus"></i> Aggregate جدید
+          <i class="fas fa-plus"></i>  جدید
+          <span class="l-hight">Aggregate</span>
         </button>
       </div>
     </div>

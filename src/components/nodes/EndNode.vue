@@ -6,7 +6,7 @@
         <small v-if="data.stepName">پایان جریان</small>
       </div>
     </div>
-    <Handle type="target" position="left" id="in" />
+    <Handle type="target" position="top" id="in" class="vue-flow__handle-target" />
   </div>
 </template>
 
@@ -101,5 +101,23 @@ function openEdit() {
   display: block;
   color: #666;
   font-size: 11px;
+}
+
+/* Handle styling */
+.vue-flow__handle {
+  width: 12px !important;
+  height: 12px !important;
+  border: 2px solid white !important;
+  border-radius: 50% !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important;
+}
+
+.vue-flow__handle-target {
+  background: #10b981 !important; /* green for input */
+}
+
+.vue-flow__handle:hover {
+  transform: scale(1.2);
+  transition: transform 0.2s ease;
 }
 </style>

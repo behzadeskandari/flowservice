@@ -8,7 +8,7 @@ class ServiceAggregatorClient {
     return response.data
   }
 
-  async getAggregate(id) {
+  async getAggregateByid(id) {
     const response = await httpClient.get(`/aggregate/get-aggregate/${id}`)
     return response.data
   }

@@ -34,7 +34,7 @@
       </button>
 
       <!-- Sidebar Overlay (Mobile only) -->
-      <div 
+      <div
         v-if="isSidebarOpen && showMobileSidebarToggle"
         class="sidebar-overlay"
         @click="isSidebarOpen = false"
@@ -244,10 +244,10 @@ const loadServices = async () => {
 const loadAggregateFlow = async (aggregateId: string) => {
   try {
     store.currentAggregateId = aggregateId
-    
+
     // Load the aggregate flow (positions come from backend)
     await store.loadSingleAggregateFlow(aggregateId)
-    
+
     // Fit view after loading
     await nextTick()
     setTimeout(() => {
@@ -264,6 +264,10 @@ const loadAggregateFlow = async (aggregateId: string) => {
 }
 
 const onDragStart = (event: DragEvent, service: any) => {
+  debugger
+  console.log(service, 'service onDragStart')
+  console.log(event.dataTransfer, 'event.dataTransfer onDragStart')
+  console.log(draggedService.value, 'event onDragStart')
   draggedService.value = service
   if (event.dataTransfer) {
     event.dataTransfer.effectAllowed = 'copy'
@@ -276,21 +280,27 @@ const onDragEnd = () => {
 }
 
 const onDragOver = (event: DragEvent) => {
+  debugger
   event.preventDefault()
   if (event.dataTransfer) {
+
+    console.log(event.dataTransfer, 'draggedService onDrop')
     event.dataTransfer.dropEffect = 'copy'
   }
 }
 
 const onDrop = async (event: DragEvent) => {
+  debugger
+  console.log(draggedService.value, 'draggedService')
   event.preventDefault()
-  
+
   if (!draggedService.value) {
     // Try to get from dataTransfer
     try {
       const data = event.dataTransfer?.getData('application/json')
       if (data) {
         draggedService.value = JSON.parse(data)
+        console.log(draggedService.value, 'draggedService onDrop')
       }
     } catch (e) {
       console.error('Failed to parse dropped data:', e)
@@ -323,6 +333,7 @@ const onDrop = async (event: DragEvent) => {
       stepName: draggedService.value.name || 'New Step',
       positionX: dropPosition.x,
       positionY: dropPosition.y,
+
     })
   }
 
@@ -363,34 +374,26 @@ onNodeDragStop((event) => {
 
   const node = event.node
   if (!node || !node.data?.aggregateStepId) {
-    // No step ID, skip backend save (might be a placeholder node)
     return
   }
 
-  // Save to backend
+  // فقط موقعیت را آپدیت کن — هیچ چیز دیگری را دست نزن!
   const updatePosition = async () => {
     try {
-      const payload = {
+      await serviceAggregatorClient.updateAggregateStep({
         id: node.data.aggregateStepId,
-        stepName: node.data.stepName || '',
         aggregateId: aggregateId,
-        serviceId: node.data.serviceId || null,
-        nextStepId: node.data.nextStepId || null,
-        trueStepId: node.data.trueStepId || null,
-        falseStepId: node.data.falseStepId || null,
-        condition: node.data.condition || '',
-        conditionParameters: node.data.conditionParameters || '',
-        status: node.data.status !== undefined ? node.data.status : true,
         positionX: Math.round(node.position.x),
         positionY: Math.round(node.position.y),
-      }
+        // هیچ فیلد دیگری نفرست! backend فقط این دوتا را آپدیت می‌کند
+      })
 
-      await serviceAggregatorClient.updateAggregateStep(payload)
+      console.log('Position saved:', node.position)
     } catch (error) {
-      console.error('Failed to save node position to backend:', error)
+      console.error('Failed to save node position:', error)
       notify({
         title: 'خطا',
-        text: 'خطا در ذخیره موقعیت Node',
+        text: 'خطا در ذخیره موقعیت نود',
         type: 'error',
       })
     }
@@ -398,6 +401,42 @@ onNodeDragStop((event) => {
 
   updatePosition()
 })
+  // const aggregateId = route.params.id as string
+  // if (!aggregateId) return
+
+  // const node = event.node
+  // if (!node || !node.data?.aggregateStepId) {
+  //   // No step ID, skip backend save (might be a placeholder node)
+  //   return
+  // }
+  // // Save to backend
+  // const updatePosition = async () => {
+  //   try {
+  //     const payload = {
+  //       id: node.data.aggregateStepId,
+  //       stepName: node.data.stepName || '',
+  //       aggregateId: aggregateId,
+  //       serviceId: node.data.serviceId || null,
+  //       nextStepId: node.data.nextStepId || null,
+  //       trueStepId: node.data.trueStepId || null,
+  //       falseStepId: node.data.falseStepId || null,
+  //       condition: node.data.condition || '',
+  //       conditionParameters: node.data.conditionParameters || '',
+  //       status: node.data.status !== undefined ? node.data.status : true,
+  //       positionX: Math.round(node.position.x),
+  //       positionY: Math.round(node.position.y),
+  //     }
+  //     await serviceAggregatorClient.updateAggregateStep(payload)
+  //   } catch (error) {
+  //     console.error('Failed to save node position to backend:', error)
+  //     notify({
+  //       title: 'خطا',
+  //       text: 'خطا در ذخیره موقعیت Node',
+  //       type: 'error',
+  //     })
+  //   }
+  // }
+  // updatePosition()
 
 const onNodesChange = (changes: any[]) => {
   // Handle node changes if needed (for other operations)
@@ -442,7 +481,7 @@ watch(() => store.stepModalOpen, (newVal) => {
   if (newVal && stepModalRef.value) {
     // Clone initial data - use JSON method because structuredClone fails with some objects
     // eslint-disable-next-line prefer-structured-clone
-    const initialData = store.stepModalInitialData 
+    const initialData = store.stepModalInitialData
       ? JSON.parse(JSON.stringify(store.stepModalInitialData))
       : {}
     store.stepModalOpen = false
@@ -453,7 +492,7 @@ watch(() => store.stepModalOpen, (newVal) => {
 onMounted(async () => {
   checkScreenSize()
   window.addEventListener('resize', checkScreenSize)
-  
+
   const aggregateId = route.params.id as string
   if (!aggregateId) {
     notify({
@@ -546,7 +585,7 @@ onBeforeUnmount(() => {
   .desktop-hint {
     display: none;
   }
-  
+
   .mobile-hint {
     display: inline;
   }
@@ -601,7 +640,7 @@ onBeforeUnmount(() => {
   .service-card {
   cursor: pointer;
   }
-  
+
   .service-card:active {
     background: #e0e7ff;
     transform: scale(0.98);

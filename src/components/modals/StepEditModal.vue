@@ -691,23 +691,23 @@ const closeMappingModal = () => {
 }
 
 const saveMapping = async () => {
-  if (!currentMapping.value.targetField || !currentMapping.value.targetField.trim()) {
-    notify({
-      title: 'خطا',
-      text: 'فیلد هدف الزامی است',
-      type: 'error',
-    })
-    return
-  }
+  // if (!currentMapping.value.targetField || !currentMapping.value.targetField.trim()) {
+  //   notify({
+  //     title: 'خطا',
+  //     text: 'فیلد هدف الزامی است',
+  //     type: 'error',
+  //   })
+  //   return
+  // }
 
-  if (!stepData.value.aggregateStepId) {
-    notify({
-      title: 'خطا',
-      text: 'aggregateStepId یافت نشد',
-      type: 'error',
-    })
-    return
-  }
+  // if (!stepData.value.aggregateStepId) {
+  //   notify({
+  //     title: 'خطا',
+  //     text: 'aggregateStepId یافت نشد',
+  //     type: 'error',
+  //   })
+  //   return
+  // }
 
   try {
     // Prepare mapping data - convert empty strings to null for optional fields

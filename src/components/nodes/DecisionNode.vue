@@ -9,8 +9,8 @@
         <small class="params" v-if="data.conditionParameters">پارامترها: {{ data.conditionParameters }}</small>
       </div>
     </div>
-    <Handle type="target" position="left" id="in" />
-    <Handle type="source" position="right" id="out" />
+    <Handle type="target" position="top" id="in" class="vue-flow__handle-target" />
+    <Handle type="source" position="bottom" id="out" class="vue-flow__handle-source" />
   </div>
 </template>
 
@@ -61,6 +61,28 @@ const store = useFlowStore()
 .condition {
   display: block;
   color: #b45309;
+}
+
+/* Handle styling */
+.vue-flow__handle {
+  width: 12px !important;
+  height: 12px !important;
+  border: 2px solid white !important;
+  border-radius: 50% !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important;
+}
+
+.vue-flow__handle-target {
+  background: #10b981 !important; /* green for input */
+}
+
+.vue-flow__handle-source {
+  background: #f59e0b !important; /* amber for output */
+}
+
+.vue-flow__handle:hover {
+  transform: scale(1.2);
+  transition: transform 0.2s ease;
 }
 </style>
 

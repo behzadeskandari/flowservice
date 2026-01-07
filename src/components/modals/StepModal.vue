@@ -297,11 +297,11 @@ async function onSave() {
           ...store.nodes[nodeIndex],
           data: {
             ...store.nodes[nodeIndex].data,
-            aggregateStepId: stepResult.id,
-            stepName: stepResult.stepName,
-            serviceId: stepResult.serviceId,
-            condition: stepResult.condition || '',
-            conditionParameters: stepResult.conditionParameters || '',
+            aggregateStepId: stepData.value.id,
+            stepName: stepData.value.stepName,
+            serviceId: stepData.value.serviceId,
+            condition: stepData.value.condition || '',
+            conditionParameters: stepData.value.conditionParameters || '',
           },
         }
         // Trigger reactivity
