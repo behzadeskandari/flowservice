@@ -248,6 +248,10 @@ const loadAggregateFlow = async (aggregateId: string) => {
     // Load the aggregate flow (positions come from backend)
     await store.loadSingleAggregateFlow(aggregateId)
 
+    // Rebuild edges from persistent storage to restore connections that may have been lost
+    // This ensures edges survive backend resets and page reloads
+    store.rebuildEdgesFromPersistent()
+
     // Fit view after loading
     await nextTick()
     setTimeout(() => {
@@ -378,7 +382,22 @@ onNodeDragStop((event) => {
     return
   }
 
-  // Save to backend
+  // Get existing connection data to preserve connections during position update
+  // Use node's current data if available, otherwise get from persistent edges
+  let nextStepId = node.data.nextStepId || null
+  let trueStepId = node.data.trueStepId || null
+  let falseStepId = node.data.falseStepId || null
+
+  // If not in node data, try to get from persistent edges
+  if (!nextStepId) {
+    const existingOutgoingEdge = store.persistentEdges.find(edge => edge.source === node.id)
+    if (existingOutgoingEdge) {
+      const targetNode = store.nodes.find(n => n.id === existingOutgoingEdge.target)
+      nextStepId = targetNode?.data?.aggregateStepId || null
+    }
+  }
+
+  // Save to backend with full payload as required by API
   const updatePosition = async () => {
     try {
       const payload = {
@@ -386,9 +405,9 @@ onNodeDragStop((event) => {
         stepName: node.data.stepName || '',
         aggregateId: aggregateId,
         serviceId: node.data.serviceId || null,
-        nextStepId: node.data.nextStepId || null,
-        trueStepId: node.data.trueStepId || null,
-        falseStepId: node.data.falseStepId || null,
+        nextStepId: nextStepId,
+        trueStepId: trueStepId,
+        falseStepId: falseStepId,
         condition: node.data.condition || '',
         conditionParameters: node.data.conditionParameters || '',
         status: node.data.status !== undefined ? node.data.status : true,

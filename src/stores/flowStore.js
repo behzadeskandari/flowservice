@@ -79,10 +79,18 @@ export const useFlowStore = defineStore('flow', () => {
    * This allows edges to survive node position updates and backend nextStepId resets
    * @param {Array} stepIdToNodeIdMap - Map from step ID to node ID for lookups
    */
-  function rebuildEdgesFromPersistent(stepIdToNodeIdMap) {
+  function rebuildEdgesFromPersistent() {
+    // Create a map from stepId to nodeId for lookups
+    const stepIdToNodeIdMap = new Map()
+    nodes.value.forEach(node => {
+      if (node.data?.aggregateStepId) {
+        stepIdToNodeIdMap.set(node.data.aggregateStepId, node.id)
+      }
+    })
+
     const rebuiltEdges = []
 
-    // First, restore edges from local persistentEdges
+    // Restore edges from persistentEdges (primary source of truth for connections)
     persistentEdges.value.forEach((persistedEdge) => {
       const sourceNodeId = persistedEdge.source
       const targetNodeId = persistedEdge.target
@@ -95,40 +103,6 @@ export const useFlowStore = defineStore('flow', () => {
         })
       }
     })
-
-    // Also add edges from backend nextStepId if valid (for compatibility)
-    if (stepIdToNodeIdMap) {
-      for (const [stepId, nodeId] of stepIdToNodeIdMap.entries()) {
-        const step = nodes.value.find(n => n.data?.aggregateStepId === stepId)
-        if (step && step.data?.nextStepId) {
-          const targetStepId = step.data.nextStepId
-          const targetNodeId = stepIdToNodeIdMap.get(targetStepId)
-
-          if (targetNodeId) {
-            // Check if edge already exists in rebuiltEdges
-            const edgeExists = rebuiltEdges.some(e => e.source === nodeId && e.target === targetNodeId)
-            if (!edgeExists) {
-              rebuiltEdges.push({
-                id: `edge-${stepId}-next-${targetStepId}`,
-                source: nodeId,
-                target: targetNodeId,
-                animated: true,
-                type: 'default',
-                markerEnd: { type: MarkerType.ArrowClosed, width: 20, height: 20, color: '#FF0072' },
-                label: 'Next',
-                data: {
-                  aggregateStepId: stepId,
-                  aggregateId: currentAggregateId.value,
-                  condition: step.data?.condition || '',
-                  conditionParameters: step.data?.conditionParameters || '',
-                  mappings: step.data?.mappings || [],
-                },
-              })
-            }
-          }
-        }
-      }
-    }
 
     edges.value = rebuiltEdges
     edges.value = [...edges.value]
@@ -1679,7 +1653,7 @@ export const useFlowStore = defineStore('flow', () => {
           // Add to both local persistent edges and Vue Flow edges
           addEdge(newEdge)
           persistentEdges.value.push(newEdge)
-
+          const currentSourceStepData = nodeA.data || {}
           // Update source node's step to point to target step (if source has a step and nextStepId actually changed)
           if (sourceStepId) {
             const currentNextStepId = nodeA.data?.nextStepId || null
@@ -1690,10 +1664,10 @@ export const useFlowStore = defineStore('flow', () => {
                 aggregateId: currentAggregateId.value,
                 serviceId: nodeA.data.serviceId,
                 nextStepId: targetStepId, // Source points to target
-                trueStepId: null,
-                falseStepId: null,
-                condition: '',
-                conditionParameters: '',
+                trueStepId: currentSourceStepData.trueStepId,
+                falseStepId: currentSourceStepData.falseStepId,
+                condition: currentSourceStepData.condition,
+                conditionParameters: currentSourceStepData.conditionParameters,
                 status: true,
               })
               // Update local node data
@@ -1751,7 +1725,7 @@ export const useFlowStore = defineStore('flow', () => {
           // Add to both local persistent edges and Vue Flow edges
           addEdge(newEdge)
           persistentEdges.value.push(newEdge)
-
+          const currentSourceStepData = nodeA.data || {}
           // Update source node's step to point to the new target step (if source has a step and nextStepId actually changed)
           if (sourceStepId) {
             const currentNextStepId = nodeA.data?.nextStepId || null
@@ -1761,11 +1735,11 @@ export const useFlowStore = defineStore('flow', () => {
                 stepName: nodeA.data.stepName || nodeA.data.serviceName || 'Step',
                 aggregateId: currentAggregateId.value,
                 serviceId: nodeA.data.serviceId,
-                nextStepId: stepResult.id, // Source points to new target
-                trueStepId: null,
-                falseStepId: null,
-                condition: '',
-                conditionParameters: '',
+                nextStepId: targetStepId, // Source points to new target
+                trueStepId: currentSourceStepData.trueStepId,
+                falseStepId: currentSourceStepData.falseStepId,
+                condition: currentSourceStepData.condition,
+                conditionParameters: currentSourceStepData.conditionParameters,
                 status: true,
               })
               // Update local node data
@@ -2424,6 +2398,7 @@ export const useFlowStore = defineStore('flow', () => {
     nodes,
     edges,
     persistentEdges,
+    rebuildEdgesFromPersistent,
     selectedNode,
     showModal,
     modalMode,
