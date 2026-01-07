@@ -12,6 +12,9 @@ const LOCAL_STORAGE_KEY = 'flowservice-flow'
 export const useFlowStore = defineStore('flow', () => {
   const nodes = ref([])
   const edges = ref([])
+  // Local persistent edges independent of backend nextStepId
+  // Survives backend updates and reloads; supports multiple outgoing edges per node
+  const persistentEdges = ref([])
   const autoSave = ref(false)
   const selectedNode = ref(null)
   const showModal = ref(false)
@@ -70,8 +73,68 @@ export const useFlowStore = defineStore('flow', () => {
   )
   loadFlow()
 
+  /**
+   * Rebuild edges from persistentEdges + valid backend connections
+   * Called after loading nodes to restore edge state from local cache
+   * This allows edges to survive node position updates and backend nextStepId resets
+   * @param {Array} stepIdToNodeIdMap - Map from step ID to node ID for lookups
+   */
+  function rebuildEdgesFromPersistent(stepIdToNodeIdMap) {
+    const rebuiltEdges = []
+
+    // First, restore edges from local persistentEdges
+    persistentEdges.value.forEach((persistedEdge) => {
+      const sourceNodeId = persistedEdge.source
+      const targetNodeId = persistedEdge.target
+
+      // Verify both nodes still exist
+      if (nodes.value.find(n => n.id === sourceNodeId) && nodes.value.find(n => n.id === targetNodeId)) {
+        rebuiltEdges.push({
+          ...persistedEdge,
+          // Keep original styling and data
+        })
+      }
+    })
+
+    // Also add edges from backend nextStepId if valid (for compatibility)
+    if (stepIdToNodeIdMap) {
+      for (const [stepId, nodeId] of stepIdToNodeIdMap.entries()) {
+        const step = nodes.value.find(n => n.data?.aggregateStepId === stepId)
+        if (step && step.data?.nextStepId) {
+          const targetStepId = step.data.nextStepId
+          const targetNodeId = stepIdToNodeIdMap.get(targetStepId)
+
+          if (targetNodeId) {
+            // Check if edge already exists in rebuiltEdges
+            const edgeExists = rebuiltEdges.some(e => e.source === nodeId && e.target === targetNodeId)
+            if (!edgeExists) {
+              rebuiltEdges.push({
+                id: `edge-${stepId}-next-${targetStepId}`,
+                source: nodeId,
+                target: targetNodeId,
+                animated: true,
+                type: 'default',
+                markerEnd: { type: MarkerType.ArrowClosed, width: 20, height: 20, color: '#FF0072' },
+                label: 'Next',
+                data: {
+                  aggregateStepId: stepId,
+                  aggregateId: currentAggregateId.value,
+                  condition: step.data?.condition || '',
+                  conditionParameters: step.data?.conditionParameters || '',
+                  mappings: step.data?.mappings || [],
+                },
+              })
+            }
+          }
+        }
+      }
+    }
+
+    edges.value = rebuiltEdges
+    edges.value = [...edges.value]
+  }
+
   async function loadAggregates() {
-    if (isLoading.value) return
     isLoading.value = true
     try {
       const allAggregates = await serviceAggregatorClient.getAggregates()
@@ -696,7 +759,8 @@ export const useFlowStore = defineStore('flow', () => {
       // Update store with nodes and edges
       nodes.value = flowNodes
       edges.value = flowEdges
-      // Trigger reactivity
+      // Also populate persistentEdges on initial load to survive position updates
+      persistentEdges.value = flowEdges.map(e => structuredClone(e))
       nodes.value = [...nodes.value]
       edges.value = [...edges.value]
 
@@ -1298,6 +1362,7 @@ export const useFlowStore = defineStore('flow', () => {
 
     nodes.value = nodes.value.filter((n) => n.id !== nodeId)
     edges.value = edges.value.filter((e) => e.source !== nodeId && e.target !== nodeId)
+    persistentEdges.value = persistentEdges.value.filter((e) => e.source !== nodeId && e.target !== nodeId)
     nodes.value = [...nodes.value]
     edges.value = [...edges.value]
 
@@ -1321,6 +1386,10 @@ export const useFlowStore = defineStore('flow', () => {
     }
     edges.value.push(edge)
     edges.value = [...edges.value]
+    // Also add to persistent edges if not already present
+    if (!persistentEdges.value.find(e => e.id === edge.id)) {
+      persistentEdges.value.push(structuredClone(edge))
+    }
   }
 
   function setSelectedNode(nodeId, mode = 'view') {
@@ -1607,7 +1676,9 @@ export const useFlowStore = defineStore('flow', () => {
             },
           }
 
-          addEdge(newEdge) // Edge created once per connection
+          // Add to both local persistent edges and Vue Flow edges
+          addEdge(newEdge)
+          persistentEdges.value.push(newEdge)
 
           // Update source node's step to point to target step (if source has a step and nextStepId actually changed)
           if (sourceStepId) {
@@ -1677,7 +1748,9 @@ export const useFlowStore = defineStore('flow', () => {
             },
           }
 
+          // Add to both local persistent edges and Vue Flow edges
           addEdge(newEdge)
+          persistentEdges.value.push(newEdge)
 
           // Update source node's step to point to the new target step (if source has a step and nextStepId actually changed)
           if (sourceStepId) {
@@ -1914,6 +1987,7 @@ export const useFlowStore = defineStore('flow', () => {
     return {
       nodes: nodes.value,
       edges: edges.value,
+      persistentEdges: persistentEdges.value,
     }
   }
 
@@ -1925,6 +1999,7 @@ export const useFlowStore = defineStore('flow', () => {
       }
     })
     edges.value = flow.edges || []
+    persistentEdges.value = flow.persistentEdges || flow.edges || []
     nodes.value = [...nodes.value]
     edges.value = [...edges.value]
   }
@@ -2029,6 +2104,7 @@ export const useFlowStore = defineStore('flow', () => {
     const edge = edges.value.find((e) => e.id === edgeId)
     if (!edge || !edge.data?.aggregateStepId) {
       edges.value = edges.value.filter((e) => e.id !== edgeId)
+      persistentEdges.value = persistentEdges.value.filter((e) => e.id !== edgeId)
       edges.value = [...edges.value]
       return
     }
@@ -2047,10 +2123,12 @@ export const useFlowStore = defineStore('flow', () => {
       })
 
       edges.value = edges.value.filter((e) => e.id !== edgeId)
+      persistentEdges.value = persistentEdges.value.filter((e) => e.id !== edgeId)
       edges.value = [...edges.value]
     } catch (error) {
       console.error('Failed to delete aggregate step:', error)
       edges.value = edges.value.filter((e) => e.id !== edgeId)
+      persistentEdges.value = persistentEdges.value.filter((e) => e.id !== edgeId)
       edges.value = [...edges.value]
     }
   }
@@ -2345,6 +2423,7 @@ export const useFlowStore = defineStore('flow', () => {
     autoSaveEnabled,
     nodes,
     edges,
+    persistentEdges,
     selectedNode,
     showModal,
     modalMode,
@@ -2387,4 +2466,5 @@ export const useFlowStore = defineStore('flow', () => {
     exportFlow,
     importFlow,
   }
+
 })
