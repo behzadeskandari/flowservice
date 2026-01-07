@@ -322,50 +322,61 @@ export const useFlowStore = defineStore('flow', () => {
           //   }
           // }
           if (step.trueStepId) {
-            // edge سبز با لیبل True
-            flowEdges.push({
-              id: `edge-${step.id}-true-${step.trueStepId}`,
-              source: sourceNodeId,
-              target: targetNodeId,
-              label: 'True',
-              markerEnd: { color: '#10B981' },
-              style: { stroke: '#10B981' },
-            })
+            const targetNodeId = stepIdToNodeIdMap.get(step.trueStepId)
+            if (targetNodeId) {
+              flowEdges.push({
+                id: `edge-${step.id}-true-${step.trueStepId}`,
+                source: sourceNodeId,
+                target: targetNodeId,
+                animated: true,
+                type: 'default',
+                markerEnd: { type: MarkerType.ArrowClosed, width: 20, height: 20, color: '#10B981' },
+                label: 'True',
+                style: { stroke: '#10B981' },
+                data: {
+                  aggregateStepId: step.id,
+                  aggregateId: aggregate.id,
+                  condition: step.condition || '',
+                  conditionParameters: step.conditionParameters || '',
+                  mappings: [],
+                },
+              })
+            }
           }
 
-          // if (step.falseStepId) {
-          //   const targetNodeId = stepIdToNodeIdMap.get(step.falseStepId)
-          //   if (targetNodeId) {
-          //     flowEdges.push({
-          //       id: `edge-${step.id}-false-${step.falseStepId}`,
-          //       source: sourceNodeId,
-          //       target: targetNodeId,
-          //       animated: true,
-          //       type: 'default',
-          //       style: { stroke: '#EF4444', strokeDasharray: '6 4' },
-          //       markerEnd: { type: MarkerType.ArrowClosed, width: 20, height: 20, color: '#EF4444' },
-          //       label: 'False',
-          //       data: {
-          //         aggregateStepId: step.id,
-          //         aggregateId: aggregate.id,
-          //         condition: step.condition || '',
-          //         conditionParameters: step.conditionParameters || '',
-          //         mappings: [],
-          //       },
-          //     })
-          //   }
-          // }
           if (step.falseStepId) {
-            // edge قرمز داش‌دار با لیبل False
-            flowEdges.push({
-              id: `edge-${step.id}-false-${step.falseStepId}`,
-              source: sourceNodeId,
-              target: targetNodeId,
-              label: 'False',
-              markerEnd: { color: '#EF4444' },
-              style: { stroke: '#EF4444', strokeDasharray: '6 4' },
-            })
+            const targetNodeId = stepIdToNodeIdMap.get(step.falseStepId)
+            if (targetNodeId) {
+              flowEdges.push({
+                id: `edge-${step.id}-false-${step.falseStepId}`,
+                source: sourceNodeId,
+                target: targetNodeId,
+                animated: true,
+                type: 'default',
+                style: { stroke: '#EF4444', strokeDasharray: '6 4' },
+                markerEnd: { type: MarkerType.ArrowClosed, width: 20, height: 20, color: '#EF4444' },
+                label: 'False',
+                data: {
+                  aggregateStepId: step.id,
+                  aggregateId: aggregate.id,
+                  condition: step.condition || '',
+                  conditionParameters: step.conditionParameters || '',
+                  mappings: [],
+                },
+              })
+            }
           }
+          // if (step.falseStepId) {
+          //   // edge قرمز داش‌دار با لیبل False
+          //   flowEdges.push({
+          //     id: `edge-${step.id}-false-${step.falseStepId}`,
+          //     source: sourceNodeId,
+          //     target: targetNodeId,
+          //     label: 'False',
+          //     markerEnd: { color: '#EF4444' },
+          //     style: { stroke: '#EF4444', strokeDasharray: '6 4' },
+          //   })
+          // }
         }
 
         // فقط وقتی چند aggregate داریم، edge از header به entry steps اضافه کنیم
