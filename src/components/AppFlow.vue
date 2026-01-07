@@ -377,17 +377,26 @@ onNodeDragStop((event) => {
     return
   }
 
-  // فقط موقعیت را آپدیت کن — هیچ چیز دیگری را دست نزن!
+  // Update position with full node data to ensure backend validation passes
   const updatePosition = async () => {
     try {
-      await serviceAggregatorClient.updateAggregateStep({
+      // Send complete update including position and all current node data
+      const updateData = {
         id: node.data.aggregateStepId,
+        stepName: node.data.stepName || node.data.serviceName || 'Step',
         aggregateId: aggregateId,
+        serviceId: node.data.serviceId || null,
+        nextStepId: node.data.nextStepId || null,
+        trueStepId: node.data.trueStepId || null,
+        falseStepId: node.data.falseStepId || null,
+        condition: node.data.condition || '',
+        conditionParameters: node.data.conditionParameters || '',
+        status: node.data.status !== undefined ? node.data.status : true,
         positionX: Math.round(node.position.x),
         positionY: Math.round(node.position.y),
-        // هیچ فیلد دیگری نفرست! backend فقط این دوتا را آپدیت می‌کند
-      })
+      }
 
+      await serviceAggregatorClient.updateAggregateStep(updateData)
       console.log('Position saved:', node.position)
     } catch (error) {
       console.error('Failed to save node position:', error)
@@ -396,6 +405,12 @@ onNodeDragStop((event) => {
         text: 'خطا در ذخیره موقعیت نود',
         type: 'error',
       })
+      // Revert position on failure by triggering a flow reload
+      if (store.aggregates.length === 1) {
+        store.loadSingleAggregateFlow(aggregateId)
+      } else {
+        store.loadAggregateFlow(aggregateId)
+      }
     }
   }
 

@@ -231,15 +231,25 @@ export const useFlowStore = defineStore('flow', () => {
           //   }
           // }
           if (step.nextStepId) {
-            // edge معمولی با رنگ صورتی/قرمز
-            flowEdges.push({
-              id: `edge-${step.id}-next-${step.nextStepId}`,
-              source: sourceNodeId,
-              target: targetNodeId,
-              label: '', // یا 'Next'
-              markerEnd: { color: '#FF0072' },
-              animated: true,
-            })
+            const targetNodeId = stepIdToNodeIdMap.get(step.nextStepId)
+            if (targetNodeId) {
+              // edge معمولی با رنگ صورتی/قرمز
+              flowEdges.push({
+                id: `edge-${step.id}-next-${step.nextStepId}`,
+                source: sourceNodeId,
+                target: targetNodeId,
+                label: '', // یا 'Next'
+                markerEnd: { type: MarkerType.ArrowClosed, width: 20, height: 20, color: '#FF0072' },
+                animated: true,
+                data: {
+                  aggregateStepId: step.id,
+                  aggregateId: aggregate.id,
+                  condition: step.condition || '',
+                  conditionParameters: step.conditionParameters || '',
+                  mappings: stepMappings,
+                },
+              })
+            }
           }
 
           // if (step.trueStepId) {
