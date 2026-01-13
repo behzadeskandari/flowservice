@@ -24,7 +24,7 @@
     <!-- Main Content Area -->
     <div class="editor-container">
       <!-- Mobile Sidebar Toggle Button -->
-      <button 
+      <button
         v-if="showMobileSidebarToggle"
         class="sidebar-toggle-btn"
         @click="isSidebarOpen = !isSidebarOpen"
@@ -34,7 +34,7 @@
       </button>
 
       <!-- Sidebar Overlay (Mobile only) -->
-      <div 
+      <div
         v-if="isSidebarOpen && showMobileSidebarToggle"
         class="sidebar-overlay"
         @click="isSidebarOpen = false"
@@ -152,7 +152,7 @@ import StepEditModal from '@/components/modals/StepEditModal.vue'
 import ServiceNode from '@/components/nodes/ServiceNode.vue'
 import DecisionNode from '@/components/nodes/DecisionNode.vue'
 import EndNode from '@/components/nodes/EndNode.vue'
-
+import StartNode from '@/components/nodes/StartNode.vue'
 const route = useRoute()
 const router = useRouter()
 const store = useFlowStore()
@@ -181,6 +181,7 @@ const nodeTypes = {
   serviceNode: markRaw(ServiceNode),
   decisionNode: markRaw(DecisionNode),
   endNode: markRaw(EndNode),
+  startNode : markRaw(StartNode)
 }
 
 const truncateUrl = (url: string | null | undefined): string => {
@@ -208,13 +209,13 @@ const loadServices = async () => {
 const loadAggregateFlow = async (aggregateId: string) => {
   try {
     store.currentAggregateId = aggregateId
-    
+
     // Load saved positions from localStorage
     const savedPositions = loadNodePositions(aggregateId)
-    
+
     // Load the aggregate flow (with saved positions passed to store)
     await store.loadSingleAggregateFlow(aggregateId, savedPositions)
-    
+
     // After nodes are loaded, apply saved positions if they exist
     await nextTick()
     if (Object.keys(savedPositions).length > 0) {
@@ -228,7 +229,7 @@ const loadAggregateFlow = async (aggregateId: string) => {
       // Trigger reactivity update
       store.nodes = [...store.nodes]
     }
-    
+
     // Fit view after loading (only if no saved positions to maintain custom layout)
     await nextTick()
     if (Object.keys(savedPositions).length === 0) {
@@ -429,7 +430,7 @@ watch(() => store.stepModalOpen, (newVal) => {
   if (newVal && stepModalRef.value) {
     // Clone initial data - use JSON method because structuredClone fails with some objects
     // eslint-disable-next-line prefer-structured-clone
-    const initialData = store.stepModalInitialData 
+    const initialData = store.stepModalInitialData
       ? JSON.parse(JSON.stringify(store.stepModalInitialData))
       : {}
     store.stepModalOpen = false
@@ -440,7 +441,7 @@ watch(() => store.stepModalOpen, (newVal) => {
 onMounted(async () => {
   checkScreenSize()
   window.addEventListener('resize', checkScreenSize)
-  
+
   const aggregateId = route.params.id as string
   if (!aggregateId) {
     notify({
@@ -533,7 +534,7 @@ onBeforeUnmount(() => {
   .desktop-hint {
     display: none;
   }
-  
+
   .mobile-hint {
     display: inline;
   }
@@ -588,7 +589,7 @@ onBeforeUnmount(() => {
   .service-card {
     cursor: pointer;
   }
-  
+
   .service-card:active {
     background: #e0e7ff;
     transform: scale(0.98);

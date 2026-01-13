@@ -119,6 +119,7 @@ export const useFlowStore = defineStore('flow', () => {
   }
 
   async function loadAggregates() {
+    debugger
     isLoading.value = true
     try {
       const allAggregates = await serviceAggregatorClient.getAggregates()
@@ -218,8 +219,14 @@ export const useFlowStore = defineStore('flow', () => {
 
           const service = step.service || {}
           const hasCondition = step.condition && `${step.condition}`.trim() !== ''
-          const nodeType = hasCondition ? 'decisionNode' : 'serviceNode'
-
+          let nodeType = '';//hasCondition ? 'decisionNode' : 'serviceNode'
+          if(hasCondition){
+            nodeType = 'decisionNode';
+          }else if(firstStep == step.serviceId){
+            nodeType = 'startNode';
+          }else{
+            nodeType = "serviceNode";
+          }
           // استفاده از position backend اگر موجود باشد، در غیر اینصورت fallback ساده
           const position = (step.positionX != null && step.positionY != null)
             ? { x: step.positionX, y: step.positionY }
@@ -256,27 +263,6 @@ export const useFlowStore = defineStore('flow', () => {
 
           const stepMappings = step.mappings || []
 
-          // if (step.nextStepId) {
-          //   const targetNodeId = stepIdToNodeIdMap.get(step.nextStepId)
-          //   if (targetNodeId) {
-          //     flowEdges.push({
-          //       id: `edge-${step.id}-next-${step.nextStepId}`,
-          //       source: sourceNodeId,
-          //       target: targetNodeId,
-          //       animated: true,
-          //       type: 'default',
-          //       markerEnd: { type: MarkerType.ArrowClosed, width: 20, height: 20, color: '#FF0072' },
-          //       label: '',
-          //       data: {
-          //         aggregateStepId: step.id,
-          //         aggregateId: aggregate.id,
-          //         condition: step.condition || '',
-          //         conditionParameters: step.conditionParameters || '',
-          //         mappings: stepMappings,
-          //       },
-          //     })
-          //   }
-          // }
           if (step.nextStepId) {
             const targetNodeId = stepIdToNodeIdMap.get(step.nextStepId)
             if (targetNodeId) {
@@ -298,29 +284,6 @@ export const useFlowStore = defineStore('flow', () => {
               })
             }
           }
-
-          // if (step.trueStepId) {
-          //   const targetNodeId = stepIdToNodeIdMap.get(step.trueStepId)
-          //   if (targetNodeId) {
-          //     flowEdges.push({
-          //       id: `edge-${step.id}-true-${step.trueStepId}`,
-          //       source: sourceNodeId,
-          //       target: targetNodeId,
-          //       animated: true,
-          //       type: 'default',
-          //       markerEnd: { type: MarkerType.ArrowClosed, width: 20, height: 20, color: '#10B981' },
-          //       label: 'True',
-          //       style: { stroke: '#10B981' },
-          //       data: {
-          //         aggregateStepId: step.id,
-          //         aggregateId: aggregate.id,
-          //         condition: step.condition || '',
-          //         conditionParameters: step.conditionParameters || '',
-          //         mappings: [],
-          //       },
-          //     })
-          //   }
-          // }
           if (step.trueStepId) {
             const targetNodeId = stepIdToNodeIdMap.get(step.trueStepId)
             if (targetNodeId) {
@@ -366,17 +329,6 @@ export const useFlowStore = defineStore('flow', () => {
               })
             }
           }
-          // if (step.falseStepId) {
-          //   // edge قرمز داش‌دار با لیبل False
-          //   flowEdges.push({
-          //     id: `edge-${step.id}-false-${step.falseStepId}`,
-          //     source: sourceNodeId,
-          //     target: targetNodeId,
-          //     label: 'False',
-          //     markerEnd: { color: '#EF4444' },
-          //     style: { stroke: '#EF4444', strokeDasharray: '6 4' },
-          //   })
-          // }
         }
 
         // فقط وقتی چند aggregate داریم، edge از header به entry steps اضافه کنیم
@@ -429,6 +381,35 @@ export const useFlowStore = defineStore('flow', () => {
     }
   }
 
+
+
+
+
+  async function getAggregateByid(params) {
+    try {
+      const aggregate = await serviceAggregatorClient.getAggregateByid(params)
+
+      if (!aggregate) {
+        console.warn(`Aggregate ${params} not found`)
+        notify({
+          title: 'خطا',
+          text: `Aggregate با ID ${params} یافت نشد`,
+          type: 'error',
+        })
+        return
+      }else{
+        return aggregate
+      }
+
+    }  catch (error) {
+      console.error('Failed to load single aggregate flow:', error)
+      notify({
+        title: 'خطا',
+        text: 'خطا در بارگذاری flow',
+        type: 'error',
+      })
+    }
+  }
   /**
    * Load a single aggregate by ID and build flow graph starting from firstStepId
    * Uses GET /api/aggregate/get-aggregate/{id} endpoint
@@ -437,6 +418,7 @@ export const useFlowStore = defineStore('flow', () => {
    * @param {string} aggregateId - The aggregate ID to load
    */
   async function loadSingleAggregateFlow(aggregateId) {
+    debugger
     try {
       // Fetch single aggregate with full details
       const aggregate = await serviceAggregatorClient.getAggregateByid(aggregateId)
@@ -456,6 +438,7 @@ export const useFlowStore = defineStore('flow', () => {
       const flowEdges = []
       const stepIdToNodeIdMap = new Map()
       const steps = aggregate.steps || []
+      const firstStep = aggregate.firstStepId;
 
       // Create a map of step IDs to step objects for quick lookup
       const stepMap = new Map()
@@ -501,8 +484,14 @@ export const useFlowStore = defineStore('flow', () => {
 
         // Determine node type: diamond for conditional, rectangular for normal
         const hasCondition = step.condition !== null && step.condition !== undefined && `${step.condition}`.trim() !== ''
-        const nodeType = hasCondition ? 'decisionNode' : 'serviceNode'
-
+        let nodeType = ''; //hasCondition ? 'decisionNode' : 'serviceNode'
+          if(hasCondition){
+            nodeType = 'decisionNode';
+          }else if(firstStep == step.serviceId){
+            nodeType = 'startNode';
+          }else{
+            nodeType = "serviceNode";
+          }
         // Get service info if available
         const service = step.service || {}
         // Use step.serviceId if available, otherwise fall back to service.id
@@ -525,7 +514,7 @@ export const useFlowStore = defineStore('flow', () => {
         // Create node
         const node = {
           id: nodeId,
-          type: nodeType,
+          type:  nodeType,
           position: position,
           data: {
             id: nodeId,
@@ -597,7 +586,14 @@ export const useFlowStore = defineStore('flow', () => {
 
           // Determine node type: diamond for conditional, rectangular for normal
           const hasCondition = step.condition !== null && step.condition !== undefined && `${step.condition}`.trim() !== ''
-          const nodeType = hasCondition ? 'decisionNode' : 'serviceNode'
+          let nodeType = ""; //hasCondition ? 'decisionNode' : 'serviceNode'
+          if(hasCondition){
+            nodeType = 'decisionNode';
+          }else if(firstStep == step.serviceId){
+            nodeType = 'startNode';
+          }else{
+            nodeType = "serviceNode";
+          }
 
           // Get service info if available
           const service = step.service || {}
@@ -617,7 +613,6 @@ export const useFlowStore = defineStore('flow', () => {
           const position = step.positionX !== null && step.positionX !== undefined && step.positionY !== null && step.positionY !== undefined
             ? { x: step.positionX, y: step.positionY }
             : getPositionForStep(step.id)
-
           // Create node
           const node = {
             id: orphanNodeId,
@@ -655,6 +650,7 @@ export const useFlowStore = defineStore('flow', () => {
 
       // Create edges only for steps that were visited (have nodes)
       steps.forEach(step => {
+        debugger
         const sourceNodeId = stepIdToNodeIdMap.get(step.id)
         if (!sourceNodeId) return // Skip if this step wasn't traversed
 
@@ -1003,6 +999,7 @@ export const useFlowStore = defineStore('flow', () => {
    * @returns {Promise<string>} The aggregate ID
    */
   async function ensureAggregate(aggregateData = null, aggregateId = null) {
+    debugger
     try {
       const aggregates = await serviceAggregatorClient.getAggregates()
       const targetId = aggregateId || currentAggregateId.value
@@ -1444,129 +1441,8 @@ export const useFlowStore = defineStore('flow', () => {
     showModal.value = false
   }
 
-  // function handleConnect(params) {
-  //   if (params.sourceHandle !== 'out' || params.targetHandle !== 'in') {
-  //     return
-  //   }
-  //   console.log('Connecting nodes:', params)
-  //   const { source, target } = params
-  //   if (!source || !target) return
-
-  //   const nodeA = nodes.value.find((n) => n.id === source)
-  //   const nodeB = nodes.value.find((n) => n.id === target)
-  //   if (!nodeA || !nodeB) return
-
-  //   if (!nodeA.position) nodeA.position = { x: 0, y: 0 }
-  //   if (!nodeB.position) nodeB.position = { x: 200, y: 200 }
-
-  //   // Add the new edge first
-  //   addEdge({
-  //     id: `e_${source}-${target}_${Date.now()}`,
-  //     source,
-  //     target,
-  //     animated: true,
-  //     type: 'default',
-  //   })
-
-  //   // Find all nodes in the connected component that includes both source and target
-  //   const connectedGroup = findConnectedComponent(source, target)
-  //   console.log(
-  //     'Connected group:',
-  //     connectedGroup.map((n) => n.id),
-  //   )
-
-  //   if (connectedGroup.length < 2) {
-  //     console.warn('Connected group has less than 2 nodes, skipping merge')
-  //     return
-  //   }
-
-  //   // Identify all combined nodes already present for this group
-  //   const groupIds = connectedGroup.map(n => n.id)
-  //   // Find combined nodes whose underlying set overlaps this group
-  //   const redundantCombinedNodes = nodes.value.filter(node => {
-  //     if (node.type !== 'combinedServiceNode') return false;
-  //     // Try to recover the combined set from label
-  //     const parts = node.data?.label?.split(' + ')
-  //     if (!parts || parts.length < 2) return false;
-  //     return parts.every(name => groupIds.some(cid => {
-  //       const cn = nodes.value.find(n => n.id === cid)
-  //       return cn && cn.label === name
-  //     }))
-  //   })
-
-  //   // Remove previous combined nodes for this group
-  //   redundantCombinedNodes.forEach(rcn => {
-  //     // Remove node
-  //     const idx = nodes.value.findIndex(n => n.id === rcn.id)
-  //     if (idx !== -1) nodes.value.splice(idx, 1)
-  //     // Remove any edges whose source or target is this combined node
-  //     edges.value = edges.value.filter(e => e.source !== rcn.id && e.target !== rcn.id)
-  //   })
-
-  //   // Merge all nodes in the connected group into one combined node
-  //   const combinedNode = mergeNodeGroup(connectedGroup)
-
-  //   // Get all node IDs in the group
-  //   const nodeIdsToMerge = Set(connectedGroup.map((n) => n.id))
-  //   // Find outgoing edges (from merged nodes to outside)
-  //   const outgoingEdges = edges.value.filter(
-  //     (e) => nodeIdsToMerge.has(e.source) && !nodeIdsToMerge.has(e.target),
-  //   )
-  //   // Find incoming edges (from outside to merged nodes)
-  //   const incomingEdges = edges.value.filter(
-  //     (e) => !nodeIdsToMerge.has(e.source) && nodeIdsToMerge.has(e.target),
-  //   )
-
-  //   // Calculate a position for the new combined node that doesn't overlap
-  //   let avgPosition = calculateAveragePosition(connectedGroup)
-  //   // Check for position overlap with existing nodes
-  //   const GRID_OFFSET = 60
-  //   let pos = { ...avgPosition }
-  //   let isOverlapping;
-  //   do {
-  //     isOverlapping = nodes.value.some(
-  //       n => Math.abs(n.position.x - pos.x) < GRID_OFFSET && Math.abs(n.position.y - pos.y) < GRID_OFFSET
-  //     );
-  //     if (isOverlapping) {
-  //       pos.x += GRID_OFFSET
-  //       pos.y += GRID_OFFSET
-  //     }
-  //   } while(isOverlapping)
-
-  //   // Add the new combined node
-  //   nodes.value.push({
-  //     id: combinedNode.id,
-  //     type: 'combinedServiceNode',
-  //     position: pos,
-  //     data: combinedNode.data,
-  //   })
-
-  //   // Replicate outgoing edges for combined node
-  //   outgoingEdges.forEach((edge) => {
-  //     addEdge({
-  //       id: `e_${combinedNode.id}-${edge.target}_${Date.now()}`,
-  //       source: combinedNode.id,
-  //       target: edge.target,
-  //       animated: edge.animated || true,
-  //       type: edge.type || 'default',
-  //     })
-  //   })
-  //   // Replicate incoming edges for combined node
-  //   incomingEdges.forEach((edge) => {
-  //     addEdge({
-  //       id: `e_${edge.source}-${combinedNode.id}_${Date.now()}`,
-  //       source: edge.source,
-  //       target: combinedNode.id,
-  //       animated: edge.animated || true,
-  //       type: edge.type || 'default',
-  //     })
-  //   })
-  //   // (Optional) force reactivity
-  //   nodes.value = [...nodes.value]
-  //   edges.value = [...edges.value]
-  //   return combinedNode
-  // }
   async function handleConnect(params) {
+    debugger
     if (params.sourceHandle !== 'out' || params.targetHandle !== 'in') {
       return
     }
@@ -2483,6 +2359,7 @@ export const useFlowStore = defineStore('flow', () => {
     clearSelected,
     exportFlow,
     importFlow,
+    getAggregateByid
   }
 
 })

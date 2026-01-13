@@ -451,10 +451,18 @@ export const useStepFlowStore = defineStore('stepFlow', () => {
       const hasCondition = step.condition !== null && step.condition !== undefined && step.condition !== ''
       const isDecision = hasCondition
       const service = step.service
+          let nodeType = ""; //hasCondition ? 'decisionNode' : 'serviceNode'
+          if(isDecision){
+            nodeType = 'decisionNode';
+          }else if(firstStep == step.serviceId){
+            nodeType = 'startNode';
+          }else{
+            nodeType = "serviceNode";
+          }
 
       nodesOut.push({
         id: nodeId,
-        type: isDecision ? 'decisionNode' : 'serviceNode', // add a diamond node type in VueFlow
+        type: nodeType,//isDecision ? 'decisionNode' : 'serviceNode', // add a diamond node type in VueFlow
         position: nextPos(),
         data: {
           aggregateStepId: step.id,

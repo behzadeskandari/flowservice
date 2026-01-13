@@ -4,58 +4,81 @@ const httpClient = createHttpClient()
 
 class ServiceAggregatorClient {
   async getAggregates() {
-    const response = await httpClient.get('/aggregate/get-aggregates')
+    const response = await httpClient.get('/aggregate/get')
     return response.data
   }
 
   async getAggregateByid(id) {
-    const response = await httpClient.get(`/aggregate/get-aggregate/${id}`)
+    const response = await httpClient.get(`/aggregate/get/${id}`)
     return response.data
   }
 
   async getServices() {
-    const response = await httpClient.get('/aggregate/get-services')
+    const response = await httpClient.get('/service/get-services')
+    return response.data
+  }
+  async getServicesById(id) {
+    const response = await httpClient.get(`/service/get-services/${id}`)
     return response.data
   }
 
   async createAggregate(data) {
-    const response = await httpClient.post('aggregate/create-aggregate', data)
+    const response = await httpClient.post('aggregate/create', data)
     return response.data
   }
 
   async updateAggregate(data) {
-    const response = await httpClient.post(`aggregate/update-aggregate`, data)
+    const response = await httpClient.post(`aggregate/update`, data)
+    return response.data
+  }
+
+  async deleteAggregate(id) {
+    const response = await httpClient.post(`aggregate/delete`, id)
     return response.data
   }
 
   async createService(data) {
-    const response = await httpClient.post('/aggregate/create-service', data)
+    const response = await httpClient.post('/service/create-service', data)
     return response.data
   }
 
   async updateService(data) {
-    const response = await httpClient.post(`/aggregate/update-service`, data)
+    const response = await httpClient.post(`/service/update-service`, data)
     return response.data
+  }
+  async deleteService(id){
+    const response = await httpClient.post(`/service/delete-service`, data)
+    return response.data
+
   }
 
   async addAggregateStep(data) {
     console.log('Adding aggregate step with data:', data);
-    const response = await httpClient.post('/aggregate/add-aggregate-step',data)
+    const response = await httpClient.post('/step/add',data)
     return response.data
   }
 
   async updateAggregateStep(data) {
-    const response = await httpClient.post(`/aggregate/update-aggregate-step`, data)
+    const response = await httpClient.post(`/step/update`, data)
+    return response.data
+  }
+
+  async deleteAggregateStep(id) {
+    const response = await httpClient.post(`/step/delete`, id)
     return response.data
   }
 
   async addAggregateStepMapping(data) {
-    const response = await httpClient.post('/aggregate/add-aggregate-step-mapping', data)
+    const response = await httpClient.post('/aggregate-mapping/add', data)
     return response.data
   }
 
   async updateAggregateStepMapping(data) {
-    const response = await httpClient.post(`/aggregate/update-aggregate-step-mapping`, data)
+    const response = await httpClient.post(`/aggregate-mapping/update`, data)
+    return response.data
+  }
+  async deleteAggregateStepMapping(id) {
+    const response = await httpClient.post(`/aggregate-mapping/delete`, id)
     return response.data
   }
 }

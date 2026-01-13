@@ -19,7 +19,7 @@
         </div>
       </div>
       <!-- connectors -->
-        <Handle type="target" position="top" id="in" class="vue-flow__handle-target" />
+      <Handle type="target" position="top" id="in" class="vue-flow__handle-target" />
       <Handle type="source" position="bottom" id="out" class="vue-flow__handle-source" />
 
 

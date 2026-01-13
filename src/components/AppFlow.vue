@@ -9,22 +9,31 @@
         <span class="toolbar-text">بازگشت به لیست</span>
       </router-link>
       <router-link to="/services"
-        class="px-3 py-2 bg-gradient-to-r from-blue-400 via-blue-500 to-blue-600 text-white font-semibold rounded-xl shadow-lg hover:from-blue-500 hover:via-blue-600 hover:to-blue-700 transition duration-300 ease-in-out">
+        class="px-3 py-2 bg-gradient-to-r from-blue-400 via-blue-500
+        to-blue-600 text-white font-semibold rounded-xl shadow-lg
+        hover:from-blue-500 hover:via-blue-600 hover:to-blue-700
+        transition duration-300 ease-in-out">
         <font-awesome-icon :icon="faArrowLeft" style="color: white" />
         <span class="toolbar-text"> لیست سرویس ها</span>
       </router-link>
       <button
-        class="px-3 py-2 bg-gradient-to-r from-green-400 via-green-500 to-green-600 text-white font-semibold rounded-xl shadow-lg hover:from-green-500 hover:via-green-600 hover:to-green-700 transition duration-300 ease-in-out"
+        class="px-3 py-2 bg-gradient-to-r from-green-400 via-green-500
+        to-green-600 text-white font-semibold rounded-xl shadow-lg
+        hover:from-green-500 hover:via-green-600 hover:to-green-700
+        transition duration-300 ease-in-out"
         @click="onAddStep">
         <font-awesome-icon :icon="faPlus" style="color: white" />
         <span class="toolbar-text">Step ایجاد</span>
       </button>
 
       <button
-        class="px-3 py-2 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 text-white font-semibold rounded-xl shadow-lg hover:from-orange-500 hover:via-orange-600 hover:to-orange-700 transition duration-300 ease-in-out"
+        class="px-3 py-2 bg-gradient-to-r from-orange-400 via-orange-500
+        to-orange-600 text-white font-semibold rounded-xl shadow-lg
+        hover:from-orange-500 hover:via-orange-600 hover:to-orange-700
+        transition duration-300 ease-in-out"
         @click="fitView">
         <font-awesome-icon :icon="faExpand" style="color: white" />
-        <span class="toolbar-text">Fit View</span>
+        <span class="toolbar-text"> تنظیم اندازه</span>
       </button>
     </div>
 
@@ -84,7 +93,7 @@
           :pan-on-scroll="true" :pan-on-scroll-speed="0.8" :selection-on-click="false" class="vue-flow-container"
           @nodes-change="onNodesChange" @edges-change="onEdgesChange" @connect="onConnect"
           @node-dblclick="onNodeDblClick" @drop="onDrop" @dragover="onDragOver" :node-types="nodeTypes">
-          <Background variant="dots" :gap="25" :size="3" color="#bbb" />
+          <Background variant="dots" :gap="25" :size="3" color="orange"/>
           <Panel position="top-center"></Panel>
           <Controls>
             <ControlButton @click.prevent="toggleTheme">
@@ -126,6 +135,7 @@ import StepEditModal from '@/components/modals/StepEditModal.vue'
 import ServiceNode from '@/components/nodes/ServiceNode.vue'
 import DecisionNode from '@/components/nodes/DecisionNode.vue'
 import EndNode from '@/components/nodes/EndNode.vue'
+import StartNode from '@/components/nodes/StartNode.vue'
 import { faCamera, faSun, faMoon, faPlus, faBars, faArrowLeft, faArrowRight, faExpand } from '@fortawesome/free-solid-svg-icons'
 import { useScreenshot } from '@/hooks/useScreenshot'
 const vueFlowInstance = useVueFlow()
@@ -148,6 +158,7 @@ const showMobileSidebarToggle = ref(false)
 const nodeTypes = {
   serviceNode: markRaw(ServiceNode),
   decisionNode: markRaw(DecisionNode),
+  startNode : markRaw(StartNode),
   endNode: markRaw(EndNode),
 }
 function sortByConnectionOrder() {
@@ -213,6 +224,7 @@ const loadServices = async () => {
 }
 
 const loadAggregateFlow = async (aggregateId: string) => {
+  debugger
   try {
     store.currentAggregateId = aggregateId
 

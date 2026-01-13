@@ -18,8 +18,7 @@
             </button>
             <button
               class="px-6 py-3 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 text-white font-semibold rounded-xl shadow-lg hover:from-orange-500 hover:via-orange-600 hover:to-orange-700 transition duration-300 ease-in-out"
-              @click="onSave"
-              :disabled="!stepData.stepName">
+              @click="onSave" :disabled="!stepData.stepName">
               <font-awesome-icon :icon="faSave" style="color: white;" />
               <span class="header-btn-text">ذخیره</span>
             </button>
@@ -29,133 +28,103 @@
 
         <!-- Body -->
         <section class="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
-        <!-- Step Information Section -->
-        <div class="space-y-4">
-          <h4 class="text-lg font-semibold text-gray-700 dark:text-gray-200">اطلاعات مرحله</h4>
+          <!-- Step Information Section -->
+          <div class="space-y-4">
+            <h4 class="text-lg font-semibold text-gray-700 dark:text-gray-200">اطلاعات مرحله</h4>
 
-          <!-- Step Name -->
-          <div>
-            <label class="block font-medium text-gray-500 mb-1 text-right px-1 py-1">نام مرحله *</label>
-            <input
-              v-model="stepData.stepName"
-              type="text"
-              placeholder="نام مرحله را وارد کنید"
-              class="w-full px-4 py-2 rounded-xl border border-gray-300
-               focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
-               bg-white shadow-sm transition text-right" />
-          </div>
-
-          <!-- Service Dropdown -->
-          <div>
-            <label class="block font-medium text-gray-500 mb-1 text-right px-1 py-1">سرویس (اختیاری)</label>
-            <select
-              v-model="stepData.serviceId"
-              class="w-full px-4 py-2 rounded-xl border border-gray-300
-               focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
-               bg-white shadow-sm transition text-right">
-              <option :value="null">-- بدون سرویس --</option>
-              <option
-                v-for="service in availableServices"
-                :key="service.id"
-                :value="service.id">
-                {{ service.name }} ({{ service.method }})
-              </option>
-            </select>
-            <small class="block mt-1 text-gray-600 text-right">
-              از بین سرویس‌های موجود انتخاب کنید. سرویس‌ها در صفحه سرویس‌ها مدیریت می‌شوند.
-            </small>
-          </div>
-
-          <!-- Condition Field -->
-          <div>
-            <label class="block font-medium text-gray-500 mb-1 text-right px-1 py-1">شرط (اختیاری)</label>
-            <input
-              v-model="stepData.condition"
-              type="text"
-              placeholder="مثال: user.role === 'admin'"
-              class="w-full px-4 py-2 rounded-xl border border-gray-300
-               focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
-               bg-white shadow-sm transition text-right" />
-            <small class="block mt-1 text-gray-600 text-right">
-              برای مراحل معمولی خالی بگذارید. برای ایجاد یک مرحله شرطی، یک شرط اضافه کنید.
-            </small>
-          </div>
-
-          <!-- Condition Parameters (visible only if condition exists) -->
-          <div v-if="stepData.condition">
-            <label class="block font-medium text-gray-500 mb-1 text-right px-1 py-1">پارامترهای شرط (اختیاری)</label>
-            <input
-              v-model="stepData.conditionParameters"
-              type="text"
-              placeholder="مثال: role,status"
-              class="w-full px-4 py-2 rounded-xl border border-gray-300
-               focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
-               bg-white shadow-sm transition text-right" />
-            <small class="block mt-1 text-gray-600 text-right">
-              نام پارامترهای جدا شده با کاما که در شرط استفاده می‌شوند.
-            </small>
-          </div>
-        </div>
-
-        <!-- Step Connections Section -->
-        <div class="space-y-4 pt-4 border-t border-gray-300">
-          <h4 class="text-lg font-semibold text-gray-700 dark:text-gray-200">اتصالات مرحله</h4>
-
-          <!-- Normal Next Step (if no condition) -->
-          <div v-if="!stepData.condition">
-            <label class="block font-medium text-gray-500 mb-1 text-right px-1 py-1">مرحله بعدی (اختیاری)</label>
-            <select
-              v-model="stepData.nextStepId"
-              class="w-full px-4 py-2 rounded-xl border border-gray-300
-               focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
-               bg-white shadow-sm transition text-right">
-              <option :value="null">-- هیچکدام (مرحله پایانی) --</option>
-              <option
-                v-for="step in availableNextSteps"
-                :key="step.id"
-                :value="step.id">
-                {{ step.stepName || `Step ${step.id.slice(0, 8)}` }}
-              </option>
-            </select>
-          </div>
-
-          <!-- Conditional Steps (if condition exists) -->
-          <template v-else>
+            <!-- Step Name -->
             <div>
-              <label class="block font-medium text-gray-500 mb-1 text-right px-1 py-1">مسیر درست (وقتی شرط درست باشد)</label>
-              <select
-                v-model="stepData.trueStepId"
-                class="w-full px-4 py-2 rounded-xl border border-gray-300
-                 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
-                 bg-white shadow-sm transition text-right">
-                <option :value="null">-- None --</option>
-                <option
-                  v-for="step in availableNextSteps"
-                  :key="step.id"
-                  :value="step.id">
+              <label class="block font-medium text-gray-500 mb-1 text-right px-1 py-1">نام مرحله *</label>
+              <input v-model="stepData.stepName" type="text" placeholder="نام مرحله را وارد کنید" class="w-full px-4 py-2 rounded-xl border border-gray-300
+               focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
+               bg-white shadow-sm transition text-right" />
+            </div>
+
+            <!-- Service Dropdown -->
+            <div>
+              <label class="block font-medium text-gray-500 mb-1 text-right px-1 py-1">سرویس (اختیاری)</label>
+              <select v-model="stepData.serviceId" class="w-full px-4 py-2 rounded-xl border border-gray-300
+               focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
+               bg-white shadow-sm transition text-right">
+                <option :value="null">-- بدون سرویس --</option>
+                <option v-for="service in availableServices" :key="service.id" :value="service.id">
+                  {{ service.name }} ({{ service.method }})
+                </option>
+              </select>
+              <small class="block mt-1 text-gray-600 text-right">
+                از بین سرویس‌های موجود انتخاب کنید. سرویس‌ها در صفحه سرویس‌ها مدیریت می‌شوند.
+              </small>
+            </div>
+
+            <!-- Condition Field -->
+            <div>
+              <label class="block font-medium text-gray-500 mb-1 text-right px-1 py-1">شرط (اختیاری)</label>
+              <input v-model="stepData.condition" type="text" placeholder="مثال: user.role === 'admin'" class="w-full px-4 py-2 rounded-xl border border-gray-300
+               focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
+               bg-white shadow-sm transition text-right" />
+              <small class="block mt-1 text-gray-600 text-right">
+                برای مراحل معمولی خالی بگذارید. برای ایجاد یک مرحله شرطی، یک شرط اضافه کنید.
+              </small>
+            </div>
+
+            <!-- Condition Parameters (visible only if condition exists) -->
+            <div v-if="stepData.condition">
+              <label class="block font-medium text-gray-500 mb-1 text-right px-1 py-1">پارامترهای شرط (اختیاری)</label>
+              <input v-model="stepData.conditionParameters" type="text" placeholder="مثال: role,status" class="w-full px-4 py-2 rounded-xl border border-gray-300
+               focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
+               bg-white shadow-sm transition text-right" />
+              <small class="block mt-1 text-gray-600 text-right">
+                نام پارامترهای جدا شده با کاما که در شرط استفاده می‌شوند.
+              </small>
+            </div>
+          </div>
+
+          <!-- Step Connections Section -->
+          <div class="space-y-4 pt-4 border-t border-gray-300">
+            <h4 class="text-lg font-semibold text-gray-700 dark:text-gray-200">اتصالات مرحله</h4>
+
+            <!-- Normal Next Step (if no condition) -->
+            <div v-if="!stepData.condition">
+              <label class="block font-medium text-gray-500 mb-1 text-right px-1 py-1">مرحله بعدی (اختیاری)</label>
+              <select v-model="stepData.nextStepId" class="w-full px-4 py-2 rounded-xl border border-gray-300
+               focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
+               bg-white shadow-sm transition text-right">
+                <option :value="null">-- هیچکدام (مرحله پایانی) --</option>
+                <option v-for="step in availableNextSteps" :key="step.id" :value="step.id">
                   {{ step.stepName || `Step ${step.id.slice(0, 8)}` }}
                 </option>
               </select>
             </div>
 
-            <div>
-              <label class="block font-medium text-gray-500 mb-1 text-right px-1 py-1">مسیر نادرست (وقتی شرط نادرست است)</label>
-              <select
-                v-model="stepData.falseStepId"
-                class="w-full px-4 py-2 rounded-xl border border-gray-300
+            <!-- Conditional Steps (if condition exists) -->
+            <template v-else>
+              <div>
+                <label class="block font-medium text-gray-500 mb-1 text-right px-1 py-1">مسیر درست (وقتی شرط درست
+                  باشد)</label>
+                <select v-model="stepData.trueStepId" class="w-full px-4 py-2 rounded-xl border border-gray-300
                  focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
                  bg-white shadow-sm transition text-right">
-                <option :value="null">-- None --</option>
-                <option
-                  v-for="step in availableNextSteps"
-                  :key="step.id"
-                  :value="step.id">
-                  {{ step.stepName || `Step ${step.id.slice(0, 8)}` }}
-                </option>
-              </select>
-            </div>
-          </template>
-        </div>
+                  <option :value="null">-- None --</option>
+                  <option v-for="step in availableNextSteps" :key="step.id" :value="step.id">
+                    {{ step.stepName || `Step ${step.id.slice(0, 8)}` }}
+                  </option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block font-medium text-gray-500 mb-1 text-right px-1 py-1">مسیر نادرست (وقتی شرط نادرست
+                  است)</label>
+                <select v-model="stepData.falseStepId" class="w-full px-4 py-2 rounded-xl border border-gray-300
+                 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
+                 bg-white shadow-sm transition text-right">
+                  <option :value="null">-- None --</option>
+                  <option v-for="step in availableNextSteps" :key="step.id" :value="step.id">
+                    {{ step.stepName || `Step ${step.id.slice(0, 8)}` }}
+                  </option>
+                </select>
+              </div>
+            </template>
+          </div>
 
         </section>
 
@@ -246,6 +215,7 @@ const openModal = (mode = 'add', initialData = null) => {
       serviceId: initialData.serviceId ? String(initialData.serviceId) : null,
     }
     stepData.value = Object.assign({}, stepData.value, cleanedData)
+    localStorage.setItem('stepData', stepData.value)
     console.log('StepModal opened with data:', stepData.value)
   }
 
@@ -263,6 +233,7 @@ function onClose() {
 }
 
 async function onSave() {
+  debugger
   if (!stepData.value.stepName) {
     notify({
       title: 'خطا',
@@ -285,7 +256,18 @@ async function onSave() {
       positionX: stepData.value.positionX ?? 100,
       positionY: stepData.value.positionY ?? 100,
     }
-
+    let record = await store.getAggregateByid(stepData.value.aggregateId);
+    if (store.nodes.length == 0) {
+      const data = {
+        id: stepData.value.aggregateId || store.currentAggregateId,
+        firstStepId: stepData.value.serviceId,
+        status: true,
+        description: record.description,
+        name: record.name,
+      }
+      console.log(store.aggregates, 'store.aggregates');
+      await serviceAggregatorClient.updateAggregate(data)
+    }
     // If we have a nodeId, this means we added a local node and need to update it with backend data
     if (stepData.value.nodeId) {
       const stepResult = await serviceAggregatorClient.addAggregateStep(payload)
@@ -363,6 +345,7 @@ onMounted(() => {
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -373,6 +356,7 @@ onMounted(() => {
     transform: scale(0.95);
     opacity: 0;
   }
+
   to {
     transform: scale(1);
     opacity: 1;

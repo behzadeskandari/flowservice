@@ -9,14 +9,11 @@
         <p>ایجاد و ویرایش سرویس‌ها</p>
       </div>
       <div class="header-actions">
-        <!-- <router-link to="/home" class="w-full h-15 text-sm leading-7 mt-4 rounded-lg text-white font-bold text-lg shadow-lg hover:shadow-xl
-          bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600
-          hover:to-amber-700 active:scale-98 transition-all duration-200">
-          <i class="fas fa-arrow-left"></i>
-         <span class="l-hight">
-         بازگشت به Flow
-         </span>
-        </router-link> -->
+                <router-link to="/aggregates"
+        class="px-3 py-2 bg-gradient-to-r from-blue-400 via-blue-500 to-blue-600 text-white font-semibold rounded-xl shadow-lg hover:from-blue-500 hover:via-blue-600 hover:to-blue-700 transition duration-300 ease-in-out">
+        <font-awesome-icon :icon="faArrowRight" style="color: white" />
+        <span class="toolbar-text"> جدول aggregate</span>
+      </router-link>
         <button class="w-full h-12 mt-4 rounded-lg text-white text-sm  leading-7 font-bold text-lg shadow-lg hover:shadow-xl
           bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600
           hover:to-amber-700 active:scale-98 transition-all duration-200" @click="openAddModal">
@@ -197,6 +194,8 @@
 </template>
 
 <script setup>
+import { faCamera, faSun, faMoon, faPlus, faBars, faArrowLeft, faArrowRight, faExpand } from '@fortawesome/free-solid-svg-icons'
+
 import { ref, computed, onMounted } from 'vue'
 import { notify } from '@kyvg/vue3-notification'
 import serviceAggregatorClient from '@/utils/service-aggregator-client'
