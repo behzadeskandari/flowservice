@@ -30,7 +30,7 @@
       <button class="SearchButton" @click="SearchAgg">جستجو</button>
       <button class="btn-del-SearchButton" @click="resetSearch">حذف</button>
       <div>
-        <label class="block font-medium text-gray-500 mb-1 text-right px-1 py-1">وضعیت *</label>
+        <label class="block font-medium text-orange-500 mb-1 text-right px-1 py-1">وضعیت </label>
         <select v-model="status" type="text" placeholder="نام Aggregate را وارد کنید" class="w-[300px] h-[50px] px-4 py-2 rounded-xl border border-gray-300
                        focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
                        bg-white shadow-sm transition text-right" required>
@@ -39,7 +39,7 @@
         </select>
       </div>
       <div>
-        <label class="block font-medium text-gray-500 mb-1 text-right px-1 py-1">نام *</label>
+        <label class="block font-medium text-orange-500 mb-1 text-right px-1 py-1">نام </label>
         <input v-model="name" type="text" placeholder="نام Aggregate را وارد کنید" class="w-[300px] h-[50px] px-4 py-2 rounded-xl border border-gray-300
                        focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
                        bg-white shadow-sm transition text-right" required />
@@ -122,7 +122,7 @@
         <span class="btn-pagenumber" v-if="aggregates.hasPreviousPage" @click="fetchPrevouisPage">
           <font-awesome-icon :icon="faArrowLeft" style="color: orange;" />
         </span>
-        <span class="btn-pagenumber">{{ aggregates.pageNumber }}</span>
+        <span class="btn-pagenumber-orange">{{ aggregates.pageNumber }}</span>
         <span class="btn-pagenumber" @click="fetchNextpage" v-if="aggregates.hasNextPage">{{ aggregates.pageNumber + 1
         }}</span>
         <!-- <span class="btn-totalpage">{{ aggregates.totalPages }}</span> -->
@@ -325,7 +325,7 @@ onMounted(() => {
 
 .search_holder {
   display: flex;
-  background-color: orange;
+  background-color: #f7f7f7;
   height: 150px;
   gap: 10;
   padding: 10px;
@@ -348,6 +348,7 @@ onMounted(() => {
 }
 
 .btn-pagenumber,
+.btn-pagenumber-orange,
 .btn-totalpage {
   color: orange;
   border-radius: 50%;
@@ -360,6 +361,10 @@ onMounted(() => {
   margin: 10px;
 }
 
+.btn-pagenumber-orange{
+  background-color: orange;
+  color:white;
+}
 .btn-totalpage {
   color: white;
   background-color: rgb(182, 179, 179);

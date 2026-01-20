@@ -5,7 +5,8 @@
       <LogoutButton />
       <router-link to="/aggregates"
         class="px-3 py-2 bg-gradient-to-r from-blue-400 via-blue-500 to-blue-600 text-white font-semibold rounded-xl shadow-lg hover:from-blue-500 hover:via-blue-600 hover:to-blue-700 transition duration-300 ease-in-out">
-        <font-awesome-icon :icon="faArrowRight" style="color: white" />
+        <font-awesome-icon :icon="faArrowLeft" style="color: white" />
+
         <span class="toolbar-text">بازگشت به لیست</span>
       </router-link>
       <router-link to="/services"
@@ -13,7 +14,7 @@
         to-blue-600 text-white font-semibold rounded-xl shadow-lg
         hover:from-blue-500 hover:via-blue-600 hover:to-blue-700
         transition duration-300 ease-in-out">
-        <font-awesome-icon :icon="faArrowLeft" style="color: white" />
+        <font-awesome-icon :icon="faArrowRight" style="color: white" />
         <span class="toolbar-text"> لیست سرویس ها</span>
       </router-link>
       <button
@@ -66,7 +67,7 @@
           <p>هیچ سرویسی موجود نیست</p>
         </div>
         <div v-else class="services-list">
-          <div v-for="service in services" :key="service.id" class="service-card" :draggable="true"
+          <div v-for="service in services.items" :key="service.id" class="service-card" :draggable="true"
             @dragstart="onDragStart($event, service)" @dragend="onDragEnd" @dblclick="onServiceDoubleClick(service)">
             <div class="service-card-header">
               <strong>{{ service.name }}</strong>
@@ -210,7 +211,7 @@ const loadServices = async () => {
   isLoadingServices.value = true
   try {
     const data = await serviceAggregatorClient.getServices()
-    services.value = Array.isArray(data) ? data : []
+    services.value = data ? data : []
   } catch (error) {
     console.error('Error loading services:', error)
     notify({
