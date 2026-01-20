@@ -1,5 +1,6 @@
 <template>
-  <div class="aggregates-page min-h-screen fullscreen flex items-center justify-center bg-gradient-to-br from-orange-50 to-amber-500">
+  <div
+    class="aggregates-page min-h-screen fullscreen flex items-center justify-center bg-gradient-to-br from-orange-50 to-amber-500">
     <!-- Header -->
     <div class="page-header">
       <div class="header-content">
@@ -11,18 +12,37 @@
       </div>
       <div class="header-actions">
 
-      <router-link to="/services"
-        class="px-3 py-2 bg-gradient-to-r from-blue-400 via-blue-500 to-blue-600 text-white font-semibold rounded-xl shadow-lg hover:from-blue-500 hover:via-blue-600 hover:to-blue-700 transition duration-300 ease-in-out">
-        <font-awesome-icon :icon="faArrowLeft" style="color: white" />
-        <span class="toolbar-text"> جدول سرویس ها</span>
-      </router-link>
+        <router-link to="/services"
+          class="px-3 py-2 bg-gradient-to-r from-blue-400 via-blue-500 to-blue-600 text-white font-semibold rounded-xl shadow-lg hover:from-blue-500 hover:via-blue-600 hover:to-blue-700 transition duration-300 ease-in-out">
+          <font-awesome-icon :icon="faArrowLeft" style="color: white" />
+          <span class="toolbar-text"> جدول سرویس ها</span>
+        </router-link>
         <button class="w-full h-12 mt-4 rounded-lg text-white text-sm leading-7 font-bold text-lg shadow-lg hover:shadow-xl
           bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600
           hover:to-amber-700 active:scale-98 transition-all duration-200" @click="openAddModal">
-          <span  class="l-hight" style="margin-inline : 20px;">
+          <span class="l-hight" style="margin-inline : 20px;">
             Aggregate جدید
           </span>
         </button>
+      </div>
+    </div>
+    <div class="search_holder">
+      <button class="SearchButton" @click="SearchAgg">جستجو</button>
+      <button class="btn-del-SearchButton" @click="resetSearch">حذف</button>
+      <div>
+        <label class="block font-medium text-gray-500 mb-1 text-right px-1 py-1">وضعیت *</label>
+        <select v-model="status" type="text" placeholder="نام Aggregate را وارد کنید" class="w-[300px] h-[50px] px-4 py-2 rounded-xl border border-gray-300
+                       focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
+                       bg-white shadow-sm transition text-right" required>
+          <option value="True">فعال</option>
+          <option value="False">غیر فعال</option>
+        </select>
+      </div>
+      <div>
+        <label class="block font-medium text-gray-500 mb-1 text-right px-1 py-1">نام *</label>
+        <input v-model="name" type="text" placeholder="نام Aggregate را وارد کنید" class="w-[300px] h-[50px] px-4 py-2 rounded-xl border border-gray-300
+                       focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
+                       bg-white shadow-sm transition text-right" required />
       </div>
     </div>
 
@@ -34,87 +54,215 @@
 
     <!-- Aggregates Table -->
     <div v-else class="aggregates-container">
-      <div v-if="aggregates.length === 0" class="empty-state">
+      <div v-if="aggregates.totalCount === 0" class="empty-state">
         <i class="fas fa-inbox"></i>
         <h3>هیچ Aggregate موجود نیست</h3>
         <p>Aggregate جدیدی ایجاد کنید تا شروع کنید</p>
       </div>
+      <div v-else>
 
-      <table v-else class="aggregates-table">
-        <thead>
-          <tr>
-            <th>نام</th>
-            <th>توضیحات</th>
-            <th>وضعیت</th>
-            <th>اقدامات</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr
-            v-for="aggregate in aggregates"
-            :key="aggregate.id"
-            @click="navigateToEditor(aggregate.id)"
-            class="clickable-row"
-          >
-            <td class="name-cell">{{ aggregate.name || 'بدون نام' }}</td>
-            <td class="description-cell">{{ truncateDescription(aggregate.description) }}</td>
-            <td class="status-cell">
-              <span class="status-badge" :class="{ active: aggregate.status, inactive: !aggregate.status }">
-                {{ aggregate.status ? 'فعال' : 'غیرفعال' }}
-              </span>
-            </td>
-            <td class="actions-cell" @click.stop>
-               <button class="btn-icon btn-view" @click.stop="navigateToEditor(aggregate.id)" title="مشاهده Flow">
-                <FontAwesomeIcon :icon="['fa','play']" />
-                <font-awesome-icon :icon="['fas', 'eye']" style="color: red;" />
-               </button>
-              <button class="btn-icon btn-edit" @click.stop="openEditModal(aggregate)" title="ویرایش">
-                <font-awesome-icon :icon="['fas', 'pen-to-square']" style="color: orange;" class="pen" />
-              </button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+        <table class="aggregates-table">
+          <thead>
+            <tr>
+              <th>ردیف</th>
+              <th>نام</th>
+              <th>توضیحات</th>
+              <th>وضعیت</th>
+              <th>زمان ویرایش</th>
+              <th>زمان ایجاد</th>
+              <th>اقدامات</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="aggregate in aggregates.items" :key="aggregate.id" @click="navigateToEditor(aggregate.id)"
+              class="clickable-row">
+              <td></td>
+              <td class="name-cell">{{ aggregate.name || 'بدون نام' }}</td>
+              <td class="description-cell">{{ truncateDescription(aggregate.description) }}</td>
+              <td class="status-cell">
+                <span class="status-badge" :class="{ active: aggregate.status, inactive: !aggregate.status }">
+                  {{ aggregate.status ? 'فعال' : 'غیرفعال' }}
+                </span>
+              </td>
+              <td class="status-cell">
+                <span class="status-badge" :class="{ active: aggregate.status, inactive: !aggregate.status }">
+                  {{ aggregate.updateDate }}
+                </span>
+
+              </td>
+
+              <td class="status-cell">
+                <span class="status-badge" :class="{ active: aggregate.status, inactive: !aggregate.status }">
+                  {{ aggregate.createDate }}
+                </span>
+              </td>
+              <td class="actions-cell" @click.stop>
+                <button class="btn-icon btn-view" @click.stop="navigateToEditor(aggregate.id)" title="مشاهده Flow">
+                  <FontAwesomeIcon :icon="['fa', 'play']" />
+                  <font-awesome-icon :icon="['fas', 'eye']" style="color: red;" />
+                </button>
+                <button class="btn-icon btn-edit" @click.stop="openEditModal(aggregate)" title="ویرایش">
+                  <font-awesome-icon :icon="['fas', 'pen-to-square']" style="color: orange;" class="pen" />
+                </button>
+                <button class="btn-icon btn-delete" @click.stop="deleteModal(aggregate.id)" title="پاک کردن">
+                  <font-awesome-icon :icon="faDeleteLeft" style="color: red;" />
+                </button>
+
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="btn-pagenumber-grey">
+        <span> تعداد کل رکورد </span>
+        <span>{{ aggregates.totalCount }}</span>
+      </div>
+
+      <div style="display:block">
+        <span class="btn-pagenumber" v-if="aggregates.hasPreviousPage" @click="fetchPrevouisPage">
+          <font-awesome-icon :icon="faArrowLeft" style="color: orange;" />
+        </span>
+        <span class="btn-pagenumber">{{ aggregates.pageNumber }}</span>
+        <span class="btn-pagenumber" @click="fetchNextpage" v-if="aggregates.hasNextPage">{{ aggregates.pageNumber + 1
+        }}</span>
+        <!-- <span class="btn-totalpage">{{ aggregates.totalPages }}</span> -->
+        <!-- <span class="btn-pagenumber-grey">{{ aggregates.totalCount }} تعداد کل رکورد </span> -->
+        <span class="btn-pagenumber" v-if="aggregates.hasNextPage" @click="fetchNextPage">
+          <font-awesome-icon :icon="faArrowRight" style="color: orange;" />
+        </span>
+      </div>
     </div>
 
     <!-- Aggregate Modal -->
-    <AggregateModal
-      :show="showModal"
-      :mode="isEditMode ? 'edit' : 'add'"
-      @update:show="showModal = $event"
-      @saved="handleModalSaved"
-    />
+    <AggregateModal :show="showModal" :mode="isEditMode ? 'edit' : 'add'" @update:show="showModal = $event"
+      @saved="handleModalSaved" />
+    <ConfirmModal :visible="showConfirm" message="آیا از پاک کردن گره مطمئن هستید؟" @confirm="onConfirmDelete"
+      @cancel="onCancelDelete" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { notify } from '@kyvg/vue3-notification'
 import serviceAggregatorClient from '@/utils/service-aggregator-client'
 import LogoutButton from '@/components/LogoutButton.vue'
 import AggregateModal from '@/components/modals/AggregateModal.vue'
 import { useFlowStore } from '@/stores/flowStore'
-import { faCamera, faSun, faMoon, faPlus, faBars, faArrowLeft, faArrowRight, faExpand } from '@fortawesome/free-solid-svg-icons'
+import { faCamera, faSun, faMoon, faPlus, faBars, faArrowLeft, faArrowRight, faExpand, faDeleteLeft, faArrowsLeftRight } from '@fortawesome/free-solid-svg-icons'
+import ConfirmModal from '@/components/modals/ConfirmModal.vue'
 
 const router = useRouter()
 const store = useFlowStore()
+const showConfirm = ref(false)
+const status = ref(null);
+const name = ref("");
+const aggregates = ref<{
+  hasNextPage: true,
+  hasPreviousPage: false,
+  items: [],
+  pageNumber: 0,
+  totalCount: 0,
+  totalPages: 0
+}>({
+  hasNextPage: true,
+  hasPreviousPage: false,
+  items: [],
+  pageNumber: 0,
+  totalCount: 0,
+  totalPages: 0
+})
 
-const aggregates = ref<any[]>([])
+
 const isLoading = ref(false)
 const showModal = ref(false)
 const isEditMode = ref(false)
+const selectedId = ref("");
+
+async function onConfirmDelete() {
+  showConfirm.value = false
+  var response = await serviceAggregatorClient.deleteAggregate(selectedId.value)
+  await loadAggregates();
+  close() // Close your main modal if you want
+}
+
+function onCancelDelete() {
+  showConfirm.value = false
+}
+function close() {
+  store.clearSelected()
+}
 
 const truncateDescription = (description: string | null | undefined): string => {
   if (!description) return 'بدون توضیحات'
   return description.length > 80 ? description.slice(0, 77) + '...' : description
+}
+async function fetchNextpage() {
+  var data = {
+    PageIndex: aggregates.value.pageNumber + 1,
+    PageSize: 10,
+  }
+  var record = await serviceAggregatorClient.getAggregatesWithParams(data);
+  aggregates.value = record;
+}
+
+async function fetchPrevouisPage() {
+  var data = {
+    PageIndex: aggregates.value.pageNumber - 1,
+    PageSize: 10,
+  }
+  var record = await serviceAggregatorClient.getAggregatesWithParams(data);
+  aggregates.value = record;
+}
+
+
+async function fetchNextPage() {
+  var data = {
+    PageIndex: aggregates.value.pageNumber + 1,
+    PageSize: 10,
+  }
+  var record = await serviceAggregatorClient.getAggregatesWithParams(data);
+  aggregates.value = record;
+
+}
+async function resetSearch() {
+  var data = {
+    PageIndex: 1,
+    PageSize: 10,
+  }
+  var record = await serviceAggregatorClient.getServicesWithParams(data);
+  aggregates.value = record;
+}
+async function SearchAgg(params) {
+  if (name.value == "") {
+    notify({
+      title: 'نام را وارد کنید',
+      text: 'نام را وارد کنید',
+      type: 'error',
+    })
+  }
+  if (status.value === null || status.value === undefined) {
+    status.value = true;
+  }
+  var data = {
+    PageIndex: aggregates.value.pageNumber,
+    PageSize: 10,
+    Name: name.value,
+    Status: status.value,
+  }
+  var record = await serviceAggregatorClient.getAggregatesWithParamsWithSearch(data);
+  aggregates.value = record;
+}
+const deleteModal = async (id) => {
+  showConfirm.value = true;
+  selectedId.value = id;
 }
 
 const loadAggregates = async () => {
   isLoading.value = true
   try {
     const data = await serviceAggregatorClient.getAggregates()
-    aggregates.value = Array.isArray(data) ? data : []
+    aggregates.value = data ? data : []
   } catch (error) {
     console.error('Error loading aggregates:', error)
     notify({
@@ -133,6 +281,7 @@ const openAddModal = () => {
 }
 
 const openEditModal = (aggregate: any) => {
+  console.log(aggregate, 'aggregateididids')
   isEditMode.value = true
   store.currentAggregateId = aggregate.id
   showModal.value = true
@@ -153,6 +302,41 @@ onMounted(() => {
 </script>
 
 <style scoped lang="postcss">
+.SearchButton {
+  background-color: rgb(249, 120, 0);
+  width: 250px;
+  height: 50px;
+  line-height: 1;
+  margin-top: 2.3em;
+  border-radius: 50px;
+  color: white;
+
+}
+
+.btn-del-SearchButton {
+  background-color: rgb(10, 184, 1);
+  width: 250px;
+  height: 50px;
+  line-height: 1;
+  margin-top: 2.3em;
+  border-radius: 50px;
+  color: white;
+}
+
+.search_holder {
+  display: flex;
+  background-color: orange;
+  height: 150px;
+  gap: 10;
+  padding: 10px;
+  margin: 0 auto;
+  justify-content: center;
+  gap: 10px;
+  width: 75.8%;
+  margin-bottom: 22px;
+  border-radius: 10px;
+}
+
 .aggregates-page {
   min-height: 100vh;
   width: 100%;
@@ -161,6 +345,35 @@ onMounted(() => {
   display: flex;
   flex-flow: column;
   box-sizing: border-box;
+}
+
+.btn-pagenumber,
+.btn-totalpage {
+  color: orange;
+  border-radius: 50%;
+  line-height: 3;
+  background-color: #eee;
+  border: 1px solid rgb(185, 184, 184);
+  display: inline-block;
+  width: 50px;
+  height: 50px;
+  margin: 10px;
+}
+
+.btn-totalpage {
+  color: white;
+  background-color: rgb(182, 179, 179);
+}
+
+.btn-pagenumber-grey {
+  background-color: rgb(231, 229, 229);
+  cursor: none;
+  pointer-events: none;
+  color: black;
+  line-height: 3;
+  display: block;
+  position: relative;
+  right: 0;
 }
 
 .page-header {
@@ -222,8 +435,13 @@ onMounted(() => {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .aggregates-container {
@@ -368,6 +586,11 @@ onMounted(() => {
   color: #ffa600;
 }
 
+.btn-delete {
+  background: #e7f3ff;
+  color: red;
+}
+
 .btn-edit:hover {
   background: #ffa600;
   color: white;
@@ -431,7 +654,7 @@ onMounted(() => {
     gap: 10px;
   }
 
-  .header-actions > * {
+  .header-actions>* {
     width: 100%;
   }
 
@@ -456,4 +679,3 @@ onMounted(() => {
   }
 }
 </style>
-

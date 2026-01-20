@@ -1,19 +1,20 @@
 <template>
-  <div class="services-page min-h-screen fullscreen flex items-center justify-center bg-gradient-to-br from-orange-50 to-amber-500">
+  <div
+    class="services-page min-h-screen fullscreen flex items-center justify-center bg-gradient-to-br from-orange-50 to-amber-500">
     <!-- Header -->
     <div class="page-header">
       <div class="header-content">
-         <LogoutButton />
+        <LogoutButton />
 
         <h1>مدیریت سرویس‌ها</h1>
         <p>ایجاد و ویرایش سرویس‌ها</p>
       </div>
       <div class="header-actions">
-                <router-link to="/aggregates"
-        class="px-3 py-2 bg-gradient-to-r from-blue-400 via-blue-500 to-blue-600 text-white font-semibold rounded-xl shadow-lg hover:from-blue-500 hover:via-blue-600 hover:to-blue-700 transition duration-300 ease-in-out">
-        <font-awesome-icon :icon="faArrowRight" style="color: white" />
-        <span class="toolbar-text"> جدول aggregate</span>
-      </router-link>
+        <router-link to="/aggregates"
+          class="px-3 py-2 bg-gradient-to-r from-blue-400 via-blue-500 to-blue-600 text-white font-semibold rounded-xl shadow-lg hover:from-blue-500 hover:via-blue-600 hover:to-blue-700 transition duration-300 ease-in-out">
+          <font-awesome-icon :icon="faArrowRight" style="color: white" />
+          <span class="toolbar-text"> جدول aggregate</span>
+        </router-link>
         <button class="w-full h-12 mt-4 rounded-lg text-white text-sm  leading-7 font-bold text-lg shadow-lg hover:shadow-xl
           bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600
           hover:to-amber-700 active:scale-98 transition-all duration-200" @click="openAddModal">
@@ -21,7 +22,32 @@
         </button>
       </div>
     </div>
+    <div class="search_holder">
+      <button class="SearchButton" @click="SearchAgg">جستجو</button>
+      <button class="btn-del-SearchButton" @click="resetSearch">حذف</button>
+      <div>
+        <label class="block font-medium text-gray-500 mb-1 text-right px-1 py-1">وضعیت *</label>
+        <select v-model="status" type="text" class="w-[300px] h-[50px] px-4 py-2 rounded-xl border border-gray-300
+                       focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
+                       bg-white shadow-sm transition text-right" required>
+          <option value="True">فعال</option>
+          <option value="False">غیر فعال</option>
+        </select>
+      </div>
 
+      <div>
+        <label class="block font-medium text-gray-500 mb-1 text-right px-1 py-1">URL *</label>
+        <input v-model="url" type="text" placeholder="URL را وارد کنید" class="w-[300px] h-[50px] px-4 py-2 rounded-xl border border-gray-300
+                       focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
+                       bg-white shadow-sm transition text-right" required />
+      </div>
+      <div>
+        <label class="block font-medium text-gray-500 mb-1 text-right px-1 py-1">نام *</label>
+        <input v-model="name" type="text" placeholder="نام سرویس را وارد کنید" class="w-[300px] h-[50px] px-4 py-2 rounded-xl border border-gray-300
+                       focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
+                       bg-white shadow-sm transition text-right" required />
+      </div>
+    </div>
     <!-- Loading State -->
     <div v-if="isLoading" class="loading-container">
       <div class="spinner"></div>
@@ -30,7 +56,7 @@
 
     <!-- Services Table -->
     <div v-else class="services-container">
-      <div v-if="services.length === 0" class="empty-state">
+      <div v-if="services.totalCount === 0" class="empty-state">
         <i class="fas fa-inbox"></i>
         <h3>هیچ سرویسی موجود نیست</h3>
         <p>سرویس جدیدی ایجاد کنید تا شروع کنید</p>
@@ -48,13 +74,13 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="service in services" :key="service.id">
+          <tr v-for="service in services.items" :key="service.id">
             <td class="name-cell">{{ service.name }}</td>
             <td class="url-cell">
               <code>{{ truncateUrl(service.url) }}</code>
             </td>
             <td class="method-cell">
-              <span class="method-badge" :class="service.method.toLowerCase()">
+              <span class="method-badge" :class="service.method">
                 {{ service.method }}
               </span>
             </td>
@@ -68,13 +94,37 @@
               <button class="btn-icon btn-edit" @click="openEditModal(service)" title="ویرایش">
                 <font-awesome-icon :icon="['fas', 'pen-to-square']" style="color: orange;" class="pen" />
               </button>
-              <button class="btn-icon btn-delete" @click="deleteService(service.id)" title="حذف">
+              <button class="btn-icon btn-delete" @click="changeStatus(service.id)" title="حذف">
+                <font-awesome-icon :icon="['fas', 'eye']" style="color: red;" />
+              </button>
+              <button class="btn-icon btn-delete" @click="deleteModal(service.id)" title="حذف">
                 <font-awesome-icon :icon="['fas', 'trash']" style="color: red;" />
               </button>
             </td>
           </tr>
         </tbody>
       </table>
+      <!-- Pagination Total -->
+      <div class="btn-pagenumber-grey">
+        <span> تعداد کل رکورد </span>
+        <span>{{ services.totalCount }}</span>
+      </div>
+
+        <!-- Pagination Block -->
+      <div style="display:block">
+        <span class="btn-pagenumber" v-if="services.hasNextPage">
+          <!--  -->
+          <font-awesome-icon :icon="faArrowRight" style="color: orange;" @click="fetchNextPage" />
+        </span>
+        <span class="btn-pagenumber" @click="fetchNextpage" v-if="services.hasNextPage">{{ services.pageNumber + 1
+          }}</span>
+        <span class="btn-pagenumber">{{ services.pageNumber }}</span>
+        <!--  -->
+        <!-- <span class="btn-totalpage">{{ aggregates.totalPages }}</span> -->
+        <span class="btn-pagenumber" v-if="services.hasPreviousPage" @click="fetchPrevouisPage">
+          <font-awesome-icon :icon="faArrowLeft" style="color: orange;" />
+        </span>
+      </div>
     </div>
 
     <!-- Service Modal -->
@@ -82,12 +132,13 @@
       class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 animate-fadeIn p-4"
       @click.self="closeModal">
       <div class="bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 p-[2px] rounded-3xl w-full max-w-2xl">
-        <div class="bg-white dark:bg-gray-900 shadow-2xl rounded-3xl w-full animate-scaleIn"
-          style="padding:20px">
+        <div class="bg-white dark:bg-gray-900 shadow-2xl rounded-3xl w-full animate-scaleIn" style="padding:20px">
 
           <!-- Header -->
-          <header class="flex flex-col sm:flex-row items-center justify-between border-b border-gray-200 pb-4 mb-6 gap-4">
-            <h3 class="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-orange-500 to-amber-600 bg-clip-text text-transparent text-center sm:text-right order-first sm:order-last">
+          <header
+            class="flex flex-col sm:flex-row items-center justify-between border-b border-gray-200 pb-4 mb-6 gap-4">
+            <h3
+              class="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-orange-500 to-amber-600 bg-clip-text text-transparent text-center sm:text-right order-first sm:order-last">
               {{ isEditMode ? 'ویرایش سرویس' : 'سرویس جدید' }}
             </h3>
             <div class="flex gap-2 w-full sm:w-auto">
@@ -99,8 +150,7 @@
               </button>
               <button
                 class="flex-1 sm:flex-none px-4 sm:px-6 py-3 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 text-white font-semibold rounded-xl shadow-lg hover:from-orange-500 hover:via-orange-600 hover:to-orange-700 transition duration-300 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                @click="saveService"
-                :disabled="!isFormValid">
+                @click="saveService" :disabled="!isFormValid">
                 <i class="fas fa-save"></i>
                 <span class="hidden sm:inline">{{ isEditMode ? 'بروزرسانی' : 'ایجاد' }}</span>
               </button>
@@ -111,28 +161,23 @@
           <section class="space-y-5 max-h-[70vh] overflow-y-auto pr-2">
             <!-- Service Information Section -->
             <div class="space-y-5">
-              <h4 class="text-lg sm:text-xl font-bold text-gray-800 dark:text-gray-100 pb-3 border-b border-orange-200">📋 اطلاعات سرویس</h4>
+              <h4 class="text-lg sm:text-xl font-bold text-gray-800 dark:text-gray-100 pb-3 border-b border-orange-200">
+                📋 اطلاعات سرویس</h4>
 
               <!-- Service Name -->
               <div class="space-y-2">
-                <label class="block font-semibold text-gray-700 dark:text-gray-200 text-right">نام سرویس <span class="text-red-500">*</span></label>
-                <input
-                  v-model="formData.name"
-                  type="text"
-                  placeholder="مثال: Shahkar Service"
-                  class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700
+                <label class="block font-semibold text-gray-700 dark:text-gray-200 text-right">نام سرویس <span
+                    class="text-red-500">*</span></label>
+                <input v-model="formData.name" type="text" placeholder="مثال: Shahkar Service" class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700
                    focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
                    bg-white dark:bg-gray-800 dark:text-white shadow-sm transition duration-200 text-right" />
               </div>
 
               <!-- URL -->
               <div class="space-y-2">
-                <label class="block font-semibold text-gray-700 dark:text-gray-200 text-right">URL <span class="text-red-500">*</span></label>
-                <input
-                  v-model="formData.url"
-                  type="text"
-                  placeholder="https://api.example.com/endpoint"
-                  class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700
+                <label class="block font-semibold text-gray-700 dark:text-gray-200 text-right">URL <span
+                    class="text-red-500">*</span></label>
+                <input v-model="formData.url" type="text" placeholder="https://api.example.com/endpoint" class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700
                    focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
                    bg-white dark:bg-gray-800 dark:text-white shadow-sm transition duration-200 text-right text-sm" />
               </div>
@@ -140,9 +185,9 @@
               <!-- Method and Type -->
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div class="space-y-2">
-                  <label class="block font-semibold text-gray-700 dark:text-gray-200 text-right">متد HTTP <span class="text-red-500">*</span></label>
-                  <select
-                    v-model="formData.method"
+                  <label class="block font-semibold text-gray-700 dark:text-gray-200 text-right">متد HTTP <span
+                      class="text-red-500">*</span></label>
+                  <select v-model="formData.method"
                     class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700
                      focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
                      bg-white dark:bg-gray-800 dark:text-white shadow-sm transition duration-200 text-right font-medium">
@@ -155,9 +200,9 @@
                 </div>
 
                 <div class="space-y-2">
-                  <label class="block font-semibold text-gray-700 dark:text-gray-200 text-right">نوع سرویس <span class="text-red-500">*</span></label>
-                  <select
-                    v-model="formData.type"
+                  <label class="block font-semibold text-gray-700 dark:text-gray-200 text-right">نوع سرویس <span
+                      class="text-red-500">*</span></label>
+                  <select v-model="formData.type"
                     class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700
                      focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
                      bg-white dark:bg-gray-800 dark:text-white shadow-sm transition duration-200 text-right font-medium">
@@ -169,16 +214,16 @@
               </div>
 
               <!-- Status -->
-              <div class="bg-gradient-to-r from-orange-50 to-amber-50 dark:from-gray-800 dark:to-gray-700 rounded-xl p-4 flex items-center justify-between border-2 border-orange-100 dark:border-orange-800">
+              <div
+                class="bg-gradient-to-r from-orange-50 to-amber-50 dark:from-gray-800 dark:to-gray-700 rounded-xl p-4 flex items-center justify-between border-2 border-orange-100 dark:border-orange-800">
                 <div class="flex items-center gap-3">
-                  <input
-                    v-model="formData.status"
-                    type="checkbox"
-                    id="statusCheckbox"
+                  <input v-model="formData.status" type="checkbox" id="statusCheckbox"
                     class="w-6 h-6 rounded-lg border-2 border-orange-400 accent-orange-500 cursor-pointer" />
-                  <label for="statusCheckbox" class="font-semibold text-gray-700 dark:text-gray-200 cursor-pointer">وضعیت سرویس</label>
+                  <label for="statusCheckbox"
+                    class="font-semibold text-gray-700 dark:text-gray-200 cursor-pointer">وضعیت سرویس</label>
                 </div>
-                <span :class="formData.status ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'" class="font-bold text-sm">
+                <span :class="formData.status ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'"
+                  class="font-bold text-sm">
                   {{ formData.status ? '✓ فعال' : '✗ غیرفعال' }}
                 </span>
               </div>
@@ -190,6 +235,8 @@
 
     <!-- Notifications -->
     <notifications />
+    <ConfirmModal :visible="showConfirm" message="آیا از پاک کردن گره مطمئن هستید؟" @confirm="onConfirmDelete"
+      @cancel="onCancelDelete" />
   </div>
 </template>
 
@@ -200,12 +247,24 @@ import { ref, computed, onMounted } from 'vue'
 import { notify } from '@kyvg/vue3-notification'
 import serviceAggregatorClient from '@/utils/service-aggregator-client'
 import LogoutButton from '@/components/LogoutButton.vue'
+import ConfirmModal from '@/components/modals/ConfirmModal.vue'
 
-const services = ref([])
+const services = ref({
+  hasNextPage: true,
+  hasPreviousPage: false,
+  items: [],
+  pageNumber: 0,
+  totalCount: 0,
+  totalPages: 0
+})
+const name = ref("");
+const url = ref("");
+const status = ref(false);
 const isLoading = ref(false)
 const showModal = ref(false)
 const isEditMode = ref(false)
-
+const selectedId = ref("");
+const showConfirm = ref(false)
 const formData = ref({
   id: null,
   name: '',
@@ -217,19 +276,99 @@ const formData = ref({
 
 const isFormValid = computed(() => {
   //&& formData.value.url
-  return formData.value.name  && formData.value.method && formData.value.type
+  return formData.value.name && formData.value.method && formData.value.type
 })
 
 const truncateUrl = (url) => {
   if (!url) return ''
   return url.length > 50 ? url.slice(0, 47) + '...' : url
 }
+async function fetchNextpage() {
+  var data = {
+    PageIndex: services.value.pageNumber + 1,
+    PageSize: 10,
+  }
+  var record = await serviceAggregatorClient.getServicesWithParams(data);
+  services.value = record;
+}
+
+async function fetchPrevouisPage() {
+  var data = {
+    PageIndex: services.value.pageNumber - 1,
+    PageSize: 10,
+  }
+  var record = await serviceAggregatorClient.getServicesWithParams(data);
+  services.value = record;
+}
+
+
+async function fetchNextPage() {
+  var data = {
+    PageIndex: services.value.pageNumber + 1,
+    PageSize: 10,
+  }
+  var record = await serviceAggregatorClient.getServicesWithParams(data);
+  services.value = record;
+
+}
+async function resetSearch() {
+  var data = {
+    PageIndex: 1,
+    PageSize: 10,
+  }
+  var record = await serviceAggregatorClient.getServicesWithParams(data);
+  services.value = record;
+}
+async function SearchAgg(params) {
+  if (name.value == "") {
+    notify({
+      title: 'نام را وارد کنید',
+      text: 'نام را وارد کنید',
+      type: 'error',
+    })
+  }
+  if (url.value == "") {
+    url.value = "";
+  }
+  if (status.value === null || status.value === undefined) {
+    status.value = true;
+  }
+  var data = {
+    PageIndex: services.value.pageNumber,
+    PageSize: 10,
+    Name: name.value,
+    URL: url.value,
+    Status: status.value
+  }
+  var record = await serviceAggregatorClient.getServicesWithParamsWithSearch(data);
+  services.value = record;
+}
+
+const deleteModal = async (id) => {
+  showConfirm.value = true;
+  selectedId.value = id;
+
+}
+
+async function onConfirmDelete() {
+  showConfirm.value = false
+  var response = await serviceAggregatorClient.deleteService(selectedId.value)
+  await loadServices();
+  close() // Close your main modal if you want
+}
+
+function onCancelDelete() {
+  showConfirm.value = false
+}
+function close() {
+  store.clearSelected()
+}
 
 const loadServices = async () => {
   isLoading.value = true
   try {
     const data = await serviceAggregatorClient.getServices()
-    services.value = Array.isArray(data) ? data : []
+    services.value = data ? data : [];
     notify({
       title: 'موفقیت',
       text: 'سرویس‌ها بارگذاری شدند',
@@ -318,14 +457,14 @@ const saveService = async () => {
   }
 }
 
-const deleteService = async (serviceId) => {
-  if (!confirm('آیا مطمئن هستید که می‌خواهید این سرویس را حذف کنید؟')) {
+const changeStatus = async (serviceId) => {
+  if (!confirm('آیا مطمئن هستید که می‌خواهید این سرویس را تغییر وضعیت دهید ؟')) {
     return
   }
 
   try {
     // Note: Backend might not have a delete endpoint, so we'll use status = false
-    const serviceToDelete = services.value.find(s => s.id === serviceId)
+    const serviceToDelete = services.value.items.find(s => s.id === serviceId)
     if (serviceToDelete) {
       await serviceAggregatorClient.updateService({
         ...serviceToDelete,
@@ -333,7 +472,7 @@ const deleteService = async (serviceId) => {
       })
       notify({
         title: 'موفقیت',
-        text: 'سرویس حذف شد',
+        text: 'سرویس تغییر وضعیت داده شد',
         type: 'success',
       })
       await loadServices()
@@ -342,7 +481,7 @@ const deleteService = async (serviceId) => {
     console.error('Error deleting service:', error)
     notify({
       title: 'خطا',
-      text: 'خطا در حذف سرویس',
+      text: 'خطا در تغییر وضعیت سرویس',
       type: 'error',
     })
   }
@@ -354,6 +493,61 @@ onMounted(() => {
 </script>
 
 <style scoped lang="postcss">
+.SearchButton {
+  background-color: rgb(249, 120, 0);
+  width: 250px;
+  height: 50px;
+  line-height: 1;
+  margin-top: 2.3em;
+  border-radius: 50px;
+  color: white;
+
+}
+
+.search_holder {
+  display: flex;
+  flex-flow: row-reverse;
+  background-color: orange;
+  height: 150px;
+  gap: 10;
+  padding: 10px;
+  margin: 0 auto;
+  justify-content: center;
+  gap: 10px;
+  width: 75.8%;
+  margin-bottom: 22px;
+  border-radius: 10px;
+}
+
+.btn-pagenumber,
+.btn-totalpage {
+  color: orange;
+  border-radius: 50%;
+  line-height: 3;
+  background-color: #eee;
+  border: 1px solid rgb(185, 184, 184);
+  display: inline-block;
+  width: 50px;
+  height: 50px;
+  margin: 10px;
+}
+
+.btn-totalpage {
+  color: white;
+  background-color: rgb(182, 179, 179);
+}
+
+.btn-pagenumber-grey {
+  background-color: rgb(231, 229, 229);
+  cursor: none;
+  pointer-events: none;
+  color: black;
+  line-height: 3;
+  display: block;
+  position: relative;
+  right: 0;
+}
+
 .services-page {
   min-height: 100vh;
   width: 100%;
@@ -362,6 +556,16 @@ onMounted(() => {
   display: flex;
   flex-flow: column;
   box-sizing: border-box;
+}
+
+.btn-del-SearchButton {
+  background-color: rgb(10, 184, 1);
+  width: 250px;
+  height: 50px;
+  line-height: 1;
+  margin-top: 2.3em;
+  border-radius: 50px;
+  color: white;
 }
 
 .page-header {
@@ -423,8 +627,13 @@ onMounted(() => {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .services-container {
@@ -619,7 +828,8 @@ onMounted(() => {
 .btn-edit:hover {
   background: #ffa600;
   color: white;
-  .pen{
+
+  .pen {
     color: white !important;
   }
 }
@@ -646,13 +856,16 @@ onMounted(() => {
   align-items: center;
   gap: 8px;
 }
-.pen{
+
+.pen {
   color: orange !important;
   transition: color 0.3s ease;
 }
-.pen:hover{
+
+.pen:hover {
   color: white !important;
 }
+
 .btn-primary {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
@@ -866,7 +1079,7 @@ onMounted(() => {
     gap: 10px;
   }
 
-  .header-actions > * {
+  .header-actions>* {
     width: 100%;
   }
 
@@ -971,6 +1184,7 @@ onMounted(() => {
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -981,6 +1195,7 @@ onMounted(() => {
     transform: scale(0.95);
     opacity: 0;
   }
+
   to {
     transform: scale(1);
     opacity: 1;

@@ -4,8 +4,8 @@ import { notify } from '@kyvg/vue3-notification'
 
 export function createHttpClient(options = {}) {
   const {
-    baseURL = "http://192.168.140.172:8099/api", /// || '/',
-    timeout = 15000,
+    baseURL = "http://192.168.13.117:5294/api", //"http://192.168.140.172:8099/api", /// || '/',
+    timeout = 1000,
     headers = {},
     getToken = () => localStorage.getItem('token'),
   } = options

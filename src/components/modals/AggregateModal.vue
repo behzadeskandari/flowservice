@@ -200,9 +200,12 @@ watch(() => props.show, async (newVal) => {
       // Load current aggregate data for editing
       try {
         const aggregates = await serviceAggregatorClient.getAggregates()
-        const agg = Array.isArray(aggregates)
-          ? aggregates.find(a => a.id === store.currentAggregateId)
-          : (aggregates.id === store.currentAggregateId ? aggregates : null)
+        console.log(
+          aggregates,'agggregatessssss'
+        )
+        const agg = Array.isArray(aggregates.items)
+          ? aggregates.items.find(a => a.id === store.currentAggregateId)
+          : (aggregates.items.id === store.currentAggregateId ? aggregates : null)
         if (agg) {
           formData.value.id = agg.id
           formData.value.name = agg.name || ''
