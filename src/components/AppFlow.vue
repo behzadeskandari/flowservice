@@ -226,6 +226,7 @@ const loadServices = async () => {
 
 const loadAggregateFlow = async (aggregateId: string) => {
   debugger
+  console.log("loading loadAggregateFlow aggregates")
   try {
     store.currentAggregateId = aggregateId
 
@@ -234,7 +235,7 @@ const loadAggregateFlow = async (aggregateId: string) => {
 
     // Rebuild edges from persistent storage to restore connections that may have been lost
     // This ensures edges survive backend resets and page reloads
-    store.rebuildEdgesFromPersistent()
+    //store.rebuildEdgesFromPersistent()
 
     // Fit view after loading
     await nextTick()

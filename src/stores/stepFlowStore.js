@@ -442,7 +442,7 @@ export const useStepFlowStore = defineStore('stepFlow', () => {
       if (x > 1500) { x = 100; y += 220 }
       return pos
     }
-
+      const firstStep = aggregate.firstStepId;
     // nodes
     steps.forEach(step => {
       const nodeId = `step-${step.id}`

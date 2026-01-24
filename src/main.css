@@ -1,8 +1,8 @@
-@import 'https://cdn.jsdelivr.net/npm/@vue-flow/core@1.48.0/dist/style.css';
-@import 'https://cdn.jsdelivr.net/npm/@vue-flow/core@1.48.0/dist/theme-default.css';
-@import 'https://cdn.jsdelivr.net/npm/@vue-flow/controls@latest/dist/style.css';
-@import 'https://cdn.jsdelivr.net/npm/@vue-flow/minimap@latest/dist/style.css';
-@import 'https://cdn.jsdelivr.net/npm/@vue-flow/node-resizer@latest/dist/style.css';
+@import './assets//css/styleFlow.css';
+@import './assets/css/theme-default.css';
+@import './assets/css/flow.css';
+@import './assets/css/map.css';
+@import './assets/css/resizable.css';
 @import 'tailwindcss';
 @import './assets/css/fonts.css';
 :root {

@@ -47,7 +47,7 @@
                focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
                bg-white shadow-sm transition text-right">
                 <option :value="null">-- بدون سرویس --</option>
-                <option v-for="service in availableServices" :key="service.id" :value="service.id">
+                <option v-for="service in availableServices.items" :key="service.id" :value="service.id">
                   {{ service.name }} ({{ service.method }})
                 </option>
               </select>
@@ -178,7 +178,7 @@ const resetForm = () => {
 const loadServices = async () => {
   try {
     const data = await serviceAggregatorClient.getServices()
-    availableServices.value = Array.isArray(data) ? data : []
+    availableServices.value = data ? data : []
   } catch (error) {
     console.error('Error loading services:', error)
     notify({

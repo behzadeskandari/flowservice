@@ -30,10 +30,10 @@
             <font-awesome-icon :icon="faEdit" />
             ویرایش
           </li>
-          <!-- <li @click="onContextSelect('delete')">
+          <li @click="onContextSelect('delete')">
             <font-awesome-icon :icon="faTrash" />
             پاک کردن
-          </li> -->
+          </li>
           <li @click="onContextSelect('json')">
             <font-awesome-icon :icon="faEye" />
             نمایش بصورت
@@ -58,6 +58,7 @@ import { Handle } from '@vue-flow/core'
 import { faEdit, faEye, faTrash } from '@fortawesome/free-solid-svg-icons'
 import ConfirmModal from '../modals/ConfirmModal.vue'
 import { useFlowStore } from '@/stores/flowStore'
+import serviceAggregatorClient from '../../utils/service-aggregator-client'
 const showConfirm = ref(false)
 // import { useEventListener  } from '@vueuse/core'
 const props = defineProps({
@@ -166,13 +167,15 @@ function onTouchCancel(e) {
   }
 }
 
-function onContextSelect(action) {
+async function onContextSelect(action) {
   openContextMenuId.value = null
   contextMenu.value.visible = false
   if (action === 'edit') {
     store.setSelectedNode(id.value, 'edit')
   } else if (action === 'delete') {
     showConfirm.value = true
+    await serviceAggregatorClient.deleteAggregate(id.value);
+
   } else if (action === 'json') {
     store.setSelectedNode(id.value, 'view')
   }

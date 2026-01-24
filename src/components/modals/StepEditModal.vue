@@ -491,7 +491,7 @@ const availableNextSteps = computed(() => {
       // Exclude combined nodes
       if (node.type === 'combinedServiceNode') return false
       // Exclude current step
-      if (mode === 'edit' && node.id === props.stepId) return false
+      if (props.mode === 'edit' && node.id === props.stepId) return false
       return true
     })
     .map(node => ({

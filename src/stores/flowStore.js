@@ -216,7 +216,7 @@ export const useFlowStore = defineStore('flow', () => {
         for (const step of steps) {
           const nodeId = `node-${step.id}`
           stepIdToNodeIdMap.set(step.id, nodeId)
-
+          const firstStep = aggregate.firstStepId;
           const service = step.service || {}
           const hasCondition = step.condition && `${step.condition}`.trim() !== ''
           let nodeType = '';//hasCondition ? 'decisionNode' : 'serviceNode'
@@ -420,6 +420,7 @@ export const useFlowStore = defineStore('flow', () => {
   async function loadSingleAggregateFlow(aggregateId) {
     debugger
     try {
+      console.log('loading single aggregates');
       // Fetch single aggregate with full details
       const aggregate = await serviceAggregatorClient.getAggregateByid(aggregateId)
 
@@ -2274,17 +2275,7 @@ export const useFlowStore = defineStore('flow', () => {
           .find((id) => id) || null
       }
 
-      await serviceAggregatorClient.updateAggregateStepMapping({
-        id: mappingId,
-        aggregateStepId: aggregateStepId,
-        inputStepId: inputStepId,
-        source: 'response',
-        targetField: '',
-        sourceField: null,
-        value: null,
-        valueType: 'string',
-        status: false,
-      })
+      await serviceAggregatorClient.deleteAggregateStepMapping(mappingId)
 
       // Remove from node data
       if (node && node.data.mappings) {
