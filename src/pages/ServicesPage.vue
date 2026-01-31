@@ -95,10 +95,15 @@
                 <font-awesome-icon :icon="['fas', 'pen-to-square']" style="color: orange;" class="pen" />
               </button>
               <button class="btn-icon btn-delete" @click="changeStatus(service.id)" title="حذف">
-                <font-awesome-icon :icon="['fas', 'eye']" style="color: red;" />
+                <font-awesome-icon :icon="['fas', 'eye']" style="color: grey;" />
               </button>
               <button class="btn-icon btn-delete" @click="deleteModal(service.id)" title="حذف">
                 <font-awesome-icon :icon="['fas', 'trash']" style="color: red;" />
+              </button>
+
+              <button class="btn-icon btn-delete" @click="AddStepMapping(service.id)"
+                title="اضافه کردن مپ سرویس به مرحله">
+                <font-awesome-icon :icon="['fas', 'faArrowLeft']" style="color: red;" />
               </button>
             </td>
           </tr>
@@ -110,7 +115,7 @@
         <span>{{ services.totalCount }}</span>
       </div>
 
-        <!-- Pagination Block -->
+      <!-- Pagination Block -->
       <div style="display:block">
         <span class="btn-pagenumber" v-if="services.hasNextPage">
           <!--  -->
@@ -232,7 +237,144 @@
         </div>
       </div>
     </div>
+    <div v-if="showModalStepMapping"
+      class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 animate-fadeIn p-4"
+      @click.self="closeModalStepModal">
+      <div class="bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 p-[2px] rounded-3xl w-full max-w-2xl">
+        <div class="bg-white dark:bg-gray-900 shadow-2xl rounded-3xl w-full animate-scaleIn" style="padding:20px">
+          <!-- Header -->
+          <header
+            class="flex flex-col sm:flex-row items-center justify-between border-b border-gray-200 pb-4 mb-6 gap-4">
+            <h3
+              class="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-orange-500 to-amber-600 bg-clip-text text-transparent text-center sm:text-right order-first sm:order-last">
+              {{ isEditMode ? 'مپ ویرایش سرویس' : ' مپ سرویس جدید' }}
+            </h3>
+            <div class="flex gap-2 w-full sm:w-auto">
+              <button
+                class="flex-1 sm:flex-none px-4 sm:px-6 py-3 bg-gradient-to-r from-gray-400 via-gray-500 to-gray-600 text-white font-semibold rounded-xl shadow-lg hover:from-gray-500 hover:via-gray-600 hover:to-gray-700 transition duration-300 ease-in-out flex items-center justify-center gap-2"
+                @click="closeModalStepModal">
+                <i class="fas fa-times"></i>
+                <span class="hidden sm:inline">لغو</span>
+              </button>
+              <button
+                class="flex-1 sm:flex-none px-4 sm:px-6 py-3 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 text-white font-semibold rounded-xl shadow-lg hover:from-orange-500 hover:via-orange-600 hover:to-orange-700 transition duration-300 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                @click="saveStepService" :disabled="!isStepMappingFormValid">
+                <i class="fas fa-save"></i>
+                <span class="hidden sm:inline">{{ isEditMode ? 'بروزرسانی' : 'ایجاد' }}</span>
+              </button>
+            </div>
+          </header>
 
+          <!-- Body -->
+          <div class="space-y-5 max-h-[70vh] overflow-y-auto pr-2">
+            <!-- Service Information Section -->
+            <div class="space-y-5" v-if="!isEditModeStepMapping">
+              <h4 class="text-lg sm:text-xl font-bold text-gray-800 dark:text-gray-100 pb-3 border-b border-orange-200">
+                📋 اطلاعات نگاشت مرحله</h4>
+
+              <!-- Step Mapping Name -->
+              <div class="space-y-2">
+                <label class="block font-semibold text-gray-700 dark:text-gray-200 text-right">نام نگاشت مرحله <span
+                    class="text-red-500">*</span></label>
+                <input v-model="formDataStepMapping.name" type="text" placeholder="مثال: Shahkar Step Mapping" class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700
+                   focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
+                   bg-white dark:bg-gray-800 dark:text-white shadow-sm transition duration-200 text-right" />
+              </div>
+
+              <!-- Service Mapping -->
+              <div class="space-y-2">
+                <label class="block font-semibold text-gray-700 dark:text-gray-200 text-right">سرویس نگاشت مرحله <span
+                    class="text-red-500">*</span></label>
+                <select v-model="formDataStepMapping.serviceId" class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700
+                   focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
+                   bg-white dark:bg-gray-800 dark:text-white shadow-sm transition duration-200 text-right font-medium">
+                  <option v-for="service in services.items" :key="service.id" :value="service.id">
+                    {{ service.name }}
+                  </option>
+                </select>
+              </div>
+
+              <!-- Type -->
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="space-y-2">
+                  <label class="block font-semibold text-gray-700 dark:text-gray-200 text-right">نوع نگاشت مرحله <span
+                      class="text-red-500">*</span></label>
+                  <input v-model="formDataStepMapping.type" type="text" placeholder="مثال: Shahkar Step Mapping" class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700
+                   focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
+                   bg-white dark:bg-gray-800 dark:text-white shadow-sm transition duration-200 text-right" />
+                </div>
+
+                <div class="space-y-2">
+                  <label class="block font-semibold text-gray-700 dark:text-gray-200 text-right">جهت نگاشت مرحله <span
+                      class="text-red-500">*</span></label>
+                  <select v-model="formDataStepMapping.direction"
+                    class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700
+                     focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
+                     bg-white dark:bg-gray-800 dark:text-white shadow-sm transition duration-200 text-right font-medium">
+                    <option :value="1">ورودی</option>
+                    <option :value="2">خروجی</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div v-else>
+              <div v-for="formdataStep in formDataStepMappingEdit" :key="formdataStep.id">
+                <div class="space-y-2">
+                  <label class="block font-semibold text-gray-700 dark:text-gray-200 text-right">نام نگاشت مرحله <span
+                      class="text-red-500">*</span></label>
+                  <input v-model="formdataStep.name" type="text" placeholder="مثال: Shahkar Step Mapping" class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700
+                   focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
+                   bg-white dark:bg-gray-800 dark:text-white shadow-sm transition duration-200 text-right" />
+                </div>
+
+                <!-- Service Mapping -->
+                <div class="space-y-2">
+                  <label class="block font-semibold text-gray-700 dark:text-gray-200 text-right">سرویس نگاشت مرحله <span
+                      class="text-red-500">*</span></label>
+                  <select v-model="formdataStep.serviceId" class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700
+                   focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
+                   bg-white dark:bg-gray-800 dark:text-white shadow-sm transition duration-200 text-right font-medium">
+                    <option v-for="service in services.items" :key="service.id" :value="service.id">
+                      {{ service.name }}
+                    </option>
+                  </select>
+                </div>
+
+                <!-- Type -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div class="space-y-2">
+                    <label class="block font-semibold text-gray-700 dark:text-gray-200 text-right">نوع نگاشت مرحله <span
+                        class="text-red-500">*</span></label>
+                    <input v-model="formdataStep.type" type="text" placeholder="مثال: Shahkar Step Mapping"
+                      class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700
+                   focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
+                   bg-white dark:bg-gray-800 dark:text-white shadow-sm transition duration-200 text-right" />
+
+                  </div>
+
+                  <div class="space-y-2">
+                    <label class="block font-semibold text-gray-700 dark:text-gray-200 text-right">جهت نگاشت مرحله <span
+                        class="text-red-500">*</span></label>
+                    <select v-model="formdataStep.direction"
+                      class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700
+                     focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
+                     bg-white dark:bg-gray-800 dark:text-white shadow-sm transition duration-200 text-right font-medium">
+                      <option :value="1">ورودی</option>
+                      <option :value="2">خروجی</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Footer -->
+
+
+
+          <!-- formDataStepMapping -->
+        </div>
+      </div>
+    </div>
     <!-- Notifications -->
     <notifications />
     <ConfirmModal :visible="showConfirm" message="آیا از پاک کردن گره مطمئن هستید؟" @confirm="onConfirmDelete"
@@ -262,9 +404,13 @@ const url = ref("");
 const status = ref(false);
 const isLoading = ref(false)
 const showModal = ref(false)
+const showModalStepMapping = ref(false)
+
 const isEditMode = ref(false)
+const isEditModeStepMapping = ref(false)
 const selectedId = ref("");
 const showConfirm = ref(false)
+
 const formData = ref({
   id: null,
   name: '',
@@ -272,6 +418,20 @@ const formData = ref({
   method: 'GET',
   type: 'REST',
   status: true,
+})
+const formDataStepMapping = ref({
+  id: null,
+  name: '',
+  serviceId: '',
+  type: '',
+  description: '',
+  direction: 1,
+})
+const formDataStepMappingEdit = ref([])
+const isStepMappingEditMode = ref(false)
+
+const isStepMappingFormValid = computed(() => {
+  return formDataStepMapping.value.name && formDataStepMapping.value.serviceId
 })
 
 const isFormValid = computed(() => {
@@ -350,6 +510,22 @@ const deleteModal = async (id) => {
 
 }
 
+const AddStepMapping = async (id) => {
+  // Implement your logic to add step mapping here
+  debugger
+  //isLoading.value = true;
+  var record = await serviceAggregatorClient.getServicesById(id);
+  if (record.id && record.inputs.length > 0) {
+    isEditModeStepMapping.value = true;
+    formDataStepMappingEdit.value = record.inputs;
+  } else {
+    isEditModeStepMapping.value = false;
+  }
+  showModalStepMapping.value = true;
+  formDataStepMapping.value.serviceId = id;
+}
+
+
 async function onConfirmDelete() {
   showConfirm.value = false
   var response = await serviceAggregatorClient.deleteService(selectedId.value)
@@ -409,11 +585,67 @@ const resetForm = () => {
   }
 }
 
+const resetStepMappingForm = () => {
+  formDataStepMapping.value = {
+    id: null,
+    name: '',
+    serviceId: '',
+    type: '',
+    description: '',
+    direction: 1,
+  }
+}
+const closeModalStepModal = () => {
+  showModalStepMapping.value = false
+  resetStepMappingForm()
+}
 const closeModal = () => {
   showModal.value = false
   resetForm()
 }
+const saveStepService = async () => {
+  if (!isStepMappingFormValid.value) {
+    notify({
+      title: 'خطا',
+      text: 'تمام فیلدهای الزامی را پر کنید',
+      type: 'error',
+    })
+    return
+  }
 
+  try {
+    if (isEditMode.value) {
+      await serviceAggregatorClient.updateServiceMapping(formDataStepMapping.value)
+      notify({
+        title: 'موفقیت',
+        text: 'سرویس بروزرسانی شد',
+        type: 'success',
+      })
+    } else {
+      await serviceAggregatorClient.addServiceMapping({
+        name: formDataStepMapping.value.name,
+        serviceId: formDataStepMapping.value.serviceId,
+        type: formData.value.type,
+        description: formDataStepMapping.value.description,
+        direction: formDataStepMapping.value.direction
+      })
+      notify({
+        title: 'موفقیت',
+        text: 'سرویس ایجاد شد',
+        type: 'success',
+      })
+    }
+    closeModalStepModal()
+    await loadServices()
+  } catch (error) {
+    console.error('Error saving service:', error)
+    notify({
+      title: 'خطا',
+      text: isEditMode.value ? 'خطا در بروزرسانی سرویس' : 'خطا در ایجاد سرویس',
+      type: 'error',
+    })
+  }
+}
 const saveService = async () => {
   if (!isFormValid.value) {
     notify({
@@ -533,10 +765,11 @@ onMounted(() => {
   margin: 10px;
 }
 
-.btn-pagenumber-orange{
+.btn-pagenumber-orange {
   background-color: orange;
-  color:white;
+  color: white;
 }
+
 .btn-totalpage {
   color: white;
   background-color: rgb(182, 179, 179);

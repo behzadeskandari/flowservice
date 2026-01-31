@@ -125,6 +125,25 @@ class ServiceAggregatorClient {
 
   //#endregion AggregateMapping
 
+
+  //#region serviceMapping
+
+async addServiceMapping(data) {
+    const response = await httpClient.post('/service-mapping/add', data)
+    return response.data
+  }
+
+  async updateServiceMapping(data) {
+    const response = await httpClient.post(`/service-mapping/update`, data)
+    return response.data
+  }
+
+  async deleteServiceMapping(id) {
+    const response = await httpClient.post(`/service-mapping/delete`, id)
+    return response.data
+  }
+
+  //#endregion serviceMapping
 }
 
 export default new ServiceAggregatorClient()

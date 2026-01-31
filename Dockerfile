@@ -1,28 +1,29 @@
 # Stage 1: Build Stage
-FROM node:20-alpine as build-stage
+# Changed 'as' to 'AS' to match 'FROM' casing
+FROM node:20-alpine AS build-stage
 
-# تنظیم پوشه کاری
 WORKDIR /app
 
-# کپی فایل‌های پکیج برای استفاده از Cache داکر
+# Copy package files
 COPY package*.json ./
 
-# نصب وابستگی‌ها
-RUN npm install
+# npm ci is preferred in Docker as it installs exact versions from package-lock.json
+# If you run into issues, you can stick with: RUN npm install --legacy-peer-deps
+RUN npm ci --legacy-peer-deps
 
-# کپی کل کد پروژه
+# Copy project files
 COPY . .
 
-# بیلد کردن پروژه برای محیط Production
+# Build the project
 RUN npm run build
 
 # Stage 2: Production Stage
-FROM nginx:stable-alpine as production-stage
+FROM nginx:stable-alpine AS production-stage
 
-# کپی فایل‌های بیلد شده از مرحله قبل به پوشه Nginx
+# Copy build artifacts from build-stage
 COPY --from=build-stage /app/dist /usr/share/nginx/html
 
-# کپی تنظیمات اختصاصی Nginx برای پشتیبانی از Vue Router (SPA)
+# Copy custom Nginx config
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 80
