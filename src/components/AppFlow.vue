@@ -104,7 +104,6 @@
           :pan-on-scroll="true"
           :pan-on-scroll-speed="0.8"
           :selection-on-click="false"
-          :key="store.currentAggregateId"
           class="vue-flow-container"
           @nodes-change="onNodesChange"
           @edges-change="onEdgesChange"

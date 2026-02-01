@@ -87,67 +87,67 @@ export const useFlowStore = defineStore('flow', () => {
    * @param {Array} stepIdToNodeIdMap - Map from step ID to node ID for lookups
    */
   function rebuildEdgesFromPersistent() {
-    const validEdges = []
+    // const validEdges = []
 
-    // Create a quick lookup for node existence
-    const nodeIds = new Set(nodes.value.map(n => n.id))
+    // // Create a quick lookup for node existence
+    // const nodeIds = new Set(nodes.value.map(n => n.id))
 
-    persistentEdges.value.forEach(pEdge => {
-      const sourceExists = nodeIds.has(pEdge.source)
-      const targetExists = nodeIds.has(pEdge.target)
+    // persistentEdges.value.forEach(pEdge => {
+    //   const sourceExists = nodeIds.has(pEdge.source)
+    //   const targetExists = nodeIds.has(pEdge.target)
 
-      if (sourceExists && targetExists) {
-        validEdges.push({
-          ...pEdge,
-          // Use a consistent ID format to prevent duplicate edges
-          id: `e-${pEdge.source}-${pEdge.target}`,
-          source: String(pEdge.source),
-          target: String(pEdge.target),
-          type: pEdge.type || 'smoothstep',
-          animated: true,
-          // Marker adds the arrow head which often forces a visual refresh
-          markerEnd: MarkerType.ArrowClosed,
-        })
-      } else {
-        console.warn(`Removing stale edge: ${pEdge.source} → ${pEdge.target}`)
+    //   if (sourceExists && targetExists) {
+    //     validEdges.push({
+    //       ...pEdge,
+    //       // Use a consistent ID format to prevent duplicate edges
+    //       id: `e-${pEdge.source}-${pEdge.target}`,
+    //       source: String(pEdge.source),
+    //       target: String(pEdge.target),
+    //       type: pEdge.type || 'smoothstep',
+    //       animated: true,
+    //       // Marker adds the arrow head which often forces a visual refresh
+    //       markerEnd: MarkerType.ArrowClosed,
+    //     })
+    //   } else {
+    //     console.warn(`Removing stale edge: ${pEdge.source} → ${pEdge.target}`)
+    //   }
+    // })
+
+    // // Trigger Vue reactivity by replacing the reference
+    // edges.value = [...validEdges]
+
+    // console.log('Edges synchronized. Count:', edges.value.length)
+    // // Create a map from stepId to nodeId for lookups
+    const stepIdToNodeId = new Map()
+    nodes.value.forEach(node => {
+      if (node.data?.aggregateStepId) {
+        stepIdToNodeId.set(node.data.aggregateStepId, node.id)
       }
     })
 
-    // Trigger Vue reactivity by replacing the reference
-    edges.value = [...validEdges]
+    const validEdges = []
 
-    console.log('Edges synchronized. Count:', edges.value.length)
-    // // Create a map from stepId to nodeId for lookups
-    // const stepIdToNodeId = new Map()
-    // nodes.value.forEach(node => {
-    //   if (node.data?.aggregateStepId) {
-    //     stepIdToNodeId.set(node.data.aggregateStepId, node.id)
-    //   }
-    // })
+    persistentEdges.value.forEach(pEdge => {
+      const sourceExists = nodes.value.some(n => n.id === pEdge.source)
+      const targetExists = nodes.value.some(n => n.id === pEdge.target)
 
-    // const validEdges = []
+      if (sourceExists && targetExists) {
+        // Keep original edge data (type, animated, label, etc.)
+        validEdges.push({
+          ...pEdge,
+          // Ensure required fields for Vue Flow
+          id: pEdge.id || `${pEdge.source}-${pEdge.target}`,
+          type: pEdge.type || 'smoothstep', // or your default
+          animated: pEdge.animated ?? false,
+        })
+      } else {
+        console.warn(`Removing stale persistent edge: ${pEdge.source} → ${pEdge.target}`)
+      }
+    })
 
-    // persistentEdges.value.forEach(pEdge => {
-    //   const sourceExists = nodes.value.some(n => n.id === pEdge.source)
-    //   const targetExists = nodes.value.some(n => n.id === pEdge.target)
-
-    //   if (sourceExists && targetExists) {
-    //     // Keep original edge data (type, animated, label, etc.)
-    //     validEdges.push({
-    //       ...pEdge,
-    //       // Ensure required fields for Vue Flow
-    //       id: pEdge.id || `${pEdge.source}-${pEdge.target}`,
-    //       type: pEdge.type || 'smoothstep', // or your default
-    //       animated: pEdge.animated ?? false,
-    //     })
-    //   } else {
-    //     console.warn(`Removing stale persistent edge: ${pEdge.source} → ${pEdge.target}`)
-    //   }
-    // })
-
-    // // IMPORTANT: Do NOT filter or overwrite — assign fully
-    // edges.value = validEdges
-    // console.log('Rebuilt edges:', edges.value.length, 'from persistent:', persistentEdges.value.length)
+    // IMPORTANT: Do NOT filter or overwrite — assign fully
+    edges.value = validEdges
+    console.log('Rebuilt edges:', edges.value.length, 'from persistent:', persistentEdges.value.length)
   }
 
   /**
@@ -229,6 +229,7 @@ export const useFlowStore = defineStore('flow', () => {
    * API Response structure: { id, name, description, status, steps: [{ id, stepName, serviceId, service, nextStepId, trueStepId, falseStepId, condition, mappings }] }
    */
   async function loadAggregateFlow(aggregateIdOrIds) {
+    debugger
     try {
       const rawData = await serviceAggregatorClient.getAggregateByid(aggregateIdOrIds)
 
@@ -285,7 +286,7 @@ export const useFlowStore = defineStore('flow', () => {
           let nodeType = '';//hasCondition ? 'decisionNode' : 'serviceNode'
           if (hasCondition) {
             nodeType = 'decisionNode';
-          } else if (firstStep == step.serviceId) {
+          } else if (firstStep == step.id) {
             nodeType = 'startNode';
           } else {
             nodeType = "serviceNode";
@@ -592,7 +593,7 @@ export const useFlowStore = defineStore('flow', () => {
         let nodeType = ''; //hasCondition ? 'decisionNode' : 'serviceNode'
         if (hasCondition) {
           nodeType = 'decisionNode';
-        } else if (firstStep == step.serviceId) {
+        } else if (firstStep == step.id) {
           nodeType = 'startNode';
         } else {
           nodeType = "serviceNode";
@@ -694,7 +695,7 @@ export const useFlowStore = defineStore('flow', () => {
           let nodeType = ""; //hasCondition ? 'decisionNode' : 'serviceNode'
           if (hasCondition) {
             nodeType = 'decisionNode';
-          } else if (firstStep == step.serviceId) {
+          } else if (firstStep == step.id) {
             nodeType = 'startNode';
           } else {
             nodeType = "serviceNode";
@@ -1196,7 +1197,7 @@ export const useFlowStore = defineStore('flow', () => {
 
     const node = {
       id: id,
-      type: 'serviceNode',
+      type: 'startNode',
       position: { x, y },
       data: {
         id,

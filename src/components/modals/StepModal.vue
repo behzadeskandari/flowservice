@@ -405,29 +405,50 @@ function onClose() {
 
 // Inside StepModal.vue -> onSave function
 const onSave = async () => {
-  debugger
   try {
-    const payload = { ...stepData.value };
+    // Validate required fields
+    if (!stepData.value.stepName || !stepData.value.stepName.trim()) {
+      notify({ title: 'خطا', text: 'نام مرحله مورد نیاز است', type: 'error' });
+      return;
+    }
+
+    // Prepare payload with aggregateId fallback
+    const payload = {
+      ...stepData.value,
+      aggregateId: stepData.value.aggregateId || store.currentAggregateId
+    };
+
     let stepResult;
 
+    // Create or update step in backend
     if (!stepData.value.id) {
       stepResult = await serviceAggregatorClient.addAggregateStep(payload);
     } else {
       stepResult = await serviceAggregatorClient.updateAggregateStep(payload);
     }
-    //Update the aggregate's firstStepId if this is the first node
+
+    if (!stepResult?.id) {
+      throw new Error('Server did not return step ID');
+    }
+
+    // Update the aggregate's firstStepId if this is the first node
     if (store.nodes.length === 0 || store.nodes.length === 1) {
-       const aggregateRecord = await store.getAggregateByid(payload.aggregateId);
-       await serviceAggregatorClient.updateAggregate({
-         ...aggregateRecord,
-         firstStepId: stepResult.id,
-         status: true
-       });
+      const aggregateRecord = await store.getAggregateByid(payload.aggregateId);
+      await serviceAggregatorClient.updateAggregate({
+        ...aggregateRecord,
+        firstStepId: stepResult.id,
+        status: true
+      });
     }
 
     // Find the node in the store to update the UI
     const targetId = stepData.value.nodeId || stepData.value.id;
-    const nodeIndex = store.nodes.findIndex((n) => n.id === String(targetId));
+    let nodeIndex = store.nodes.findIndex((n) => n.id === String(targetId));
+
+    // Fallback: search by aggregateStepId if not found
+    if (nodeIndex === -1 && stepData.value.id) {
+      nodeIndex = store.nodes.findIndex((n) => n.data?.aggregateStepId === stepData.value.id);
+    }
 
     if (nodeIndex !== -1) {
       // Create a shallow copy of the node to trigger reactivity
@@ -445,24 +466,30 @@ const onSave = async () => {
         updatedNode.id = String(stepResult.id);
       }
 
-      // 1. Update the node at the specific index
+      // Update the node at the specific index
       store.nodes[nodeIndex] = updatedNode;
+    } else {
+      // Node not found - reload from store to ensure UI is fresh
+      console.warn(`Node not found with ID ${targetId}. Store has ${store.nodes.length} nodes.`);
+      await store.loadSingleAggregateFlow(payload.aggregateId);
+    }
 
-      // 2. Force array reactivity by creating a new reference
-      store.nodes = [...store.nodes];
+    // Force array reactivity by creating a new reference
+    store.nodes = [...store.nodes];
 
+    // Handle pending connection
+    if (store.pendingConnection) {
+      store.persistentEdges.push({
+        source: store.pendingConnection.source,
+        target: store.pendingConnection.target,
+        type: 'smoothstep',
+        animated: true
+      });
+      store.pendingConnection = null;
+    }
 
-      if (store.pendingConnection) {
-        store.persistentEdges.push({
-          source: store.pendingConnection.source,
-          target: store.pendingConnection.target,
-          type: 'smoothstep',
-          animated: true
-        })
-        // Reset the pending state
-        store.pendingConnection = null
-      }
-      // 3. IMPORTANT: Rebuild edges to show the new connection
+    // Always rebuild edges to show the new connection
+    if (typeof store.rebuildEdgesFromPersistent === 'function') {
       store.rebuildEdgesFromPersistent();
     }
 
@@ -470,6 +497,11 @@ const onSave = async () => {
     closeModal();
   } catch (error) {
     console.error('Save failed:', error);
+    notify({
+      title: 'خطا',
+      text: error?.message || 'خطا در ذخیره مرحله',
+      type: 'error'
+    });
   }
 };
 

@@ -454,7 +454,7 @@ export const useStepFlowStore = defineStore('stepFlow', () => {
           let nodeType = ""; //hasCondition ? 'decisionNode' : 'serviceNode'
           if(isDecision){
             nodeType = 'decisionNode';
-          }else if(firstStep == step.serviceId){
+          }else if(firstStep == step.id){
             nodeType = 'startNode';
           }else{
             nodeType = "serviceNode";
