@@ -36,6 +36,16 @@
         <font-awesome-icon :icon="faExpand" style="color: white" />
         <span class="toolbar-text"> تنظیم اندازه</span>
       </button>
+      <button
+        :disabled="isExecuting"
+        class="px-3 py-2 bg-gradient-to-r from-purple-400 via-purple-500
+        to-purple-600 text-white font-semibold rounded-xl shadow-lg
+        hover:from-purple-500 hover:via-purple-600 hover:to-purple-700
+        transition duration-300 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed"
+        @click="executeAggregate">
+        <font-awesome-icon :icon="isExecuting ? faSpinner : faPlay" style="color: white;" :class="{ 'animate-spin': isExecuting }" />
+        <span class="toolbar-text">{{ isExecuting ? 'درحال اجرا...' : 'اجرا' }}</span>
+      </button>
     </div>
 
     <!-- Main Content Area -->
@@ -112,7 +122,7 @@
           @drop="onDrop"
           @dragover="onDragOver"
           :node-types="nodeTypes">
-          <Background variant="dots" :gap="25" :size="3" color="orange"/>
+          <Background variant="dots" :gap="25" :size="3" />
           <Panel position="top-center"></Panel>
           <Controls>
             <ControlButton @click.prevent="toggleTheme">
@@ -155,7 +165,7 @@ import ServiceNode from '@/components/nodes/ServiceNode.vue'
 import DecisionNode from '@/components/nodes/DecisionNode.vue'
 import EndNode from '@/components/nodes/EndNode.vue'
 import StartNode from '@/components/nodes/StartNode.vue'
-import { faCamera, faSun, faMoon, faPlus, faBars, faArrowLeft, faArrowRight, faExpand } from '@fortawesome/free-solid-svg-icons'
+import { faCamera, faSun, faMoon, faPlus, faBars, faArrowLeft, faArrowRight, faExpand, faPlay, faSpinner } from '@fortawesome/free-solid-svg-icons'
 import { useScreenshot } from '@/hooks/useScreenshot'
 const vueFlowInstance = useVueFlow()
 const { fitView: fitViewFlow, onNodeDragStop } = vueFlowInstance
@@ -172,6 +182,8 @@ const isLoadingServices = ref(false)
 const draggedService = ref<any>(null)
 const isSidebarOpen = ref(true) // Default to open
 const showMobileSidebarToggle = ref(false)
+const isExecuting = ref(false)
+const executionStatus = ref<{ [key: string]: 'pending' | 'executing' | 'completed' | 'error' }>({})
 
 // Register node types
 const nodeTypes = {
@@ -209,6 +221,107 @@ function doScreenshot() {
   }
 
   capture(element, { shouldDownload: true, type: 'png' })
+}
+
+const executeAggregate = async () => {
+  const aggregateId = route.params.id as string
+  if (!aggregateId) {
+    notify({
+      title: 'خطا',
+      text: 'Aggregate ID یافت نشد',
+      type: 'error',
+    })
+    return
+  }
+
+  if (store.nodes.length === 0) {
+    notify({
+      title: 'خطا',
+      text: 'هیچ گام برای اجرا وجود ندارد',
+      type: 'error',
+    })
+    return
+  }
+
+  isExecuting.value = true
+  executionStatus.value = {}
+
+  try {
+    // Initialize all nodes as pending
+    store.nodes.forEach(node => {
+      if (node.type !== 'startNode' && node.type !== 'endNode') {
+        executionStatus.value[node.id] = 'pending'
+      }
+    })
+
+    // Execute the aggregate
+    const response = await serviceAggregatorClient.executeAggregate({
+      id: aggregateId,
+    })
+
+    // Animate execution flow through steps
+    if (response && response.executionPath) {
+      await animateExecutionFlow(response.executionPath)
+    }
+
+    notify({
+      title: 'موفق',
+      text: 'Aggregate با موفقیت اجرا شد',
+      type: 'success',
+    })
+  } catch (error) {
+    console.error('Execution failed:', error)
+    notify({
+      title: 'خطا',
+      text: error?.message || 'خطا در اجرای Aggregate',
+      type: 'error',
+    })
+  } finally {
+    isExecuting.value = false
+    // Clear execution status after a delay
+    setTimeout(() => {
+      executionStatus.value = {}
+    }, 2000)
+  }
+}
+
+const animateExecutionFlow = async (executionPath: any[]) => {
+  // Animate through each executed step
+  for (const stepExecution of executionPath) {
+    // Find the node corresponding to this step
+    const node = store.nodes.find(
+      n => n.data?.aggregateStepId === stepExecution.stepId || n.id === stepExecution.stepId
+    )
+
+    if (node) {
+      // Mark as executing
+      executionStatus.value[node.id] = 'executing'
+      // Add visual highlight
+      node.data = { ...node.data, isExecuting: true }
+
+      // Wait for step execution time
+      await new Promise(resolve => setTimeout(resolve, stepExecution.duration || 500))
+
+      // Mark as completed
+      if (stepExecution.status === 'success') {
+        executionStatus.value[node.id] = 'completed'
+        node.data = { ...node.data, isExecuting: false, executionResult: stepExecution.result }
+      } else {
+        executionStatus.value[node.id] = 'error'
+        node.data = { ...node.data, isExecuting: false, executionError: stepExecution.error }
+      }
+
+      // Animate edges leading to next steps
+      const outgoingEdges = store.edges.filter(e => e.source === node.id)
+      for (const edge of outgoingEdges) {
+        edge.animated = true
+        edge.style = { stroke: '#10b981', strokeWidth: 3 }
+        await new Promise(resolve => setTimeout(resolve, 300))
+        edge.animated = false
+        edge.style = {}
+      }
+    }
+  }
 }
 function toggleTheme() {
   isDark.value = !isDark.value
@@ -838,6 +951,65 @@ onBeforeUnmount(() => {
   .service-card-header strong {
     font-size: 13px;
   }
+}
+
+/* Execution Animation Styles */
+@keyframes pulse-execute {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(168, 85, 247, 0.7);
+  }
+
+  50% {
+    box-shadow: 0 0 0 10px rgba(168, 85, 247, 0);
+  }
+}
+
+@keyframes executing-glow {
+  0%, 100% {
+    filter: drop-shadow(0 0 0px rgba(16, 185, 129, 0));
+  }
+
+  50% {
+    filter: drop-shadow(0 0 8px rgba(16, 185, 129, 0.8));
+  }
+}
+
+@keyframes completed-pulse {
+  0% {
+    filter: drop-shadow(0 0 0px rgba(34, 197, 94, 0));
+  }
+
+  100% {
+    filter: drop-shadow(0 0 4px rgba(34, 197, 94, 0.6));
+  }
+}
+
+@keyframes error-shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+
+  25% {
+    transform: translateX(-5px);
+  }
+
+  75% {
+    transform: translateX(5px);
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
 }
 
 /* Mobile */

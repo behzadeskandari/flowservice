@@ -144,6 +144,15 @@ async addServiceMapping(data) {
   }
 
   //#endregion serviceMapping
+
+
+  //#region Execute Aggregate
+
+  async executeAggregate(data) {
+    const response = await httpClient.post(`/execute/${data.id}`, )
+    return response.data
+  }
+  //#endregion Execute Aggregate
 }
 
 export default new ServiceAggregatorClient()

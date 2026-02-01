@@ -30,6 +30,7 @@ export const useFlowStore = defineStore('flow', () => {
   const stepModalOpen = ref(false)
   const stepModalInitialData = ref(null)
   const isProcessingConnection = ref(false)
+  const executionStatus = ref({}) // Track execution status for each node
 
   watch(autoSave, (newVal) => {
     localStorage.setItem('AutoSave', newVal)

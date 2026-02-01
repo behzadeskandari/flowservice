@@ -1,14 +1,33 @@
 <template>
   <div>
-    <div class="service-node" @contextmenu.prevent="onRightClick" @touchstart.passive="onTouchStart" @touchend.passive="onTouchEnd" @touchmove.passive="onTouchCancel">
+    <div class="service-node" :class="{
+      'node-executing': data.isExecuting,
+      'node-completed': executionStatus === 'completed',
+      'node-error': executionStatus === 'error'
+    }" @contextmenu.prevent="onRightClick" @touchstart.passive="onTouchStart" @touchend.passive="onTouchEnd" @touchmove.passive="onTouchCancel">
       <div class="node-header" @dblclick="openEdit">
         <strong>{{ data.stepName || data.label }}</strong>
+        <span v-if="data.isExecuting" class="execution-badge executing">
+          <font-awesome-icon :icon="faSpinner" class="icon-spin" />
+        </span>
+        <span v-else-if="executionStatus === 'completed'" class="execution-badge completed">
+          ✓
+        </span>
+        <span v-else-if="executionStatus === 'error'" class="execution-badge error">
+          ✕
+        </span>
       </div>
 
       <div class="node-body">
         <small class="meta">مرحله: {{ data.stepName || data.label }}</small>
         <small class="meta">سرویس: {{ data.serviceName || 'بدون سرویس' }}</small>
         <small class="meta" v-if="data.conditionParameters">پارامترها: {{ data.conditionParameters }}</small>
+        <div v-if="data.executionError" class="execution-error">
+          <small>خطا: {{ data.executionError }}</small>
+        </div>
+        <div v-if="data.executionResult" class="execution-result">
+          <small>نتیجه: {{ data.executionResult }}</small>
+        </div>
         <div v-if="data.mappings && data.mappings.length" class="mappings">
           <div v-for="m in data.mappings" :key="m.id || m.targetField" class="map-row">
             <span class="map-target">{{ m.targetField || '-' }}</span>
@@ -55,7 +74,7 @@
 <script setup>
 import { onBeforeUnmount, onMounted, toRefs, ref, computed } from 'vue'
 import { Handle } from '@vue-flow/core'
-import { faEdit, faEye, faTrash } from '@fortawesome/free-solid-svg-icons'
+import { faEdit, faEye, faTrash, faSpinner } from '@fortawesome/free-solid-svg-icons'
 import ConfirmModal from '../modals/ConfirmModal.vue'
 import { useFlowStore } from '@/stores/flowStore'
 import serviceAggregatorClient from '../../utils/service-aggregator-client'
@@ -77,6 +96,11 @@ const contextMenu = ref({
 
 const menuRef = ref(null)
 const openContextMenuId = ref(null)
+
+// Compute execution status based on store's executionStatus
+const executionStatus = computed(() => {
+  return store.executionStatus?.[id.value] || null
+})
 
 const previewFields = computed(() => {
   return data.value.fields ? data.value.fields.slice(0, 3) : []
@@ -285,5 +309,128 @@ function onCancelDelete() {
 .vue-flow__handle:hover {
   transform: scale(1.2);
   transition: transform 0.2s ease;
+}
+
+/* Execution Status Styles */
+.node-executing {
+  animation: executing-glow 1s ease-in-out infinite;
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.6) !important;
+}
+
+.node-completed {
+  animation: completed-pulse 0.6s ease-out;
+  box-shadow: 0 0 15px rgba(34, 197, 94, 0.4) !important;
+}
+
+.node-error {
+  animation: error-shake 0.5s ease-in-out;
+  box-shadow: 0 0 15px rgba(239, 68, 68, 0.4) !important;
+}
+
+.execution-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  font-weight: bold;
+  margin-right: 8px;
+  font-size: 14px;
+}
+
+.execution-badge.executing {
+  background: #10b981;
+  color: white;
+  animation: pulse-execute 1.5s infinite;
+}
+
+.execution-badge.completed {
+  background: #22c55e;
+  color: white;
+}
+
+.execution-badge.error {
+  background: #ef4444;
+  color: white;
+}
+
+.execution-error {
+  padding: 4px 8px;
+  background: #fee2e2;
+  border-left: 3px solid #ef4444;
+  border-radius: 4px;
+  margin-top: 4px;
+  color: #991b1b;
+  font-size: 11px;
+}
+
+.execution-result {
+  padding: 4px 8px;
+  background: #dcfce7;
+  border-left: 3px solid #22c55e;
+  border-radius: 4px;
+  margin-top: 4px;
+  color: #166534;
+  font-size: 11px;
+  word-break: break-word;
+}
+
+.icon-spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes executing-glow {
+  0%, 100% {
+    filter: drop-shadow(0 0 0px rgba(16, 185, 129, 0));
+  }
+
+  50% {
+    filter: drop-shadow(0 0 8px rgba(16, 185, 129, 0.8));
+  }
+}
+
+@keyframes completed-pulse {
+  0% {
+    filter: drop-shadow(0 0 0px rgba(34, 197, 94, 0));
+  }
+
+  100% {
+    filter: drop-shadow(0 0 4px rgba(34, 197, 94, 0.6));
+  }
+}
+
+@keyframes error-shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+
+  25% {
+    transform: translateX(-5px);
+  }
+
+  75% {
+    transform: translateX(5px);
+  }
+}
+
+@keyframes pulse-execute {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+  }
+
+  50% {
+    box-shadow: 0 0 0 10px rgba(16, 185, 129, 0);
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
 }
 </style>
