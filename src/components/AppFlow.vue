@@ -199,7 +199,16 @@ function doScreenshot() {
     console.warn('VueFlow element not found')
     return
   }
-  capture(vueFlowRef.value, { shouldDownload: true, type: 'png' })
+
+  // Get the actual DOM element from the VueFlow component ref
+  const element = vueFlowRef.value.$el || vueFlowRef.value
+
+  if (!element) {
+    console.warn('Cannot access VueFlow DOM element')
+    return
+  }
+
+  capture(element, { shouldDownload: true, type: 'png' })
 }
 function toggleTheme() {
   isDark.value = !isDark.value
