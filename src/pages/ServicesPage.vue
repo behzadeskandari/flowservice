@@ -252,7 +252,7 @@
       </div>
     </div>
     <div v-if="showModalStepMapping"
-      class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 animate-fadeIn p-4"
+      class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 animate-fadeIn p-4 m-y-2 overflow-y-auto"
       @click.self="closeModalStepModal">
       <div class="bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 p-[2px] rounded-3xl w-full max-w-2xl">
         <div class="bg-white dark:bg-gray-900 shadow-2xl rounded-3xl w-full animate-scaleIn" style="padding:20px">
@@ -263,30 +263,14 @@
               class="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-orange-500 to-amber-600 bg-clip-text text-transparent text-center sm:text-right order-first sm:order-last">
               {{ isEditMode ? 'مپ ویرایش سرویس' : ' مپ سرویس جدید' }}
             </h3>
-            <div class="flex gap-2 w-full sm:w-auto">
-              <button
-                class="flex-1 sm:flex-none px-4 sm:px-6 py-3 bg-gradient-to-r from-gray-400 via-gray-500 to-gray-600 text-white font-semibold rounded-xl shadow-lg hover:from-gray-500 hover:via-gray-600 hover:to-gray-700 transition duration-300 ease-in-out flex items-center justify-center gap-2"
-                @click="closeModalStepModal">
-                <i class="fas fa-times"></i>
-                <span class="hidden sm:inline">لغو</span>
-              </button>
-              <button
-                class="flex-1 sm:flex-none px-4 sm:px-6 py-3 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 text-white font-semibold rounded-xl shadow-lg hover:from-orange-500 hover:via-orange-600 hover:to-orange-700 transition duration-300 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                @click="saveStepService" :disabled="!isStepMappingFormValid">
-                <i class="fas fa-save"></i>
-                <span class="hidden sm:inline">{{ isEditMode ? 'بروزرسانی' : 'ایجاد' }}</span>
-              </button>
-            </div>
           </header>
 
           <!-- Body -->
-          <div class="space-y-5 max-h-[70vh] overflow-y-auto pr-2">
-            <!-- Service Information Section -->
+          <!-- <div class="space-y-5 max-h-[70vh] overflow-y-auto pr-2">
             <div class="space-y-5" v-if="!isEditModeStepMapping">
               <h4 class="text-lg sm:text-xl font-bold text-gray-800 dark:text-gray-100 pb-3 border-b border-orange-200">
                 📋 اطلاعات نگاشت مرحله</h4>
 
-              <!-- Step Mapping Name -->
               <div class="space-y-2">
                 <label class="block font-semibold text-gray-700 dark:text-gray-200 text-right">نام نگاشت مرحله <span
                     class="text-red-500">*</span></label>
@@ -295,7 +279,6 @@
                    bg-white dark:bg-gray-800 dark:text-white shadow-sm transition duration-200 text-right" />
               </div>
 
-              <!-- Service Mapping -->
               <div class="space-y-2">
                 <label class="block font-semibold text-gray-700 dark:text-gray-200 text-right">سرویس نگاشت مرحله <span
                     class="text-red-500">*</span></label>
@@ -308,7 +291,6 @@
                 </select>
               </div>
 
-              <!-- Type -->
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div class="space-y-2">
                   <label class="block font-semibold text-gray-700 dark:text-gray-200 text-right">نوع نگاشت مرحله <span
@@ -341,7 +323,6 @@
                    bg-white dark:bg-gray-800 dark:text-white shadow-sm transition duration-200 text-right" />
                 </div>
 
-                <!-- Service Mapping -->
                 <div class="space-y-2">
                   <label class="block font-semibold text-gray-700 dark:text-gray-200 text-right">سرویس نگاشت مرحله <span
                       class="text-red-500">*</span></label>
@@ -354,7 +335,6 @@
                   </select>
                 </div>
 
-                <!-- Type -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div class="space-y-2">
                     <label class="block font-semibold text-gray-700 dark:text-gray-200 text-right">نوع نگاشت مرحله <span
@@ -379,9 +359,104 @@
                 </div>
               </div>
             </div>
-          </div>
+          </div> -->
           <!-- Footer -->
+          <div class="space-y-6">
+            <div class="flex items-center justify-between">
+              <h4 class="text-lg sm:text-xl font-bold text-gray-800 dark:text-gray-100 pb-3 border-b border-orange-200">
+                📋 نگاشت‌های مرحله
+              </h4>
+              <button type="button" @click="addNewMapping"
+                class="px-5 py-2.5 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl shadow hover:from-green-600 hover:to-emerald-700 transition flex items-center gap-2 text-sm font-medium">
+                <i class="fas fa-plus"></i>
+                افزودن نگاشت جدید
+              </button>
+            </div>
 
+            <!-- No mappings yet -->
+            <div v-if="stepMappings.length === 0" class="text-center py-10 text-gray-500 dark:text-gray-400">
+              هنوز نگاشتی اضافه نشده است. روی "افزودن نگاشت جدید" کلیک کنید.
+            </div>
+
+            <!-- List of mappings -->
+            <div v-for="(mapping, index) in stepMappings" :key="index"
+              class="bg-gray-50 dark:bg-gray-800/50 p-5 rounded-xl border border-gray-200 dark:border-gray-700 relative">
+
+              <!-- Remove button (top right) -->
+              <button v-if="stepMappings.length > 1 || !isEditMode" @click="removeMapping(index)"
+                class="absolute top-3 right-3 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-600 transition text-lg"
+                title="حذف این نگاشت">
+                <i class="fas fa-trash-alt"></i>
+              </button>
+
+              <div class="space-y-5">
+                <!-- Name -->
+                <div class="space-y-2">
+                  <label class="block font-semibold text-gray-700 dark:text-gray-200 text-right">
+                    نام نگاشت مرحله <span class="text-red-500">*</span>
+                  </label>
+                  <input v-model="mapping.name" type="text" placeholder="مثال: Shahkar Step Mapping"
+                    class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white dark:bg-gray-800 dark:text-white shadow-sm transition duration-200 text-right" />
+                </div>
+
+                <!-- Service -->
+                <div class="space-y-2">
+                  <label class="block font-semibold text-gray-700 dark:text-gray-200 text-right">
+                    سرویس نگاشت مرحله <span class="text-red-500">*</span>
+                  </label>
+                  <select v-model="mapping.serviceId"
+                    class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white dark:bg-gray-800 dark:text-white shadow-sm transition duration-200 text-right font-medium">
+                    <option value="">یک سرویس انتخاب کنید</option>
+                    <option v-for="service in services.items" :key="service.id" :value="service.id">
+                      {{ service.name }}
+                    </option>
+                  </select>
+                </div>
+
+                <!-- Type + Direction in grid -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                  <div class="space-y-2">
+                    <label class="block font-semibold text-gray-700 dark:text-gray-200 text-right">
+                      نوع نگاشت مرحله <span class="text-red-500">*</span>
+                    </label>
+                    <input v-model="mapping.type" type="text" placeholder="مثال: Input/Output Type"
+                      class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white dark:bg-gray-800 dark:text-white shadow-sm transition duration-200 text-right" />
+                  </div>
+
+                  <div class="space-y-2">
+                    <label class="block font-semibold text-gray-700 dark:text-gray-200 text-right">
+                      جهت نگاشت مرحله <span class="text-red-500">*</span>
+                    </label>
+                    <select v-model="mapping.direction"
+                      class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white dark:bg-gray-800 dark:text-white shadow-sm transition duration-200 text-right font-medium">
+                      <option :value="null">انتخاب کنید</option>
+                      <option :value="1">ورودی</option>
+                      <option :value="2">خروجی</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Optional: index number or small header -->
+              <div class="absolute top-3 left-4 text-sm font-medium text-gray-500 dark:text-gray-400">
+                نگاشت #{{ index + 1 }}
+              </div>
+            </div>
+             <div class="flex gap-2 w-full sm:w-auto">
+              <button
+                class="flex-1 sm:flex-none px-4 sm:px-6 py-3 bg-gradient-to-r from-gray-400 via-gray-500 to-gray-600 text-white font-semibold rounded-xl shadow-lg hover:from-gray-500 hover:via-gray-600 hover:to-gray-700 transition duration-300 ease-in-out flex items-center justify-center gap-2"
+                @click="closeModalStepModal">
+                <i class="fas fa-times"></i>
+                <span class="hidden sm:inline">لغو</span>
+              </button>
+              <button
+                class="flex-1 sm:flex-none px-4 sm:px-6 py-3 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 text-white font-semibold rounded-xl shadow-lg hover:from-orange-500 hover:via-orange-600 hover:to-orange-700 transition duration-300 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                @click="saveStepService" :disabled="!isStepMappingFormValid">
+                <i class="fas fa-save"></i>
+                <span class="hidden sm:inline">{{ isEditMode ? 'بروزرسانی' : 'ایجاد' }}</span>
+              </button>
+            </div>
+          </div>
 
 
           <!-- formDataStepMapping -->
@@ -575,6 +650,46 @@ const AddStepMapping = async (id) => {
 }
 
 
+// Instead of one object → array of mappings
+const stepMappings = ref([])           // all mappings user is creating/editing
+
+// When opening modal in "add" mode → start with one empty item
+const openAddModal = () => {
+  stepMappings.value = [getEmptyMapping()]
+  showModalStepMapping.value = true
+  isEditMode.value = false
+  resetForm()
+  showModal.value = true
+}
+
+// When opening in edit mode → load existing ones (example)
+const openEditModal = (existingMappings) => {
+  stepMappings.value = existingMappings.map(m => ({ ...m })) // deep copy
+  showModalStepMapping.value = true
+  isEditMode.value = true
+  formData.value = JSON.parse(JSON.stringify(service))
+  showModal.value = true
+}
+
+
+const getEmptyMapping = () => ({
+  name: '',
+  serviceId: null,
+  type: '',
+  direction: null,   // 1 = input, 2 = output
+  // ... add other fields if needed (id, status, etc.)
+})
+
+const addNewMapping = () => {
+  stepMappings.value.push(getEmptyMapping())
+}
+
+const removeMapping = (index) => {
+  if (confirm('آیا مطمئن هستید که این نگاشت را حذف کنید؟')) {
+    stepMappings.value.splice(index, 1)
+  }
+}
+
 async function onConfirmDelete() {
   showConfirm.value = false
   var response = await serviceAggregatorClient.deleteService(selectedId.value)
@@ -611,17 +726,7 @@ const loadServices = async () => {
   }
 }
 
-const openAddModal = () => {
-  isEditMode.value = false
-  resetForm()
-  showModal.value = true
-}
 
-const openEditModal = (service) => {
-  isEditMode.value = true
-  formData.value = JSON.parse(JSON.stringify(service))
-  showModal.value = true
-}
 
 const resetForm = () => {
   formData.value = {
@@ -657,50 +762,84 @@ const isValidFn = () => {
   return !isUrlValid && formData.url?.trim()
 }
 const saveStepService = async () => {
-  if (!isStepMappingFormValid.value) {
-    notify({
-      title: 'خطا',
-      text: 'تمام فیلدهای الزامی را پر کنید',
-      type: 'error',
-    })
+  const invalid = stepMappings.value.some(m =>
+    !m.name?.trim() || !m.serviceId || !m.type?.trim() || m.direction == null
+  )
+
+  if (invalid) {
+    alert('لطفاً تمام فیلدهای اجباری را پر کنید')
     return
   }
 
   try {
+    // Example: send all at once (adjust to your API)
     if (isEditMode.value) {
-      await serviceAggregatorClient.updateServiceMapping(formDataStepMapping.value)
-      notify({
-        title: 'موفقیت',
-        text: 'سرویس بروزرسانی شد',
-        type: 'success',
-      })
+      // Update multiple – or call update for each
+      await Promise.all(
+        stepMappings.value.map(mapping =>
+          serviceAggregatorClient.updateStepMapping(mapping.id, mapping)
+        )
+      )
     } else {
-      await serviceAggregatorClient.addServiceMapping({
-        name: formDataStepMapping.value.name,
-        serviceId: formDataStepMapping.value.serviceId,
-        type: formData.value.type,
-        description: formDataStepMapping.value.description,
-        direction: formDataStepMapping.value.direction
-      })
-      notify({
-        title: 'موفقیت',
-        text: 'سرویس ایجاد شد',
-        type: 'success',
-      })
+      // Create multiple
+      await Promise.all(
+        stepMappings.value.map(mapping =>
+          serviceAggregatorClient.addStepMapping(mapping)
+        )
+      )
     }
+
+    // Success → close modal, refresh list, notify
+    notify({ title: 'موفق', text: 'نگاشت‌ها با موفقیت ذخیره شدند', type: 'success' })
     closeModalStepModal()
-    await loadServices()
-  } catch (error) {
-    console.error('Error saving service:', error)
-    notify({
-      title: 'خطا',
-      text: isEditMode.value ? 'خطا در بروزرسانی سرویس' : 'خطا در ایجاد سرویس',
-      type: 'error',
-    })
+  } catch (err) {
+    notify({ title: 'خطا', text: 'ذخیره ناموفق بود', type: 'error' })
+    console.error(err)
   }
+  // if (!isStepMappingFormValid.value) {
+  //   notify({
+  //     title: 'خطا',
+  //     text: 'تمام فیلدهای الزامی را پر کنید',
+  //     type: 'error',
+  //   })
+  //   return
+  // }
+
+  // try {
+  //   if (isEditMode.value) {
+  //     await serviceAggregatorClient.updateServiceMapping(formDataStepMapping.value)
+  //     notify({
+  //       title: 'موفقیت',
+  //       text: 'سرویس بروزرسانی شد',
+  //       type: 'success',
+  //     })
+  //   } else {
+  //     await serviceAggregatorClient.addServiceMapping({
+  //       name: formDataStepMapping.value.name,
+  //       serviceId: formDataStepMapping.value.serviceId,
+  //       type: formData.value.type,
+  //       description: formDataStepMapping.value.description,
+  //       direction: formDataStepMapping.value.direction
+  //     })
+  //     notify({
+  //       title: 'موفقیت',
+  //       text: 'سرویس ایجاد شد',
+  //       type: 'success',
+  //     })
+  //   }
+  //   closeModalStepModal()
+  //   await loadServices()
+  // } catch (error) {
+  //   console.error('Error saving service:', error)
+  //   notify({
+  //     title: 'خطا',
+  //     text: isEditMode.value ? 'خطا در بروزرسانی سرویس' : 'خطا در ایجاد سرویس',
+  //     type: 'error',
+  //   })
+  // }
 }
 const saveService = async () => {
-   if (!isUrlOrPathValid.value) {
+  if (!isUrlOrPathValid.value) {
     notify({
       title: 'خطا',
       text: ',URL را بدرستی پر کنید',
@@ -719,12 +858,12 @@ const saveService = async () => {
 
   try {
     if (isEditMode.value) {
-     if(!isUrlValid.value){
+      if (!isUrlValid.value) {
         notify({
-            title: 'خطا',
-            text: 'URL وارد شده اشتباه میباشد',
-            type: 'error',
-          })
+          title: 'خطا',
+          text: 'URL وارد شده اشتباه میباشد',
+          type: 'error',
+        })
       }
       await serviceAggregatorClient.updateService(formData.value)
       notify({

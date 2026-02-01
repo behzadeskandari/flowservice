@@ -9,41 +9,34 @@
 
         <span class="toolbar-text">بازگشت به لیست</span>
       </router-link>
-      <router-link to="/services"
-        class="px-3 py-2 bg-gradient-to-r from-blue-400 via-blue-500
+      <router-link to="/services" class="px-3 py-2 bg-gradient-to-r from-blue-400 via-blue-500
         to-blue-600 text-white font-semibold rounded-xl shadow-lg
         hover:from-blue-500 hover:via-blue-600 hover:to-blue-700
         transition duration-300 ease-in-out">
         <font-awesome-icon :icon="faArrowRight" style="color: white" />
         <span class="toolbar-text"> لیست سرویس ها</span>
       </router-link>
-      <button
-        class="px-3 py-2 bg-gradient-to-r from-green-400 via-green-500
+      <button class="px-3 py-2 bg-gradient-to-r from-green-400 via-green-500
         to-green-600 text-white font-semibold rounded-xl shadow-lg
         hover:from-green-500 hover:via-green-600 hover:to-green-700
-        transition duration-300 ease-in-out"
-        @click="onAddStep">
+        transition duration-300 ease-in-out" @click="onAddStep">
         <font-awesome-icon :icon="faPlus" style="color: white" />
         <span class="toolbar-text">Step ایجاد</span>
       </button>
 
-      <button
-        class="px-3 py-2 bg-gradient-to-r from-orange-400 via-orange-500
+      <button class="px-3 py-2 bg-gradient-to-r from-orange-400 via-orange-500
         to-orange-600 text-white font-semibold rounded-xl shadow-lg
         hover:from-orange-500 hover:via-orange-600 hover:to-orange-700
-        transition duration-300 ease-in-out"
-        @click="fitView">
+        transition duration-300 ease-in-out" @click="fitView">
         <font-awesome-icon :icon="faExpand" style="color: white" />
         <span class="toolbar-text"> تنظیم اندازه</span>
       </button>
-      <button
-        :disabled="isExecuting"
-        class="px-3 py-2 bg-gradient-to-r from-purple-400 via-purple-500
+      <button :disabled="isExecuting" class="px-3 py-2 bg-gradient-to-r from-purple-400 via-purple-500
         to-purple-600 text-white font-semibold rounded-xl shadow-lg
         hover:from-purple-500 hover:via-purple-600 hover:to-purple-700
-        transition duration-300 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed"
-        @click="executeAggregate">
-        <font-awesome-icon :icon="isExecuting ? faSpinner : faPlay" style="color: white;" :class="{ 'animate-spin': isExecuting }" />
+        transition duration-300 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed" @click="executeAggregate">
+        <font-awesome-icon :icon="isExecuting ? faSpinner : faPlay" style="color: white;"
+          :class="{ 'animate-spin': isExecuting }" />
         <span class="toolbar-text">{{ isExecuting ? 'درحال اجرا...' : 'اجرا' }}</span>
       </button>
     </div>
@@ -102,27 +95,14 @@
 
       <!-- Main Canvas: Vue Flow -->
       <div class="canvas-container">
-        <VueFlow ref="vueFlowRef"
-          :default-viewport="{ x: 0, y: 0, zoom: 0.8 }"
-          :max-zoom="2"
-          :min-zoom="0.1"
-          :nodes="store.nodes"
-          :edges="store.edges"
-          :zoom-on-scroll="true"
-          :fit-view-on-init="true"
-          :pan-on-drag="true"
-          :pan-on-scroll="true"
-          :pan-on-scroll-speed="0.8"
-          :selection-on-click="false"
-          class="vue-flow-container"
-          @nodes-change="onNodesChange"
-          @edges-change="onEdgesChange"
-          @connect="onConnect"
-          @node-dblclick="onNodeDblClick"
-          @drop="onDrop"
-          @dragover="onDragOver"
+        <VueFlow ref="vueFlowRef" :default-viewport="{ x: 0, y: 0, zoom: 0.8 }" :max-zoom="2" :min-zoom="0.1"
+          :nodes="store.nodes" :edges="store.edges" :zoom-on-scroll="true" :fit-view-on-init="true" :pan-on-drag="true"
+          :pan-on-scroll="true" :pan-on-scroll-speed="0.8" :selection-on-click="false"
+          :class="{ 'dark': themeStore.isDark }"
+          @nodes-change="onNodesChange" @edges-change="onEdgesChange"
+          @connect="onConnect" @node-dblclick="onNodeDblClick" @drop="onDrop" @dragover="onDragOver"
           :node-types="nodeTypes">
-          <Background variant="dots" :gap="25" :size="3" />
+          <Background variant="dots" :gap="25" :size="3"/>
           <Panel position="top-center"></Panel>
           <Controls>
             <ControlButton @click.prevent="toggleTheme">
@@ -167,6 +147,9 @@ import EndNode from '@/components/nodes/EndNode.vue'
 import StartNode from '@/components/nodes/StartNode.vue'
 import { faCamera, faSun, faMoon, faPlus, faBars, faArrowLeft, faArrowRight, faExpand, faPlay, faSpinner } from '@fortawesome/free-solid-svg-icons'
 import { useScreenshot } from '@/hooks/useScreenshot'
+import { useThemeStore } from '@/stores/useThemeStore' // Assuming you have a theme store
+
+const themeStore = useThemeStore()
 const vueFlowInstance = useVueFlow()
 const { fitView: fitViewFlow, onNodeDragStop } = vueFlowInstance
 const screenToFlowCoordinate = (vueFlowInstance as any).screenToFlowCoordinate
@@ -189,7 +172,7 @@ const executionStatus = ref<{ [key: string]: 'pending' | 'executing' | 'complete
 const nodeTypes = {
   serviceNode: markRaw(ServiceNode),
   decisionNode: markRaw(DecisionNode),
-  startNode : markRaw(StartNode),
+  startNode: markRaw(StartNode),
   endNode: markRaw(EndNode),
 }
 function sortByConnectionOrder() {
@@ -955,7 +938,9 @@ onBeforeUnmount(() => {
 
 /* Execution Animation Styles */
 @keyframes pulse-execute {
-  0%, 100% {
+
+  0%,
+  100% {
     box-shadow: 0 0 0 0 rgba(168, 85, 247, 0.7);
   }
 
@@ -965,7 +950,9 @@ onBeforeUnmount(() => {
 }
 
 @keyframes executing-glow {
-  0%, 100% {
+
+  0%,
+  100% {
     filter: drop-shadow(0 0 0px rgba(16, 185, 129, 0));
   }
 
@@ -985,7 +972,9 @@ onBeforeUnmount(() => {
 }
 
 @keyframes error-shake {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translateX(0);
   }
 
