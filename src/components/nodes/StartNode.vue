@@ -60,13 +60,14 @@ const store = useFlowStore()
 /* Notch on the right side */
 .start-box::after {
   content: '';
+
   position: absolute;
   /* right: -10px; */
   top: 50%;
   transform: translateY(-50%);
   width: 0;
   height: 0;
-  border-left: 8px solid #13d308;
+  border-left: 8px solid transparent;
   border-top: 12px solid transparent;
   border-bottom: 12px solid transparent;
 }
@@ -79,7 +80,7 @@ const store = useFlowStore()
   transform: translateY(-50%);
   width: 0;
   height: 0;
-  border-left: 5px solid #1fbe0d;
+  border-left: 5px solid transparent;
   border-top: 10px solid transparent;
   border-bottom: 10px solid transparent;
 }

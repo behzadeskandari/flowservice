@@ -34,8 +34,9 @@
         <select v-model="status" type="text" placeholder="نام Aggregate را وارد کنید" class="w-[300px] h-[50px] px-4 py-2 rounded-xl border border-gray-300
                        focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
                        bg-white shadow-sm transition text-right" required>
-          <option value="True">فعال</option>
-          <option value="False">غیر فعال</option>
+          <option :value="null">یک مورد انتخاب کنید</option>
+          <option :value="true">فعال</option>
+          <option :value="false">غیر فعال</option>
         </select>
       </div>
       <div>
@@ -124,7 +125,7 @@
         </span>
         <span class="btn-pagenumber-orange">{{ aggregates.pageNumber }}</span>
         <span class="btn-pagenumber" @click="fetchNextpage" v-if="aggregates.hasNextPage">{{ aggregates.pageNumber + 1
-        }}</span>
+          }}</span>
         <!-- <span class="btn-totalpage">{{ aggregates.totalPages }}</span> -->
         <!-- <span class="btn-pagenumber-grey">{{ aggregates.totalCount }} تعداد کل رکورد </span> -->
         <span class="btn-pagenumber" v-if="aggregates.hasNextPage" @click="fetchNextPage">
@@ -226,6 +227,9 @@ async function fetchNextPage() {
 
 }
 async function resetSearch() {
+
+  name.value = '';
+  status.value = null;
   var data = {
     PageIndex: 1,
     PageSize: 10,
@@ -361,10 +365,11 @@ onMounted(() => {
   margin: 10px;
 }
 
-.btn-pagenumber-orange{
+.btn-pagenumber-orange {
   background-color: orange;
-  color:white;
+  color: white;
 }
+
 .btn-totalpage {
   color: white;
   background-color: rgb(182, 179, 179);

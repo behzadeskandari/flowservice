@@ -201,25 +201,45 @@ const availableNextSteps = computed(() => {
 
 // Expose open/close methods
 const openModal = (mode = 'add', initialData = null) => {
-  // First, reset the form to clear any previous state
-  resetForm()
+  // // First, reset the form to clear any previous state
+  // resetForm()
 
-  // Then load services
-  loadServices()
+  // // Then load services
+  // loadServices()
 
-  // Set the initial data after reset
-  if (initialData && Object.keys(initialData).length > 0) {
-    // Ensure serviceId is properly typed (string or null)
-    const cleanedData = {
-      ...initialData,
-      serviceId: initialData.serviceId ? String(initialData.serviceId) : null,
-    }
-    stepData.value = Object.assign({}, stepData.value, cleanedData)
-    localStorage.setItem('stepData', stepData.value)
-    console.log('StepModal opened with data:', stepData.value)
-  }
+  // // Set the initial data after reset
+  // if (initialData && Object.keys(initialData).length > 0) {
+  //   // Ensure serviceId is properly typed (string or null)
+  //   const cleanedData = {
+  //     ...initialData,
+  //     serviceId: initialData.serviceId ? String(initialData.serviceId) : null,
+  //   }
+  //   stepData.value = Object.assign({}, stepData.value, cleanedData)
+  //   localStorage.setItem('stepData', stepData.value)
+  //   console.log('StepModal opened with data:', stepData.value)
+  // }
 
   // Finally, open the modal
+  // isOpen.value = true
+  resetForm()
+  loadServices()
+
+  if (initialData) {
+    stepData.value = {
+      ...stepData.value,
+      // Map the backend DB ID to .id so onSave knows to UPDATE
+      id: initialData.aggregateStepId || initialData.id || null,
+      nodeId: initialData.nodeId || initialData.id || null, // Vue Flow reference
+      stepName: initialData.stepName || '',
+      serviceId: initialData.serviceId || null,
+      aggregateId: initialData.aggregateId || store.currentAggregateId,
+      nextStepId: initialData.nextStepId || null,
+      condition: initialData.condition || '',
+      conditionParameters: initialData.conditionParameters || '',
+      positionX: initialData.position?.x || initialData.positionX || 100,
+      positionY: initialData.position?.y || initialData.positionY || 100,
+    };
+  }
   isOpen.value = true
 }
 
@@ -232,85 +252,227 @@ function onClose() {
   closeModal()
 }
 
-async function onSave() {
-  debugger
-  if (!stepData.value.stepName) {
-    notify({
-      title: 'خطا',
-      text: 'نام مرحله مورد نیاز است',
-      type: 'error',
-    })
-    return
-  }
+// async function onSave() {
+//   if (!stepData.value.stepName) {
+//     notify({ title: 'خطا', text: 'نام مرحله مورد نیاز است', type: 'error' });
+//     return;
+//   }
 
-  try {
-    const payload = {
-      stepName: stepData.value.stepName,
-      aggregateId: stepData.value.aggregateId || store.currentAggregateId,
-      serviceId: stepData.value.serviceId || null,
-      nextStepId: stepData.value.nextStepId || null,
-      trueStepId: stepData.value.trueStepId || null,
-      falseStepId: stepData.value.falseStepId || null,
-      condition: stepData.value.condition || '',
-      conditionParameters: stepData.value.conditionParameters || '',
-      positionX: stepData.value.positionX ?? 100,
-      positionY: stepData.value.positionY ?? 100,
-    }
-    let record = await store.getAggregateByid(stepData.value.aggregateId);
-    if (store.nodes.length == 0) {
-      const data = {
-        id: stepData.value.aggregateId || store.currentAggregateId,
-        firstStepId: stepData.value.serviceId,
-        status: true,
-        description: record.description,
-        name: record.name,
-      }
-      console.log(store.aggregates, 'store.aggregates');
-      await serviceAggregatorClient.updateAggregate(data)
-    }
-    // If we have a nodeId, this means we added a local node and need to update it with backend data
-    if (stepData.value.nodeId) {
-      const stepResult = await serviceAggregatorClient.addAggregateStep(payload)
+//   try {
+//     // Re-insert your actual data fields here:
+//     const payload = {
+//       stepName: stepData.value.stepName,
+//       aggregateId: stepData.value.aggregateId || store.currentAggregateId,
+//       serviceId: stepData.value.serviceId || null,
+//       nextStepId: stepData.value.nextStepId || null,
+//       trueStepId: stepData.value.trueStepId || null,
+//       falseStepId: stepData.value.falseStepId || null,
+//       positionX: stepData.value.positionX ?? 100,
+//       positionY: stepData.value.positionY ?? 100,
+//       condition: stepData.value.condition || '',
+//       conditionParameters: stepData.value.conditionParameters || '',
+//     };
 
-      // Update the local node with the backend step data
-      const nodeIndex = store.nodes.findIndex((n) => n.id === stepData.value.nodeId)
-      if (nodeIndex !== -1) {
-        store.nodes[nodeIndex] = {
-          ...store.nodes[nodeIndex],
-          data: {
-            ...store.nodes[nodeIndex].data,
-            aggregateStepId: stepData.value.id,
-            stepName: stepData.value.stepName,
-            serviceId: stepData.value.serviceId,
-            condition: stepData.value.condition || '',
-            conditionParameters: stepData.value.conditionParameters || '',
-          },
-        }
-        // Trigger reactivity
-        store.nodes = [...store.nodes]
-      }
-    } else {
-      // Normal case: use the store's saveConnectionStep
-      await store.saveConnectionStep(payload)
-    }
+//     let stepResult;
 
-    notify({
-      title: 'موفق',
-      text: 'مرحله با موفقیت ذخیره شد',
-      type: 'success',
-    })
-    closeModal()
-  } catch (error) {
-    console.error('Error saving step:', error)
-    notify({
-      title: 'خطا',
-      text: 'خطا در ذخیره مرحله',
-      type: 'error',
-    })
-  }
-}
+//     // Check if we are updating (has id) or creating (no id)
+//     if (!stepData.value.id) {
+//       // Create new step in backend
+//       stepResult = await serviceAggregatorClient.addAggregateStep(payload);
+//     } else {
+//       // Update existing step in backend
+//       stepResult = await serviceAggregatorClient.updateAggregateStep({
+//         ...payload,
+//         id: stepData.value.id
+//       });
+//     }
+
+//     // Update the aggregate's firstStepId if this is the first node
+//     if (store.nodes.length === 0 || store.nodes.length === 1) {
+//        const aggregateRecord = await store.getAggregateByid(payload.aggregateId);
+//        await serviceAggregatorClient.updateAggregate({
+//          ...aggregateRecord,
+//          firstStepId: stepResult.id,
+//          status: true
+//        });
+//     }
+
+//     // Local Update (Reactivity)
+//     const targetId = stepData.value.nodeId || stepData.value.id;
+//     const nodeIndex = store.nodes.findIndex((n) =>
+//       n.id === targetId || n.data.aggregateStepId === stepData.value.id
+//     );
+
+//     if (nodeIndex !== -1) {
+//       store.nodes[nodeIndex].data = {
+//         ...store.nodes[nodeIndex].data,
+//         ...payload,
+//         aggregateStepId: stepResult.id
+//       };
+
+//       // If it was a brand new node, sync the actual ID
+//       if (!stepData.value.id) {
+//           store.nodes[nodeIndex].id = stepResult.id;
+//       }
+
+//       store.nodes = [...store.nodes];
+//     }
+
+//     notify({ title: 'موفق', text: 'مرحله با موفقیت ذخیره شد', type: 'success' });
+//     closeModal();
+//   } catch (error) {
+//     console.error('Error saving step:', error);
+//     notify({ title: 'خطا', text: 'خطا در ذخیره مرحله', type: 'error' });
+//   }
+//   // debugger
+//   // if (!stepData.value.stepName) {
+//   //   notify({
+//   //     title: 'خطا',
+//   //     text: 'نام مرحله مورد نیاز است',
+//   //     type: 'error',
+//   //   })
+//   //   return
+//   // }
+
+//   // try {
+//   //   const payload = {
+//   //     stepName: stepData.value.stepName,
+//   //     aggregateId: stepData.value.aggregateId || store.currentAggregateId,
+//   //     serviceId: stepData.value.serviceId || null,
+//   //     nextStepId: stepData.value.nextStepId || null,
+//   //     trueStepId: stepData.value.trueStepId || null,
+//   //     falseStepId: stepData.value.falseStepId || null,
+//   //     condition: stepData.value.condition || '',
+//   //     conditionParameters: stepData.value.conditionParameters || '',
+//   //     positionX: stepData.value.positionX ?? 100,
+//   //     positionY: stepData.value.positionY ?? 100,
+//   //   }
+//   //   let record = await store.getAggregateByid(stepData.value.aggregateId);
+//   //   if (store.nodes.length == 0) {
+//   //     const data = {
+//   //       id: stepData.value.aggregateId || store.currentAggregateId,
+//   //       firstStepId: stepData.value.serviceId,
+//   //       status: true,
+//   //       description: record.description,
+//   //       name: record.name,
+//   //     }
+//   //     console.log(store.aggregates, 'store.aggregates');
+//   //     await serviceAggregatorClient.updateAggregate(data)
+//   //   }
+//   //   // If we have a nodeId, this means we added a local node and need to update it with backend data
+//   //   if (stepData.value.nodeId) {
+//   //     const stepResult = await serviceAggregatorClient.addAggregateStep(payload)
+
+//   //     // Update the local node with the backend step data
+//   //     const nodeIndex = store.nodes.findIndex((n) => n.id === stepData.value.nodeId)
+//   //     if (nodeIndex !== -1) {
+//   //       store.nodes[nodeIndex] = {
+//   //         ...store.nodes[nodeIndex],
+//   //         data: {
+//   //           ...store.nodes[nodeIndex].data,
+//   //           aggregateStepId: stepData.value.id,
+//   //           stepName: stepData.value.stepName,
+//   //           serviceId: stepData.value.serviceId,
+//   //           condition: stepData.value.condition || '',
+//   //           conditionParameters: stepData.value.conditionParameters || '',
+//   //         },
+//   //       }
+//   //       // Trigger reactivity
+//   //       store.nodes = [...store.nodes]
+//   //     }
+//   //   } else {
+//   //     // Normal case: use the store's saveConnectionStep
+//   //     await store.saveConnectionStep(payload)
+//   //   }
+
+//   //   notify({
+//   //     title: 'موفق',
+//   //     text: 'مرحله با موفقیت ذخیره شد',
+//   //     type: 'success',
+//   //   })
+//   //   closeModal()
+//   // } catch (error) {
+//   //   console.error('Error saving step:', error)
+//   //   notify({
+//   //     title: 'خطا',
+//   //     text: 'خطا در ذخیره مرحله',
+//   //     type: 'error',
+//   //   })
+//   // }
+// }
 
 // Auto-load services when modal opens
+
+// Inside StepModal.vue -> onSave function
+const onSave = async () => {
+  debugger
+  try {
+    const payload = { ...stepData.value };
+    let stepResult;
+
+    if (!stepData.value.id) {
+      stepResult = await serviceAggregatorClient.addAggregateStep(payload);
+    } else {
+      stepResult = await serviceAggregatorClient.updateAggregateStep(payload);
+    }
+    //Update the aggregate's firstStepId if this is the first node
+    if (store.nodes.length === 0 || store.nodes.length === 1) {
+       const aggregateRecord = await store.getAggregateByid(payload.aggregateId);
+       await serviceAggregatorClient.updateAggregate({
+         ...aggregateRecord,
+         firstStepId: stepResult.id,
+         status: true
+       });
+    }
+
+    // Find the node in the store to update the UI
+    const targetId = stepData.value.nodeId || stepData.value.id;
+    const nodeIndex = store.nodes.findIndex((n) => n.id === String(targetId));
+
+    if (nodeIndex !== -1) {
+      // Create a shallow copy of the node to trigger reactivity
+      const updatedNode = { ...store.nodes[nodeIndex] };
+
+      updatedNode.data = {
+        ...updatedNode.data,
+        ...payload,
+        aggregateStepId: stepResult.id,
+        nextStepId: payload.nextStepId
+      };
+
+      // Update the node ID if it was a new node
+      if (!stepData.value.id) {
+        updatedNode.id = String(stepResult.id);
+      }
+
+      // 1. Update the node at the specific index
+      store.nodes[nodeIndex] = updatedNode;
+
+      // 2. Force array reactivity by creating a new reference
+      store.nodes = [...store.nodes];
+
+
+      if (store.pendingConnection) {
+        store.persistentEdges.push({
+          source: store.pendingConnection.source,
+          target: store.pendingConnection.target,
+          type: 'smoothstep',
+          animated: true
+        })
+        // Reset the pending state
+        store.pendingConnection = null
+      }
+      // 3. IMPORTANT: Rebuild edges to show the new connection
+      store.rebuildEdgesFromPersistent();
+    }
+
+    notify({ title: 'موفق', text: 'تغییرات با موفقیت ذخیره شد', type: 'success' });
+    closeModal();
+  } catch (error) {
+    console.error('Save failed:', error);
+  }
+};
+
 watch(isOpen, (newVal) => {
   if (newVal) {
     loadServices()

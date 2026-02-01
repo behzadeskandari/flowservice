@@ -67,6 +67,9 @@
           <p>هیچ سرویسی موجود نیست</p>
         </div>
         <div v-else class="services-list">
+          <div class="service-card" style="color:green">Start Node</div>
+          <div class="service-card" style="color:green">If Node</div>
+          <div class="service-card" style="color:green">End Node</div>
           <div v-for="service in services.items" :key="service.id" class="service-card" :draggable="true"
             @dragstart="onDragStart($event, service)" @dragend="onDragEnd" @dblclick="onServiceDoubleClick(service)">
             <div class="service-card-header">
@@ -89,11 +92,27 @@
 
       <!-- Main Canvas: Vue Flow -->
       <div class="canvas-container">
-        <VueFlow ref="vueFlowRef" :default-viewport="{ x: 0, y: 0, zoom: 0.8 }" :max-zoom="2" :min-zoom="0.1"
-          :nodes="store.nodes" :edges="store.edges" :zoom-on-scroll="true" :fit-view-on-init="true" :pan-on-drag="true"
-          :pan-on-scroll="true" :pan-on-scroll-speed="0.8" :selection-on-click="false" class="vue-flow-container"
-          @nodes-change="onNodesChange" @edges-change="onEdgesChange" @connect="onConnect"
-          @node-dblclick="onNodeDblClick" @drop="onDrop" @dragover="onDragOver" :node-types="nodeTypes">
+        <VueFlow ref="vueFlowRef"
+          :default-viewport="{ x: 0, y: 0, zoom: 0.8 }"
+          :max-zoom="2"
+          :min-zoom="0.1"
+          :nodes="store.nodes"
+          :edges="store.edges"
+          :zoom-on-scroll="true"
+          :fit-view-on-init="true"
+          :pan-on-drag="true"
+          :pan-on-scroll="true"
+          :pan-on-scroll-speed="0.8"
+          :selection-on-click="false"
+          :key="store.currentAggregateId"
+          class="vue-flow-container"
+          @nodes-change="onNodesChange"
+          @edges-change="onEdgesChange"
+          @connect="onConnect"
+          @node-dblclick="onNodeDblClick"
+          @drop="onDrop"
+          @dragover="onDragOver"
+          :node-types="nodeTypes">
           <Background variant="dots" :gap="25" :size="3" color="orange"/>
           <Panel position="top-center"></Panel>
           <Controls>
@@ -253,7 +272,6 @@ const loadAggregateFlow = async (aggregateId: string) => {
 }
 
 const onDragStart = (event: DragEvent, service: any) => {
-  debugger
   console.log(service, 'service onDragStart')
   console.log(event.dataTransfer, 'event.dataTransfer onDragStart')
   console.log(draggedService.value, 'event onDragStart')
@@ -269,7 +287,6 @@ const onDragEnd = () => {
 }
 
 const onDragOver = (event: DragEvent) => {
-  debugger
   event.preventDefault()
   if (event.dataTransfer) {
 
@@ -279,7 +296,6 @@ const onDragOver = (event: DragEvent) => {
 }
 
 const onDrop = async (event: DragEvent) => {
-  debugger
   console.log(draggedService.value, 'draggedService')
   event.preventDefault()
 

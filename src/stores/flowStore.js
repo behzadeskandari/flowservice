@@ -12,6 +12,7 @@ const LOCAL_STORAGE_KEY = 'flowservice-flow'
 export const useFlowStore = defineStore('flow', () => {
   const nodes = ref([])
   const edges = ref([])
+  const isSyncing = ref(false)
   // Local persistent edges independent of backend nextStepId
   // Survives backend updates and reloads; supports multiple outgoing edges per node
   const persistentEdges = ref([])
@@ -73,6 +74,12 @@ export const useFlowStore = defineStore('flow', () => {
   )
   loadFlow()
 
+
+  watch([nodes, edges], () => {
+    if (autoSave.value && !isSyncing.value) {
+      saveFlow(nodes.value, edges.value)
+    }
+  }, { deep: true })
   /**
    * Rebuild edges from persistentEdges + valid backend connections
    * Called after loading nodes to restore edge state from local cache
@@ -80,32 +87,67 @@ export const useFlowStore = defineStore('flow', () => {
    * @param {Array} stepIdToNodeIdMap - Map from step ID to node ID for lookups
    */
   function rebuildEdgesFromPersistent() {
-    // Create a map from stepId to nodeId for lookups
-    const stepIdToNodeIdMap = new Map()
-    nodes.value.forEach(node => {
-      if (node.data?.aggregateStepId) {
-        stepIdToNodeIdMap.set(node.data.aggregateStepId, node.id)
-      }
-    })
+    const validEdges = []
 
-    const rebuiltEdges = []
+    // Create a quick lookup for node existence
+    const nodeIds = new Set(nodes.value.map(n => n.id))
 
-    // Restore edges from persistentEdges (primary source of truth for connections)
-    persistentEdges.value.forEach((persistedEdge) => {
-      const sourceNodeId = persistedEdge.source
-      const targetNodeId = persistedEdge.target
+    persistentEdges.value.forEach(pEdge => {
+      const sourceExists = nodeIds.has(pEdge.source)
+      const targetExists = nodeIds.has(pEdge.target)
 
-      // Verify both nodes still exist
-      if (nodes.value.find(n => n.id === sourceNodeId) && nodes.value.find(n => n.id === targetNodeId)) {
-        rebuiltEdges.push({
-          ...persistedEdge,
-          // Keep original styling and data
+      if (sourceExists && targetExists) {
+        validEdges.push({
+          ...pEdge,
+          // Use a consistent ID format to prevent duplicate edges
+          id: `e-${pEdge.source}-${pEdge.target}`,
+          source: String(pEdge.source),
+          target: String(pEdge.target),
+          type: pEdge.type || 'smoothstep',
+          animated: true,
+          // Marker adds the arrow head which often forces a visual refresh
+          markerEnd: MarkerType.ArrowClosed,
         })
+      } else {
+        console.warn(`Removing stale edge: ${pEdge.source} → ${pEdge.target}`)
       }
     })
 
-    edges.value = rebuiltEdges
-    edges.value = [...edges.value]
+    // Trigger Vue reactivity by replacing the reference
+    edges.value = [...validEdges]
+
+    console.log('Edges synchronized. Count:', edges.value.length)
+    // // Create a map from stepId to nodeId for lookups
+    // const stepIdToNodeId = new Map()
+    // nodes.value.forEach(node => {
+    //   if (node.data?.aggregateStepId) {
+    //     stepIdToNodeId.set(node.data.aggregateStepId, node.id)
+    //   }
+    // })
+
+    // const validEdges = []
+
+    // persistentEdges.value.forEach(pEdge => {
+    //   const sourceExists = nodes.value.some(n => n.id === pEdge.source)
+    //   const targetExists = nodes.value.some(n => n.id === pEdge.target)
+
+    //   if (sourceExists && targetExists) {
+    //     // Keep original edge data (type, animated, label, etc.)
+    //     validEdges.push({
+    //       ...pEdge,
+    //       // Ensure required fields for Vue Flow
+    //       id: pEdge.id || `${pEdge.source}-${pEdge.target}`,
+    //       type: pEdge.type || 'smoothstep', // or your default
+    //       animated: pEdge.animated ?? false,
+    //     })
+    //   } else {
+    //     console.warn(`Removing stale persistent edge: ${pEdge.source} → ${pEdge.target}`)
+    //   }
+    // })
+
+    // // IMPORTANT: Do NOT filter or overwrite — assign fully
+    // edges.value = validEdges
+    // console.log('Rebuilt edges:', edges.value.length, 'from persistent:', persistentEdges.value.length)
   }
 
   /**
@@ -116,6 +158,27 @@ export const useFlowStore = defineStore('flow', () => {
   function mergePersistedEdges() {
     // Rebuild edges and add any missing ones from persistentEdges
     rebuildEdgesFromPersistent()
+  }
+
+  const getStepStyle = (node, index, total) => {
+    // Green for the first node
+    if (index === 0) return { backgroundColor: '#10b981', color: 'white' };
+
+    // Custom style for Decision nodes (Diamond shape or specific color)
+    if (node.data?.type === 'decision') {
+      return { backgroundColor: '#fef3c7', border: '2px solid #f59e0b' };
+    }
+
+    // Default White for others
+    return { backgroundColor: '#ffffff', color: '#333' };
+  };
+
+  // Call this inside your loadAggregateFlow function
+  function applyNodeStyles() {
+    nodes.value = nodes.value.map((node, index) => ({
+      ...node,
+      style: getStepStyle(node, index, nodes.value.length)
+    }));
   }
 
   async function loadAggregates() {
@@ -220,11 +283,11 @@ export const useFlowStore = defineStore('flow', () => {
           const service = step.service || {}
           const hasCondition = step.condition && `${step.condition}`.trim() !== ''
           let nodeType = '';//hasCondition ? 'decisionNode' : 'serviceNode'
-          if(hasCondition){
+          if (hasCondition) {
             nodeType = 'decisionNode';
-          }else if(firstStep == step.serviceId){
+          } else if (firstStep == step.serviceId) {
             nodeType = 'startNode';
-          }else{
+          } else {
             nodeType = "serviceNode";
           }
           // استفاده از position backend اگر موجود باشد، در غیر اینصورت fallback ساده
@@ -360,11 +423,51 @@ export const useFlowStore = defineStore('flow', () => {
       }
 
       // به‌روزرسانی store
-      nodes.value = flowNodes
-      edges.value = flowEdges
-      nodes.value = [...nodes.value]
-      edges.value = [...edges.value]
+      // nodes.value = flowNodes
+      // edges.value = flowEdges
+      // nodes.value = [...nodes.value]
+      // edges.value = [...edges.value]
+      const backendNodes = flowNodes
+      const backendEdges = flowEdges
+      // 1. Merge nodes (keep existing if ID matches, add new ones)
+      const existingNodeIds = new Set(nodes.value.map(n => n.id))
+      backendNodes.forEach(bNode => {
+        const idx = nodes.value.findIndex(n => n.id === bNode.id)
+        if (idx !== -1) {
+          // Update existing node (preserve local changes like position if not in backend)
+          nodes.value[idx] = {
+            ...nodes.value[idx],
+            ...bNode,
+            position: nodes.value[idx].position || bNode.position, // prefer local position if exists
+          }
+        } else {
+          // Add new node from backend
+          nodes.value.push(bNode)
+        }
+      })
 
+      // 2. Merge edges: add backend edges to persistentEdges if missing
+      backendEdges.forEach(bEdge => {
+        if (!persistentEdges.value.some(e => e.id === bEdge.id)) {
+          persistentEdges.value.push({
+            ...bEdge,
+            // Ensure Vue Flow required fields
+            animated: bEdge.animated ?? true,
+            markerEnd: bEdge.markerEnd || { type: MarkerType.ArrowClosed, width: 20, height: 20 },
+          })
+        }
+      })
+
+      // 3. Clean up stale edges (optional - remove edges whose nodes no longer exist)
+      persistentEdges.value = persistentEdges.value.filter(e =>
+        nodes.value.some(n => n.id === e.source) &&
+        nodes.value.some(n => n.id === e.target)
+      )
+
+      // 4. Finally rebuild UI edges from persistent
+      rebuildEdgesFromPersistent()
+
+      console.log('Merged backend → persistent edges now:', persistentEdges.value.length)
       // فقط وقتی چند aggregate داریم layout دستی اعمال کنیم
       if (isMultiple) {
         applyConnectionOrderLayout()
@@ -397,11 +500,11 @@ export const useFlowStore = defineStore('flow', () => {
           type: 'error',
         })
         return
-      }else{
+      } else {
         return aggregate
       }
 
-    }  catch (error) {
+    } catch (error) {
       console.error('Failed to load single aggregate flow:', error)
       notify({
         title: 'خطا',
@@ -418,6 +521,7 @@ export const useFlowStore = defineStore('flow', () => {
    * @param {string} aggregateId - The aggregate ID to load
    */
   async function loadSingleAggregateFlow(aggregateId) {
+    isSyncing.value = true
     debugger
     try {
       console.log('loading single aggregates');
@@ -486,13 +590,13 @@ export const useFlowStore = defineStore('flow', () => {
         // Determine node type: diamond for conditional, rectangular for normal
         const hasCondition = step.condition !== null && step.condition !== undefined && `${step.condition}`.trim() !== ''
         let nodeType = ''; //hasCondition ? 'decisionNode' : 'serviceNode'
-          if(hasCondition){
-            nodeType = 'decisionNode';
-          }else if(firstStep == step.serviceId){
-            nodeType = 'startNode';
-          }else{
-            nodeType = "serviceNode";
-          }
+        if (hasCondition) {
+          nodeType = 'decisionNode';
+        } else if (firstStep == step.serviceId) {
+          nodeType = 'startNode';
+        } else {
+          nodeType = "serviceNode";
+        }
         // Get service info if available
         const service = step.service || {}
         // Use step.serviceId if available, otherwise fall back to service.id
@@ -515,7 +619,7 @@ export const useFlowStore = defineStore('flow', () => {
         // Create node
         const node = {
           id: nodeId,
-          type:  nodeType,
+          type: nodeType,
           position: position,
           data: {
             id: nodeId,
@@ -588,11 +692,11 @@ export const useFlowStore = defineStore('flow', () => {
           // Determine node type: diamond for conditional, rectangular for normal
           const hasCondition = step.condition !== null && step.condition !== undefined && `${step.condition}`.trim() !== ''
           let nodeType = ""; //hasCondition ? 'decisionNode' : 'serviceNode'
-          if(hasCondition){
+          if (hasCondition) {
             nodeType = 'decisionNode';
-          }else if(firstStep == step.serviceId){
+          } else if (firstStep == step.serviceId) {
             nodeType = 'startNode';
-          }else{
+          } else {
             nodeType = "serviceNode";
           }
 
@@ -765,7 +869,7 @@ export const useFlowStore = defineStore('flow', () => {
       mergePersistedEdges()
 
       console.log('Store updated - nodes:', nodes.value.length, 'edges:', edges.value.length)
-
+      isSyncing.value = false
       // Skip layout for single aggregate flow - nodes are already positioned
       // applyConnectionOrderLayout() expects aggregate nodes which we don't create here
     } catch (error) {
@@ -1153,7 +1257,158 @@ export const useFlowStore = defineStore('flow', () => {
   /**
    * Add a node with API call (creates service in backend)
    */
+  // async function addNode(options = {}) {
+  //   const {
+  //     position = {},
+  //     label = 'New Service',
+  //     serviceName = '',
+  //     fields = [],
+  //     url = '',
+  //     method = 'GET',
+  //     type = 'REST',
+  //   } = options
+
+  //   const x = typeof position.x === 'number' ? position.x : 100
+  //   const y = typeof position.y === 'number' ? position.y : 100
+  //   const id = uniqueId('svc')
+
+  //   await ensureAggregate()
+
+  //   try {
+  //     const serviceData = {
+  //       name: serviceName || label,
+  //       url: url || '',
+  //       method: method,
+  //       type: type,
+  //     }
+
+  //     const createdService = await serviceAggregatorClient.createService(serviceData)
+
+  //     const isFirstNode = nodes.value.length === 0
+
+  //   // Default Style (White/Gray)
+  //   let nodeStyle = {
+  //     backgroundColor: '#ffffff',
+  //     border: '1px solid #e2e8f0',
+  //     color: '#1f2937',
+  //     borderRadius: '8px'
+  //   }
+  //   debugger
+  //   // Start Node Style (Green) - First node added
+  //   if (isFirstNode) {
+  //     nodeStyle = {
+  //       backgroundColor: '#10b981', // Emerald 500
+  //       border: '1px solid #059669',
+  //       color: '#ffffff',
+  //       borderRadius: '8px',
+  //       boxShadow: '0 4px 6px -1px rgba(16, 185, 129, 0.3)'
+  //     }
+  //   }
+
+  //   // Decision Node Style (Diamond/Yellow usually, or different border)
+  //   let nodeType = 'serviceNode'
+  //   if (isDecision) {
+  //     nodeType = 'decisionNode'
+  //     nodeStyle = {
+  //       ...nodeStyle,
+  //       backgroundColor: '#fffbeb', // Amber 50
+  //       borderColor: '#f59e0b',    // Amber 500
+  //     }
+  //   }
+
+  //   // 4. Create the Node Object
+  //   const id = uniqueId('svc')
+  //   const newNode = {
+  //     id: id,
+  //     type: nodeType,
+  //     position: { x: position.x, y: position.y },
+  //     style: nodeStyle, // Apply the Calculated Style
+  //     data: {
+  //       id,
+  //       // Bind backend ID
+  //       serviceId: createdService.id,
+  //       aggregateId: currentAggregateId.value,
+
+  //       // Visual Data
+  //       label: label,
+  //       serviceName: serviceName || label,
+  //       isStartNode: isFirstNode, // Flag for internal logic
+
+  //       // Service Data
+  //       url: url,
+  //       method: method,
+  //       type: type,
+  //       status: true,
+  //       fields: structuredClone(fields),
+  //     },
+  //   }
+
+  //   // 5. CRITICAL: Force Re-render by creating a NEW array reference
+  //   // Do NOT use nodes.value.push(newNode)
+  //   nodes.value = [...nodes.value, newNode]
+
+  //   notify({
+  //     title: 'موفق',
+  //     text: 'سرویس در سرور ایجاد شد',
+  //     type: 'success',
+  //   })
+
+  //   return newNode
+  //     // const node = {
+  //     //   id: id,
+  //     //   type: 'serviceNode',
+  //     //   position: { x, y },
+  //     //   data: {
+  //     //     id,
+  //     //     serviceId: createdService.id,
+  //     //     aggregateId: currentAggregateId.value,
+  //     //     label: label,
+  //     //     serviceName: serviceName || label,
+  //     //     url: url,
+  //     //     method: method,
+  //     //     type: type,
+  //     //     status: true,
+  //     //     fields: structuredClone(fields),
+  //     //   },
+  //     // }
+
+  //     // nodes.value.push(node)
+  //     // nodes.value = [...nodes.value]
+  //     // return node
+  //   } catch (error) {
+  //     console.error('Failed to create service:', error)
+  //     notify({
+  //       title: 'خطا',
+  //       text: 'خطا در ایجاد سرویس',
+  //       type: 'error',
+  //     })
+  //     // const node = {
+  //     //   id: id,
+  //     //   type: 'serviceNode',
+  //     //   position: { x, y },
+  //     //   data: {
+  //     //     id,
+  //     //     serviceId: null,
+  //     //     aggregateId: currentAggregateId.value,
+  //     //     label: label,
+  //     //     serviceName: serviceName || label,
+  //     //     url: url,
+  //     //     method: method,
+  //     //     type: type,
+  //     //     status: true,
+  //     //     fields: structuredClone(fields),
+  //     //   },
+  //     // }
+  //     // nodes.value.push(node)
+  //     // nodes.value = [...nodes.value]
+  //     // return node
+  //     return null
+  //   }
+  // }
+
   async function addNode(options = {}) {
+    debugger
+    // 1. EXTRACT isDecision HERE
     const {
       position = {},
       label = 'New Service',
@@ -1162,11 +1417,12 @@ export const useFlowStore = defineStore('flow', () => {
       url = '',
       method = 'GET',
       type = 'REST',
+      isDecision = false // <--- Added this line
     } = options
 
     const x = typeof position.x === 'number' ? position.x : 100
     const y = typeof position.y === 'number' ? position.y : 100
-    const id = uniqueId('svc')
+    // Note: We don't need 'id' here yet, we generate it later for the node
 
     await ensureAggregate()
 
@@ -1178,18 +1434,59 @@ export const useFlowStore = defineStore('flow', () => {
         type: type,
       }
 
+      // 2. Call Server
       const createdService = await serviceAggregatorClient.createService(serviceData)
 
-      const node = {
+      const isFirstNode = nodes.value.length === 0
+
+      // Default Style (White/Gray)
+      let nodeStyle = {
+        backgroundColor: '#ffffff',
+        border: '1px solid #e2e8f0',
+        color: '#1f2937',
+        borderRadius: '8px'
+      }
+      let nodeType = ''
+      // Start Node Style (Green) - First node added
+      if (isFirstNode) {
+        nodeType = 'startNode'
+        nodeStyle = {
+          backgroundColor: '#10b981', // Emerald 500
+          border: '1px solid #059669',
+          color: '#ffffff',
+          borderRadius: '8px',
+          boxShadow: '0 4px 6px -1px rgba(16, 185, 129, 0.3)'
+        }
+      } else {
+        nodeType = 'serviceNode'
+      }
+
+      // Decision Node Style (Diamond/Yellow)
+
+      // 3. Now this check works because variable is defined
+      if (isDecision) {
+        nodeType = 'decisionNode'
+        nodeStyle = {
+          ...nodeStyle,
+          backgroundColor: '#fffbeb', // Amber 50
+          borderColor: '#f59e0b',    // Amber 500
+        }
+      }
+
+      // 4. Create the Node Object
+      const id = uniqueId('svc')
+      const newNode = {
         id: id,
-        type: 'serviceNode',
-        position: { x, y },
+        type: nodeType,
+        position: { x, y }, // Use the extracted x, y
+        style: nodeStyle,
         data: {
           id,
           serviceId: createdService.id,
           aggregateId: currentAggregateId.value,
           label: label,
           serviceName: serviceName || label,
+          isStartNode: isFirstNode,
           url: url,
           method: method,
           type: type,
@@ -1198,9 +1495,18 @@ export const useFlowStore = defineStore('flow', () => {
         },
       }
 
-      nodes.value.push(node)
-      nodes.value = [...nodes.value]
-      return node
+      // 5. Force Re-render
+      nodes.value = [...nodes.value, newNode]
+      // nodes.value.push(node)
+      // nodes.value = [...nodes.value]
+      notify({
+        title: 'موفق',
+        text: 'سرویس در سرور ایجاد شد',
+        type: 'success',
+      })
+
+      return newNode
+
     } catch (error) {
       console.error('Failed to create service:', error)
       notify({
@@ -1208,29 +1514,11 @@ export const useFlowStore = defineStore('flow', () => {
         text: 'خطا در ایجاد سرویس',
         type: 'error',
       })
-      const node = {
-        id: id,
-        type: 'serviceNode',
-        position: { x, y },
-        data: {
-          id,
-          serviceId: null,
-          aggregateId: currentAggregateId.value,
-          label: label,
-          serviceName: serviceName || label,
-          url: url,
-          method: method,
-          type: type,
-          status: true,
-          fields: structuredClone(fields),
-        },
-      }
-      nodes.value.push(node)
-      nodes.value = [...nodes.value]
-      return node
+      // nodes.value.push(node)
+      // nodes.value = [...nodes.value]
+      // return node
     }
   }
-
   /**
    * Ensure service exists in backend (create if it doesn't)
    * Called when user adds first field to a new service
@@ -1280,20 +1568,6 @@ export const useFlowStore = defineStore('flow', () => {
     }
   }
 
-  // function updateNode(nodeId, patch) {
-  //   const idx = nodes.value.findIndex((n) => n.id === nodeId)
-  //   if (idx === -1) return null
-  //   const node = nodes.value[idx]
-  //   nodes.value[idx] = {
-  //     ...node,
-  //     data: {
-  //       ...node.data,
-  //       ...patch,
-  //     },
-  //   }
-  //   nodes.value = [...nodes.value]
-  //   return nodes.value[idx]
-  // }
   async function updateNode(nodeId, patch, options = {}) {
     const idx = nodes.value.findIndex((n) => n.id === nodeId)
     if (idx === -1) return null
@@ -1443,40 +1717,103 @@ export const useFlowStore = defineStore('flow', () => {
   }
 
   async function handleConnect(params) {
-    debugger
+    // 1. Validation: Ensure connections only happen between valid handles
     if (params.sourceHandle !== 'out' || params.targetHandle !== 'in') {
-      return
+      console.warn('Invalid connection: Must connect from "out" to "in"');
+      return;
     }
-    const { source, target } = params
-    if (!source || !target) return
 
-    const nodeA = nodes.value.find((n) => n.id === source)
-    const nodeB = nodes.value.find((n) => n.id === target)
-    if (!nodeA || !nodeB) return
+    const { source, target } = params;
+    if (!source || !target) return;
 
-    if (!nodeA.position) nodeA.position = { x: 0, y: 0 }
-    if (!nodeB.position) nodeB.position = { x: 200, y: 200 }
+    // 2. Find nodes in the store
+    const nodeA = nodes.value.find((n) => n.id === source);
+    const nodeB = nodes.value.find((n) => n.id === target);
 
-    await ensureAggregate()
+    if (!nodeA || !nodeB) {
+      console.error('Source or Target node not found in store');
+      return;
+    }
 
-    // Initialize step data with fields from nodeB
+    // 3. Ensure we have an active Aggregate context
+    await ensureAggregate();
+
+    // 4. Prepare Step Data
+    // We are primarily updating Node A (the source) to point to Node B (the target)
     const stepData = {
-      stepName: nodeB.data.stepName || nodeB.data.serviceName || 'Step',
+      // If Node A already exists in the backend, pass its ID to trigger UPDATE mode
+      id: nodeA.data.aggregateStepId || null,
+
+      // UI Reference for updating the canvas later
+      nodeId: source,
+
+      // Core Fields
+      stepName: nodeA.data.stepName || nodeA.data.label || 'Step',
       aggregateId: currentAggregateId.value,
-      serviceId: nodeB.data.serviceId || null,
-      nextStepId: null,
-      trueStepId: null,
-      falseStepId: null,
-      condition: '',
-      conditionParameters: '',
-    }
+      serviceId: nodeA.data.serviceId || null,
 
-    // Store the pending connection and step data
-    pendingConnection.value = { source, target, nodeA, nodeB }
-    connectionStepData.value = stepData
+      // The connection target: Node B's backend ID is the "nextStepId" for Node A
+      nextStepId: nodeB.data.aggregateStepId || null,
 
-    // Open StepModal with the initial data
-    openStepModal(stepData)
+      // Inherit existing logic if present
+      trueStepId: nodeA.data.trueStepId || null,
+      falseStepId: nodeA.data.falseStepId || null,
+      condition: nodeA.data.condition || '',
+      conditionParameters: nodeA.data.conditionParameters || '',
+
+      // Position synchronization
+      positionX: Math.round(nodeA.position.x),
+      positionY: Math.round(nodeA.position.y),
+    };
+
+    // 5. Save state for visual edge creation after modal save
+    pendingConnection.value = {
+      source,
+      target,
+      sourceNode: nodeA,
+      targetNode: nodeB
+    };
+    connectionStepData.value = stepData;
+
+    // 6. Open the Modal
+    // If id exists, it opens in 'edit' mode. If not, 'add' mode.
+    const mode = stepData.id ? 'edit' : 'add';
+    openStepModal(mode, stepData);
+
+    // debugger
+    // if (params.sourceHandle !== 'out' || params.targetHandle !== 'in') {
+    //   return
+    // }
+    // const { source, target } = params
+    // if (!source || !target) return
+
+    // const nodeA = nodes.value.find((n) => n.id === source)
+    // const nodeB = nodes.value.find((n) => n.id === target)
+    // if (!nodeA || !nodeB) return
+
+    // if (!nodeA.position) nodeA.position = { x: 0, y: 0 }
+    // if (!nodeB.position) nodeB.position = { x: 200, y: 200 }
+
+    // await ensureAggregate()
+
+    // // Initialize step data with fields from nodeB
+    // const stepData = {
+    //   stepName: nodeB.data.stepName || nodeB.data.serviceName || 'Step',
+    //   aggregateId: currentAggregateId.value,
+    //   serviceId: nodeB.data.serviceId || null,
+    //   nextStepId: null,
+    //   trueStepId: null,
+    //   falseStepId: null,
+    //   condition: '',
+    //   conditionParameters: '',
+    // }
+
+    // // Store the pending connection and step data
+    // pendingConnection.value = { source, target, nodeA, nodeB }
+    // connectionStepData.value = stepData
+
+    // // Open StepModal with the initial data
+    // openStepModal(stepData)
   }
 
   /**
@@ -1486,232 +1823,278 @@ export const useFlowStore = defineStore('flow', () => {
    * 1. Drag-connect: pendingConnection exists, create edge between nodes
    * 2. Button-click: no pendingConnection, just create step
    */
-  async function saveConnectionStep(updatedStepData) {
-    // Prevent double execution of connection processing
-    if (isProcessingConnection.value) return
+  async function saveConnectionStep(params) {
+    const { source, target, sourceHandle } = params;
+
+    // 1. Find the source node using the correct ID from params
+    const sourceNode = nodes.value.find((n) => n.id === source);
+    if (!sourceNode) {
+      console.error("Source node not found:", source);
+      return;
+    }
+
+    // 2. Clone the data to avoid direct mutation before API success
+    const updatedData = { ...sourceNode.data };
+
+    // 3. Update the correct field based on the handle ID
+    // Note: Check your custom node to see if the handle id is exactly 'true'/'false'
+    // or if it contains those strings (e.g., 'source-true')
+    if (sourceHandle?.includes('true')) {
+      updatedData.trueStepId = target;
+    } else if (sourceHandle?.includes('false')) {
+      updatedData.falseStepId = target;
+    } else {
+      updatedData.nextStepId = target;
+    }
 
     try {
-      isProcessingConnection.value = true
-      let stepResult
+      // 4. Send the update to the server
+      // We pass service: null to ensure we only update the connection IDs
+      await serviceAggregatorClient.updateAggregateStep({
+        ...updatedData,
+        service: null
+      });
 
-      // If there's a pending connection (drag-connect scenario), handle node/edge creation
-      if (pendingConnection.value) {
-        const { source, target, nodeA, nodeB } = pendingConnection.value
+      // 5. Update Local State (Optimistic UI)
+      sourceNode.data = updatedData;
 
-        // Find source and target nodes
-        const sourceNodeIdx = nodes.value.findIndex((n) => n.id === source)
-        const targetNodeIdx = nodes.value.findIndex((n) => n.id === target)
+      // 6. Update persistent edges so the UI doesn't lose the line
+      persistentEdges.value.push({ source, target, sourceHandle });
 
-        const sourceStepId = sourceNodeIdx !== -1 ? nodes.value[sourceNodeIdx].data?.aggregateStepId : null
-        const targetStepId = targetNodeIdx !== -1 ? nodes.value[targetNodeIdx].data?.aggregateStepId : null
-
-        // If target node already has a step, update the target step with the new data
-        if (targetStepId) {
-          stepResult = await serviceAggregatorClient.updateAggregateStep({
-            id: targetStepId,
-            stepName: updatedStepData.stepName || nodeB.data.stepName || nodeB.data.serviceName || 'Step',
-            aggregateId: updatedStepData.aggregateId || currentAggregateId.value,
-            serviceId: updatedStepData.serviceId || nodeB.data.serviceId || null,
-            nextStepId: updatedStepData.nextStepId || null,
-            trueStepId: updatedStepData.trueStepId || null,
-            falseStepId: updatedStepData.falseStepId || null,
-            condition: updatedStepData.condition || '',
-            conditionParameters: updatedStepData.conditionParameters || '',
-            status: updatedStepData.status !== undefined ? updatedStepData.status : true,
-          })
-
-          // Update the target node with the updated step data
-          if (targetNodeIdx !== -1) {
-            const targetNodeId = nodes.value[targetNodeIdx].id
-            updateNode(targetNodeId, {
-              data: {
-                stepName: stepResult.stepName,
-                serviceId: stepResult.serviceId,
-                condition: stepResult.condition || '',
-                conditionParameters: stepResult.conditionParameters || '',
-              }
-            })
-          }
-
-          // Create the edge with the existing target step data
-          const edgeId = `e_${source}-${target}_${Date.now()}`
-          const newEdge = {
-            id: edgeId,
-            source,
-            target,
-            animated: true,
-            type: 'default',
-            markerEnd: {
-              type: MarkerType.ArrowClosed,
-              width: 20,
-              height: 20,
-              color: '#FF0072',
-            },
-            data: {
-              aggregateStepId: targetStepId,
-              aggregateId: currentAggregateId.value,
-              condition: stepResult.condition || '',
-              conditionParameters: stepResult.conditionParameters || '',
-              mappings: stepResult.mappings || [],
-            },
-          }
-
-          // Add to both local persistent edges and Vue Flow edges
-          addEdge(newEdge)
-          persistentEdges.value.push(newEdge)
-          const currentSourceStepData = nodeA.data || {}
-          // Update source node's step to point to target step (if source has a step and nextStepId actually changed)
-          if (sourceStepId) {
-            const currentNextStepId = nodeA.data?.nextStepId || null
-            if (currentNextStepId !== targetStepId) {
-              await serviceAggregatorClient.updateAggregateStep({
-                id: sourceStepId,
-                stepName: nodeA.data.stepName || nodeA.data.serviceName || 'Step',
-                aggregateId: currentAggregateId.value,
-                serviceId: nodeA.data.serviceId,
-                nextStepId: targetStepId, // Source points to target
-                trueStepId: currentSourceStepData.trueStepId,
-                falseStepId: currentSourceStepData.falseStepId,
-                condition: currentSourceStepData.condition,
-                conditionParameters: currentSourceStepData.conditionParameters,
-                status: true,
-              })
-              // Update local node data
-              updateNode(source, { data: { nextStepId: targetStepId } })
-            }
-          }
-
-          // Reload flow to ensure positions and data are up to date
-          if (aggregates.value.length === 1) {
-            await loadSingleAggregateFlow(currentAggregateId.value)
-          } else {
-            await loadAggregateFlow(currentAggregateId.value)
-          }
-        } else {
-          // Create new step for new service/node
-          stepResult = await serviceAggregatorClient.addAggregateStep(updatedStepData)
-
-          // Update the target node with the created step data
-          if (targetNodeIdx !== -1) {
-            const targetNodeId = nodes.value[targetNodeIdx].id
-            updateNode(targetNodeId, {
-              data: {
-                aggregateStepId: stepResult.id,
-                stepName: stepResult.stepName,
-                serviceId: stepResult.serviceId,
-                condition: stepResult.condition || '',
-                conditionParameters: stepResult.conditionParameters || '',
-              }
-            })
-          }
-
-          // Create the edge with the returned step data
-          const edgeId = `e_${source}-${target}_${Date.now()}`
-          const newEdge = {
-            id: edgeId,
-            source,
-            target,
-            animated: true,
-            type: 'default',
-            markerEnd: {
-              type: MarkerType.ArrowClosed,
-              width: 20,
-              height: 20,
-              color: '#FF0072',
-            },
-            data: {
-              aggregateStepId: stepResult.id,
-              aggregateId: currentAggregateId.value,
-              condition: stepResult.condition || '',
-              conditionParameters: stepResult.conditionParameters || '',
-              mappings: stepResult.mappings || [],
-            },
-          }
-
-          // Add to both local persistent edges and Vue Flow edges
-          addEdge(newEdge)
-          persistentEdges.value.push(newEdge)
-          const currentSourceStepData = nodeA.data || {}
-          // Update source node's step to point to the new target step (if source has a step and nextStepId actually changed)
-          if (sourceStepId) {
-            const currentNextStepId = nodeA.data?.nextStepId || null
-            if (currentNextStepId !== stepResult.id) {
-              await serviceAggregatorClient.updateAggregateStep({
-                id: sourceStepId,
-                stepName: nodeA.data.stepName || nodeA.data.serviceName || 'Step',
-                aggregateId: currentAggregateId.value,
-                serviceId: nodeA.data.serviceId,
-                nextStepId: targetStepId, // Source points to new target
-                trueStepId: currentSourceStepData.trueStepId,
-                falseStepId: currentSourceStepData.falseStepId,
-                condition: currentSourceStepData.condition,
-                conditionParameters: currentSourceStepData.conditionParameters,
-                status: true,
-              })
-              // Update local node data
-              updateNode(source, { data: { nextStepId: stepResult.id } })
-            }
-          }
-
-          // Backup edges before reload
-          const edgesBeforeReload = edges.value.map(e => structuredClone(e))
-
-          // Reload flow to ensure positions and data are up to date
-          if (aggregates.value.length === 1) {
-            await loadSingleAggregateFlow(currentAggregateId.value)
-          } else {
-            await loadAggregateFlow(currentAggregateId.value)
-          }
-
-          // Restore any edges that were lost during reload
-          edgesBeforeReload.forEach(oldEdge => {
-            if (!edges.value.find(e => e.id === oldEdge.id)) {
-              edges.value.push(structuredClone(oldEdge))
-              // Also add to persistentEdges if not already there
-              if (!persistentEdges.value.find(e => e.id === oldEdge.id)) {
-                persistentEdges.value.push(structuredClone(oldEdge))
-              }
-            }
-          })
-        }
-      } else {
-        // Button-click scenario: no pending connection, create new step
-        stepResult = await serviceAggregatorClient.addAggregateStep(updatedStepData)
-
-        // Reload flow to get latest positions and complete data from backend
-        if (aggregates.value.length === 1) {
-          await loadSingleAggregateFlow(currentAggregateId.value)
-        } else {
-          await loadAggregateFlow(currentAggregateId.value)
-        }
-      }
-
-      // Close the modal and reset connection state
-      showConnectionModal.value = false
-      pendingConnection.value = null
-      connectionStepData.value = null
-      // Force reactivity
-      nodes.value = [...nodes.value]
-      edges.value = [...edges.value]
-
-      notify({
-        title: 'موفقیت',
-        text: 'Step و ترکیب سرویس ایجاد شد',
-        type: 'success',
-      })
+      notify({ title: 'موفقیت', text: 'اتصال با موفقیت ذخیره شد', type: 'success' });
     } catch (error) {
-      console.error('Failed to save connection step:', error)
-      showConnectionModal.value = false
-      pendingConnection.value = null
-      connectionStepData.value = null
-      notify({
-        title: 'خطا',
-        text: 'خطا در ایجاد step',
-        type: 'error',
-      })
-    } finally {
-      isProcessingConnection.value = false
+      console.error('Failed to save connection to backend:', error);
+
+      // Rollback: Remove the edge from the UI if the server save failed
+      edges.value = edges.value.filter(e => !(e.source === source && e.target === target));
+
+      notify({ title: 'خطا', text: 'خطا در ذخیره اتصال در سرور', type: 'error' });
     }
+    // // Prevent double execution of connection processing
+    // if (isProcessingConnection.value) return
+
+    // try {
+    //   isProcessingConnection.value = true
+    //   let stepResult
+
+    //   // If there's a pending connection (drag-connect scenario), handle node/edge creation
+    //   if (pendingConnection.value) {
+    //     const { source, target, nodeA, nodeB } = pendingConnection.value
+
+    //     // Find source and target nodes
+    //     const sourceNodeIdx = nodes.value.findIndex((n) => n.id === source)
+    //     const targetNodeIdx = nodes.value.findIndex((n) => n.id === target)
+
+    //     const sourceStepId = sourceNodeIdx !== -1 ? nodes.value[sourceNodeIdx].data?.aggregateStepId : null
+    //     const targetStepId = targetNodeIdx !== -1 ? nodes.value[targetNodeIdx].data?.aggregateStepId : null
+
+    //     // If target node already has a step, update the target step with the new data
+    //     if (targetStepId) {
+    //       stepResult = await serviceAggregatorClient.updateAggregateStep({
+    //         id: targetStepId,
+    //         stepName: updatedStepData.stepName || nodeB.data.stepName || nodeB.data.serviceName || 'Step',
+    //         aggregateId: updatedStepData.aggregateId || currentAggregateId.value,
+    //         serviceId: updatedStepData.serviceId || nodeB.data.serviceId || null,
+    //         nextStepId: updatedStepData.nextStepId || null,
+    //         trueStepId: updatedStepData.trueStepId || null,
+    //         falseStepId: updatedStepData.falseStepId || null,
+    //         condition: updatedStepData.condition || '',
+    //         conditionParameters: updatedStepData.conditionParameters || '',
+    //         status: updatedStepData.status !== undefined ? updatedStepData.status : true,
+    //       })
+
+    //       // Update the target node with the updated step data
+    //       if (targetNodeIdx !== -1) {
+    //         const targetNodeId = nodes.value[targetNodeIdx].id
+    //         updateNode(targetNodeId, {
+    //           data: {
+    //             stepName: stepResult.stepName,
+    //             serviceId: stepResult.serviceId,
+    //             condition: stepResult.condition || '',
+    //             conditionParameters: stepResult.conditionParameters || '',
+    //           }
+    //         })
+    //       }
+
+    //       // Create the edge with the existing target step data
+    //       const edgeId = `e_${source}-${target}_${Date.now()}`
+    //       const newEdge = {
+    //         id: edgeId,
+    //         source,
+    //         target,
+    //         animated: true,
+    //         type: 'default',
+    //         markerEnd: {
+    //           type: MarkerType.ArrowClosed,
+    //           width: 20,
+    //           height: 20,
+    //           color: '#FF0072',
+    //         },
+    //         data: {
+    //           aggregateStepId: targetStepId,
+    //           aggregateId: currentAggregateId.value,
+    //           condition: stepResult.condition || '',
+    //           conditionParameters: stepResult.conditionParameters || '',
+    //           mappings: stepResult.mappings || [],
+    //         },
+    //       }
+
+    //       // Add to both local persistent edges and Vue Flow edges
+    //       addEdge(newEdge)
+    //       persistentEdges.value.push(newEdge)
+    //       const currentSourceStepData = nodeA.data || {}
+    //       // Update source node's step to point to target step (if source has a step and nextStepId actually changed)
+    //       if (sourceStepId) {
+    //         const currentNextStepId = nodeA.data?.nextStepId || null
+    //         if (currentNextStepId !== targetStepId) {
+    //           await serviceAggregatorClient.updateAggregateStep({
+    //             id: sourceStepId,
+    //             stepName: nodeA.data.stepName || nodeA.data.serviceName || 'Step',
+    //             aggregateId: currentAggregateId.value,
+    //             serviceId: nodeA.data.serviceId,
+    //             nextStepId: targetStepId, // Source points to target
+    //             trueStepId: currentSourceStepData.trueStepId,
+    //             falseStepId: currentSourceStepData.falseStepId,
+    //             condition: currentSourceStepData.condition,
+    //             conditionParameters: currentSourceStepData.conditionParameters,
+    //             status: true,
+    //           })
+    //           // Update local node data
+    //           updateNode(source, { data: { nextStepId: targetStepId } })
+    //         }
+    //       }
+
+    //       // Reload flow to ensure positions and data are up to date
+    //       if (aggregates.value.length === 1) {
+    //         await loadSingleAggregateFlow(currentAggregateId.value)
+    //       } else {
+    //         await loadAggregateFlow(currentAggregateId.value)
+    //       }
+    //     } else {
+    //       // Create new step for new service/node
+    //       stepResult = await serviceAggregatorClient.addAggregateStep(updatedStepData)
+
+    //       // Update the target node with the created step data
+    //       if (targetNodeIdx !== -1) {
+    //         const targetNodeId = nodes.value[targetNodeIdx].id
+    //         updateNode(targetNodeId, {
+    //           data: {
+    //             aggregateStepId: stepResult.id,
+    //             stepName: stepResult.stepName,
+    //             serviceId: stepResult.serviceId,
+    //             condition: stepResult.condition || '',
+    //             conditionParameters: stepResult.conditionParameters || '',
+    //           }
+    //         })
+    //       }
+
+    //       // Create the edge with the returned step data
+    //       const edgeId = `e_${source}-${target}_${Date.now()}`
+    //       const newEdge = {
+    //         id: edgeId,
+    //         source,
+    //         target,
+    //         animated: true,
+    //         type: 'default',
+    //         markerEnd: {
+    //           type: MarkerType.ArrowClosed,
+    //           width: 20,
+    //           height: 20,
+    //           color: '#FF0072',
+    //         },
+    //         data: {
+    //           aggregateStepId: stepResult.id,
+    //           aggregateId: currentAggregateId.value,
+    //           condition: stepResult.condition || '',
+    //           conditionParameters: stepResult.conditionParameters || '',
+    //           mappings: stepResult.mappings || [],
+    //         },
+    //       }
+
+    //       // Add to both local persistent edges and Vue Flow edges
+    //       addEdge(newEdge)
+    //       persistentEdges.value.push(newEdge)
+    //       const currentSourceStepData = nodeA.data || {}
+    //       // Update source node's step to point to the new target step (if source has a step and nextStepId actually changed)
+    //       if (sourceStepId) {
+    //         const currentNextStepId = nodeA.data?.nextStepId || null
+    //         if (currentNextStepId !== stepResult.id) {
+    //           await serviceAggregatorClient.updateAggregateStep({
+    //             id: sourceStepId,
+    //             stepName: nodeA.data.stepName || nodeA.data.serviceName || 'Step',
+    //             aggregateId: currentAggregateId.value,
+    //             serviceId: nodeA.data.serviceId,
+    //             nextStepId: targetStepId, // Source points to new target
+    //             trueStepId: currentSourceStepData.trueStepId,
+    //             falseStepId: currentSourceStepData.falseStepId,
+    //             condition: currentSourceStepData.condition,
+    //             conditionParameters: currentSourceStepData.conditionParameters,
+    //             status: true,
+    //           })
+    //           // Update local node data
+    //           updateNode(source, { data: { nextStepId: stepResult.id } })
+    //         }
+    //       }
+
+    //       // Backup edges before reload
+    //       const edgesBeforeReload = edges.value.map(e => structuredClone(e))
+
+    //       // Reload flow to ensure positions and data are up to date
+    //       if (aggregates.value.length === 1) {
+    //         await loadSingleAggregateFlow(currentAggregateId.value)
+    //       } else {
+    //         await loadAggregateFlow(currentAggregateId.value)
+    //       }
+
+    //       // Restore any edges that were lost during reload
+    //       edgesBeforeReload.forEach(oldEdge => {
+    //         if (!edges.value.find(e => e.id === oldEdge.id)) {
+    //           edges.value.push(structuredClone(oldEdge))
+    //           // Also add to persistentEdges if not already there
+    //           if (!persistentEdges.value.find(e => e.id === oldEdge.id)) {
+    //             persistentEdges.value.push(structuredClone(oldEdge))
+    //           }
+    //         }
+    //       })
+    //     }
+    //   } else {
+    //     // Button-click scenario: no pending connection, create new step
+    //     stepResult = await serviceAggregatorClient.addAggregateStep(updatedStepData)
+
+    //     // Reload flow to get latest positions and complete data from backend
+    //     if (aggregates.value.length === 1) {
+    //       await loadSingleAggregateFlow(currentAggregateId.value)
+    //     } else {
+    //       await loadAggregateFlow(currentAggregateId.value)
+    //     }
+    //   }
+
+    //   // Close the modal and reset connection state
+    //   showConnectionModal.value = false
+    //   pendingConnection.value = null
+    //   connectionStepData.value = null
+    //   // Force reactivity
+    //   nodes.value = [...nodes.value]
+    //   edges.value = [...edges.value]
+
+    //   notify({
+    //     title: 'موفقیت',
+    //     text: 'Step و ترکیب سرویس ایجاد شد',
+    //     type: 'success',
+    //   })
+    // } catch (error) {
+    //   console.error('Failed to save connection step:', error)
+    //   showConnectionModal.value = false
+    //   pendingConnection.value = null
+    //   connectionStepData.value = null
+    //   notify({
+    //     title: 'خطا',
+    //     text: 'خطا در ایجاد step',
+    //     type: 'error',
+    //   })
+    // } finally {
+    //   isProcessingConnection.value = false
+    // }
   }
 
   function closeConnectionModal() {
@@ -1724,157 +2107,17 @@ export const useFlowStore = defineStore('flow', () => {
    * Open step modal from connection or button click
    * Called when user connects two nodes or clicks Add Step button
    */
-  function openStepModal(initialData = null) {
-    stepModalInitialData.value = initialData
-    stepModalOpen.value = true
+  function openStepModal(mode, data) {
+    stepModalOpen.value = true;
+    stepModalInitialData.value = { ...data };
+    modalMode.value = mode;
   }
 
   function closeStepModal() {
     stepModalOpen.value = false
     stepModalInitialData.value = null
     closeConnectionModal()
-  }
-  /**
-   * Finds all nodes in the connected component that includes both startNodeId and endNodeId
-   * Uses BFS to traverse the graph and find all connected nodes
-   */
-  const visited = ref(new Set())
-  const adjacency = ref(new Map())
-  function findConnectedComponent(startNodeId, endNodeId) {
-    const queue = [startNodeId, endNodeId]
-    const componentNodeIds = new Set([startNodeId, endNodeId])
-
-    // Build adjacency list from edges
-    edges.value.forEach((edge) => {
-      if (!adjacency.value.has(edge.source)) {
-        adjacency.value.set(edge.source, [])
-      }
-      if (!adjacency.value.has(edge.target)) {
-        adjacency.value.set(edge.target, [])
-      }
-      adjacency.value.get(edge.source).push(edge.target)
-      adjacency.value.get(edge.target).push(edge.source)
-    })
-
-    // BFS to find all connected nodes
-    while (queue.length > 0) {
-      const currentNodeId = queue.shift()
-      if (visited.value.has(currentNodeId)) continue
-      visited.value.add(currentNodeId)
-
-      const neighbors = adjacency.value.get(currentNodeId) || []
-      neighbors.forEach((neighborId) => {
-        if (!visited.value.has(neighborId) && !componentNodeIds.has(neighborId)) {
-          componentNodeIds.add(neighborId)
-          queue.push(neighborId)
-        }
-      })
-    }
-
-    // Get all node objects from the component
-    return nodes.value.filter((n) => componentNodeIds.has(n.id))
-  }
-
-  /**
-   * Extracts all individual nodes from a group, handling both regular nodes and combined nodes
-   * Combined nodes contain multiple services, so we need to reconstruct the original nodes
-   */
-  function extractAllIndividualNodes(nodeGroup) {
-    const individualNodes = []
-
-    nodeGroup.forEach((node) => {
-      if (node.type === 'combinedServiceNode') {
-        // For combined nodes, we need to reconstruct individual nodes from the combinedSchema
-        // The combinedSchema.services contains arrays of fields, one per original node
-        const servicesFields = node.data.combinedSchema?.services || []
-        const combinedLabel = node.data.label || ''
-
-        // Split label by ' + ' to get individual service labels
-        // Handle edge cases where label might not be in expected format
-        let labelParts = combinedLabel
-          .split(' + ')
-          .map((l) => l.trim())
-          .filter((l) => l)
-
-        // If label splitting doesn't match services count, generate labels
-        if (labelParts.length !== servicesFields.length) {
-          labelParts = servicesFields.map((_, idx) => labelParts[idx] || `Service ${idx + 1}`)
-        }
-
-        servicesFields.forEach((fields, index) => {
-          // Create a virtual node representation for merging
-          const label = labelParts[index] || `Service ${index + 1}`
-          individualNodes.push({
-            id: `${node.id}_service_${index}`,
-            label: label,
-            fields: Array.isArray(fields) ? fields : [],
-            serviceName: label,
-          })
-        })
-      } else {
-        // Regular node - add as is
-        individualNodes.push({
-          id: node.id,
-          label: node.data.label || 'Unnamed',
-          fields: Array.isArray(node.data.fields) ? node.data.fields : [],
-          serviceName: node.data.serviceName || node.data.label || 'Unnamed',
-        })
-      }
-    })
-
-    return individualNodes
-  }
-
-  /**
-   * Merges all nodes in a group into one combined node
-   * Follows the exact pattern: merge data, merge fields, merge labels
-   */
-  function mergeNodeGroup(nodeGroup) {
-    if (nodeGroup.length === 0) {
-      throw new Error('Cannot merge empty node group')
-    }
-
-    // Extract all individual nodes (handles both regular and combined nodes)
-    const individualNodes = extractAllIndividualNodes(nodeGroup)
-
-    // Collect all fields from all individual nodes
-    const allFieldsArrays = individualNodes.map((node) => node.fields || [])
-
-    // Merge all fields using mergeNFields
-    const mergedResult = mergeNFields(...allFieldsArrays)
-
-    // Build combined label: node1 + node2 + node3 + ...
-    const combinedLabel = individualNodes.map((node) => node.label).join(' + ')
-    mergedResult['label'] = combinedLabel
-    // Create the combined node
-    const id = uniqueId('combined')
-    return {
-      id,
-      data: {
-        id,
-        label: combinedLabel,
-        combinedSchema: mergedResult,
-        editable: true,
-      },
-    }
-  }
-
-  /**
-   * Calculates the average position of all nodes in a group
-   */
-  function calculateAveragePosition(nodeGroup) {
-    if (nodeGroup.length === 0) {
-      return { x: 100, y: 100 }
-    }
-
-    const sumX = nodeGroup.reduce((sum, node) => sum + (node.position?.x || 0), 0)
-    const sumY = nodeGroup.reduce((sum, node) => sum + (node.position?.y || 0), 0)
-    const count = nodeGroup.length
-
-    return {
-      x: Math.round(sumX / count),
-      y: Math.round(sumY / count),
-    }
+    rebuildEdgesFromPersistent()
   }
 
   function exportFlow() {

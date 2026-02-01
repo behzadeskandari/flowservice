@@ -22,7 +22,7 @@
         </button>
       </div>
     </div>
-    <div class="search_holder">
+    <div class="search_holder" :key="resetKey">
       <button class="SearchButton" @click="SearchAgg">جستجو</button>
       <button class="btn-del-SearchButton" @click="resetSearch">حذف</button>
       <div>
@@ -30,8 +30,9 @@
         <select v-model="status" type="text" class="w-[300px] h-[50px] px-4 py-2 rounded-xl border border-gray-300
                        focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
                        bg-white shadow-sm transition text-right" required>
-          <option value="True">فعال</option>
-          <option value="False">غیر فعال</option>
+          <option :value="null">یک مورد انتخاب کنید</option>
+          <option :value="true">فعال</option>
+          <option :value="false">غیر فعال</option>
         </select>
       </div>
 
@@ -122,7 +123,7 @@
           <font-awesome-icon :icon="faArrowRight" style="color: orange;" @click="fetchNextPage" />
         </span>
         <span class="btn-pagenumber" @click="fetchNextpage" v-if="services.hasNextPage">{{ services.pageNumber + 1
-          }}</span>
+        }}</span>
         <span class="btn-pagenumber-orange">{{ services.pageNumber }}</span>
         <!--  -->
         <!-- <span class="btn-totalpage">{{ aggregates.totalPages }}</span> -->
@@ -179,13 +180,26 @@
               </div>
 
               <!-- URL -->
-              <div class="space-y-2">
+              <!-- <div class="space-y-2">
                 <label class="block font-semibold text-gray-700 dark:text-gray-200 text-right">URL <span
                     class="text-red-500">*</span></label>
                 <input v-model="formData.url" type="text" placeholder="https://api.example.com/endpoint" class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700
                    focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
                    bg-white dark:bg-gray-800 dark:text-white shadow-sm transition duration-200 text-right text-sm" />
+              </div> -->
+              <div class="space-y-2">
+                <label class="block font-semibold text-gray-700 dark:text-gray-200 text-right">
+                  URL <span class="text-red-500">*</span>
+                </label>
+                <input v-model="formData.url" type="text" placeholder="https://api.example.com/endpoint" class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700
+           focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
+           bg-white dark:bg-gray-800 dark:text-white shadow-sm transition duration-200 text-right text-sm" />
+                <p v-if="isValidFn" class="text-red-500 text-sm text-right mt-1">
+                  لطفاً یک URL معتبر وارد کنید (مثال: https://api.example.com/path)
+                </p>
               </div>
+
+
 
               <!-- Method and Type -->
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -345,8 +359,7 @@
                   <div class="space-y-2">
                     <label class="block font-semibold text-gray-700 dark:text-gray-200 text-right">نوع نگاشت مرحله <span
                         class="text-red-500">*</span></label>
-                    <input v-model="formdataStep.type" type="text" placeholder="مثال: Shahkar Step Mapping"
-                      class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700
+                    <input v-model="formdataStep.type" type="text" placeholder="مثال: Shahkar Step Mapping" class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700
                    focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
                    bg-white dark:bg-gray-800 dark:text-white shadow-sm transition duration-200 text-right" />
 
@@ -401,10 +414,11 @@ const services = ref({
 })
 const name = ref("");
 const url = ref("");
-const status = ref(false);
+const status = ref(null);
 const isLoading = ref(false)
 const showModal = ref(false)
 const showModalStepMapping = ref(false)
+const resetKey = ref(0)
 
 const isEditMode = ref(false)
 const isEditModeStepMapping = ref(false)
@@ -435,9 +449,37 @@ const isStepMappingFormValid = computed(() => {
 })
 
 const isFormValid = computed(() => {
-  //&& formData.value.url
-  return formData.value.name && formData.value.method && formData.value.type
+  return (
+    formData.value.name?.trim() &&
+    formData.value.method &&
+    formData.value.type
+  );
 })
+
+const isUrlOrPathValid = computed(() => {
+  const input = formData.value.url?.trim();
+  if (!input) return false;
+
+  if (input.startsWith('/')) {
+    // Simple path check
+    return /^\/[-a-zA-Z0-9@:%_+.~#?&/=]*$/.test(input);
+  }
+
+  // Full URL check
+  return urlRegex.test(input);  // use the robust one
+});
+
+
+// Add this right before your isUrlValid computed
+const urlRegex = /^(?:(?:(?:https?|ftp):)?\/\/)(?:\S+(?::\S*)?@)?(?:(?!(?:10|127)(?:\.\d{1,3}){3})(?!(?:169\.254|192\.168)(?:\.\d{1,3}){2})(?!172\.(?:1[6-9]|2\d|3[0-1])(?:\.\d{1,3}){2})(?:[1-9]\d?|1\d\d|2[01]\d|22[0-3])(?:\.(?:1?\d{1,2}|2[0-4]\d|25[0-5])){2}(?:\.(?:[1-9]\d?|1\d\d|2[0-4]\d|25[0-4]))|(?:(?:[a-z0-9\u00a1-\uffff][a-z0-9\u00a1-\uffff_-]{0,62})?[a-z0-9\u00a1-\uffff]\.)+(?:[a-z\u00a1-\uffff]{2,}\.?))(?::\d{2,5})?(?:[/?#]\S*)?$/i;
+
+const isUrlValid = computed(() => {
+  const input = formData.value.url?.trim();
+  if (!input) return false;
+  return urlRegex.test(input);
+});
+
+
 
 const truncateUrl = (url) => {
   if (!url) return ''
@@ -472,12 +514,19 @@ async function fetchNextPage() {
 
 }
 async function resetSearch() {
+
+  url.value = '';
+  name.value = '';
+  status.value = null;
   var data = {
     PageIndex: 1,
     PageSize: 10,
   }
+  resetKey.value++
+
   var record = await serviceAggregatorClient.getServicesWithParams(data);
   services.value = record;
+
 }
 async function SearchAgg(params) {
   if (name.value == "") {
@@ -603,6 +652,10 @@ const closeModal = () => {
   showModal.value = false
   resetForm()
 }
+
+const isValidFn = () => {
+  return !isUrlValid && formData.url?.trim()
+}
 const saveStepService = async () => {
   if (!isStepMappingFormValid.value) {
     notify({
@@ -647,6 +700,14 @@ const saveStepService = async () => {
   }
 }
 const saveService = async () => {
+   if (!isUrlOrPathValid.value) {
+    notify({
+      title: 'خطا',
+      text: ',URL را بدرستی پر کنید',
+      type: 'error',
+    })
+    return
+  }
   if (!isFormValid.value) {
     notify({
       title: 'خطا',
@@ -658,6 +719,13 @@ const saveService = async () => {
 
   try {
     if (isEditMode.value) {
+     if(!isUrlValid.value){
+        notify({
+            title: 'خطا',
+            text: 'URL وارد شده اشتباه میباشد',
+            type: 'error',
+          })
+      }
       await serviceAggregatorClient.updateService(formData.value)
       notify({
         title: 'موفقیت',
