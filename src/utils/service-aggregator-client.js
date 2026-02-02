@@ -129,12 +129,16 @@ class ServiceAggregatorClient {
   //#region serviceMapping
 
 async addServiceMapping(data) {
-    const response = await httpClient.post('/service-mapping/add', data)
+    // Convert to plain object to avoid circular references with Vue reactivity
+    const plainData = typeof data === 'object' && data !== null ? JSON.parse(JSON.stringify(data)) : data
+    const response = await httpClient.post('/service-mapping/add', plainData[0])
     return response.data
   }
 
   async updateServiceMapping(data) {
-    const response = await httpClient.post(`/service-mapping/update`, data)
+    // Convert to plain object to avoid circular references with Vue reactivity
+    const plainData = typeof data === 'object' && data !== null ? JSON.parse(JSON.stringify(data)) : data
+    const response = await httpClient.post(`/service-mapping/update`, plainData[0])
     return response.data
   }
 

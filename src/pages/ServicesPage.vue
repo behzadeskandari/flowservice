@@ -104,7 +104,8 @@
 
               <button class="btn-icon btn-delete" @click="AddStepMapping(service.id)"
                 title="اضافه کردن مپ سرویس به مرحله">
-                <font-awesome-icon :icon="['fas', 'faArrowLeft']" style="color: red;" />
+                <!-- <font-awesome-icon :icon="['fas', 'faArrowLeft']" style="color: red;" /> -->
+                <font-awesome-icon :icon="faExpand" style="color: orange" />
               </button>
             </td>
           </tr>
@@ -123,12 +124,12 @@
           <font-awesome-icon :icon="faArrowRight" style="color: orange;" @click="fetchNextPage" />
         </span>
         <span class="btn-pagenumber" @click="fetchNextpage" v-if="services.hasNextPage">{{ services.pageNumber + 1
-        }}</span>
+          }}</span>
         <span class="btn-pagenumber-orange">{{ services.pageNumber }}</span>
         <!--  -->
         <!-- <span class="btn-totalpage">{{ aggregates.totalPages }}</span> -->
         <span class="btn-pagenumber" v-if="services.hasPreviousPage" @click="fetchPrevouisPage">
-          <font-awesome-icon :icon="faArrowLeft" style="color: orange;" />
+          <font-awesome-icon :icon="faExpand" style="color: orange;" />
         </span>
       </div>
     </div>
@@ -254,8 +255,8 @@
     <div v-if="showModalStepMapping"
       class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 animate-fadeIn p-4 m-y-2 overflow-y-auto"
       @click.self="closeModalStepModal">
-      <div class="bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 p-[2px] rounded-3xl w-full max-w-2xl">
-        <div class="bg-white dark:bg-gray-900 shadow-2xl rounded-3xl w-full animate-scaleIn" style="padding:20px">
+      <div class="bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 p-[2px] rounded-3xl w-full max-w-2xl -translate-y-5">
+        <div class="bg-white dark:bg-gray-900 shadow-2xl rounded-3xl w-full animate-scaleIn " style="padding:20px">
           <!-- Header -->
           <header
             class="flex flex-col sm:flex-row items-center justify-between border-b border-gray-200 pb-4 mb-6 gap-4">
@@ -378,71 +379,162 @@
               هنوز نگاشتی اضافه نشده است. روی "افزودن نگاشت جدید" کلیک کنید.
             </div>
 
-            <!-- List of mappings -->
-            <div v-for="(mapping, index) in stepMappings" :key="index"
-              class="bg-gray-50 dark:bg-gray-800/50 p-5 rounded-xl border border-gray-200 dark:border-gray-700 relative">
+            <!-- Input Mappings Section -->
+            <div v-if="stepMappings.filter(m => m.direction === 1).length > 0">
+              <h5 class="text-md font-bold text-blue-700 dark:text-blue-400 mb-4 flex items-center gap-2">
+                <i class="fas fa-arrow-down text-blue-500"></i> نگاشت‌های ورودی (Input)
+              </h5>
+              <div class="space-y-4">
+                <div v-for="(mapping, index) in stepMappings.filter(m => m.direction === 1)" :key="mapping.id || `new-${index}`"
+                  class="bg-blue-50 dark:bg-blue-900/20 p-5 rounded-xl border-2 border-blue-200 dark:border-blue-700 relative">
 
-              <!-- Remove button (top right) -->
-              <button v-if="stepMappings.length > 1 || !isEditMode" @click="removeMapping(index)"
-                class="absolute top-3 right-3 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-600 transition text-lg"
-                title="حذف این نگاشت">
-                <i class="fas fa-trash-alt"></i>
-              </button>
+                  <!-- Remove button (top right) -->
+                  <button @click="removeMapping(stepMappings.indexOf(mapping))"
+                    class="absolute top-3 right-3 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-600 transition text-lg hover:scale-110"
+                    title="حذف این نگاشت">
+                    <i class="fas fa-trash-alt"></i>
+                  </button>
 
-              <div class="space-y-5">
-                <!-- Name -->
-                <div class="space-y-2">
-                  <label class="block font-semibold text-gray-700 dark:text-gray-200 text-right">
-                    نام نگاشت مرحله <span class="text-red-500">*</span>
-                  </label>
-                  <input v-model="mapping.name" type="text" placeholder="مثال: Shahkar Step Mapping"
-                    class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white dark:bg-gray-800 dark:text-white shadow-sm transition duration-200 text-right" />
-                </div>
-
-                <!-- Service -->
-                <div class="space-y-2">
-                  <label class="block font-semibold text-gray-700 dark:text-gray-200 text-right">
-                    سرویس نگاشت مرحله <span class="text-red-500">*</span>
-                  </label>
-                  <select v-model="mapping.serviceId"
-                    class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white dark:bg-gray-800 dark:text-white shadow-sm transition duration-200 text-right font-medium">
-                    <option value="">یک سرویس انتخاب کنید</option>
-                    <option v-for="service in services.items" :key="service.id" :value="service.id">
-                      {{ service.name }}
-                    </option>
-                  </select>
-                </div>
-
-                <!-- Type + Direction in grid -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                  <div class="space-y-2">
-                    <label class="block font-semibold text-gray-700 dark:text-gray-200 text-right">
-                      نوع نگاشت مرحله <span class="text-red-500">*</span>
-                    </label>
-                    <input v-model="mapping.type" type="text" placeholder="مثال: Input/Output Type"
-                      class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white dark:bg-gray-800 dark:text-white shadow-sm transition duration-200 text-right" />
+                  <!-- Badge for new mapping -->
+                  <div v-if="!mapping.id" class="absolute top-3 right-12 px-2 py-1 bg-green-100 text-green-800 text-xs font-bold rounded">
+                    جدید
                   </div>
 
-                  <div class="space-y-2">
-                    <label class="block font-semibold text-gray-700 dark:text-gray-200 text-right">
-                      جهت نگاشت مرحله <span class="text-red-500">*</span>
-                    </label>
-                    <select v-model="mapping.direction"
-                      class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white dark:bg-gray-800 dark:text-white shadow-sm transition duration-200 text-right font-medium">
-                      <option :value="null">انتخاب کنید</option>
-                      <option :value="1">ورودی</option>
-                      <option :value="2">خروجی</option>
-                    </select>
+                  <div class="space-y-3 pr-8">
+                    <!-- Name -->
+                    <div class="space-y-1">
+                      <label class="block font-semibold text-gray-700 dark:text-gray-200 text-right text-sm">
+                        نام <span class="text-red-500">*</span>
+                      </label>
+                      <input v-model="mapping.name" type="text" placeholder="مثال: User ID"
+                        class="w-full px-3 py-2 rounded-lg border-2 border-blue-200 dark:border-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-800 dark:text-white shadow-sm transition duration-200 text-right text-sm" />
+                    </div>
+
+                    <!-- Service + Type -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div class="space-y-1">
+                        <label class="block font-semibold text-gray-700 dark:text-gray-200 text-right text-sm">
+                          سرویس <span class="text-red-500">*</span>
+                        </label>
+                        <select v-model="mapping.serviceId"
+                          class="w-full px-3 py-2 rounded-lg border-2 border-blue-200 dark:border-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-800 dark:text-white shadow-sm transition duration-200 text-right text-sm font-medium">
+                          <option value="">انتخاب کنید</option>
+                          <option v-for="service in services.items" :key="service.id" :value="service.id">
+                            {{ service.name }}
+                          </option>
+                        </select>
+                      </div>
+
+                      <div class="space-y-1">
+                        <label class="block font-semibold text-gray-700 dark:text-gray-200 text-right text-sm">
+                          نوع <span class="text-red-500">*</span>
+                        </label>
+                        <input v-model="mapping.type" type="text" placeholder="مثال: String"
+                          class="w-full px-3 py-2 rounded-lg border-2 border-blue-200 dark:border-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-800 dark:text-white shadow-sm transition duration-200 text-right text-sm" />
+                      </div>
+                    </div>
+
+                    <!-- Description -->
+                    <div class="space-y-1">
+                      <label class="block font-semibold text-gray-700 dark:text-gray-200 text-right text-sm">
+                        توضیحات
+                      </label>
+                      <textarea v-model="mapping.description" rows="2"
+                        class="w-full px-3 py-2 rounded-lg border-2 border-blue-200 dark:border-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-800 dark:text-white shadow-sm transition duration-200 text-right text-sm resize-none" />
+                    </div>
+
+                    <!-- Delete Button -->
+                    <div class="pt-3 border-t border-blue-200 dark:border-blue-700">
+                      <button @click="removeMapping(stepMappings.indexOf(mapping))"
+                        class="w-full px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-lg transition duration-200 flex items-center justify-center gap-2">
+                        <i class="fas fa-trash-alt"></i>
+                        حذف این نگاشت
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-
-              <!-- Optional: index number or small header -->
-              <div class="absolute top-3 left-4 text-sm font-medium text-gray-500 dark:text-gray-400">
-                نگاشت #{{ index + 1 }}
               </div>
             </div>
-             <div class="flex gap-2 w-full sm:w-auto">
+
+            <!-- Output Mappings Section -->
+            <div v-if="stepMappings.filter(m => m.direction === 2).length > 0">
+              <h5 class="text-md font-bold text-green-700 dark:text-green-400 mb-4 flex items-center gap-2">
+                <i class="fas fa-arrow-up text-green-500"></i> نگاشت‌های خروجی (Output)
+              </h5>
+              <div class="space-y-4">
+                <div v-for="(mapping, index) in stepMappings.filter(m => m.direction === 2)" :key="mapping.id || `new-${index}`"
+                  class="bg-green-50 dark:bg-green-900/20 p-5 rounded-xl border-2 border-green-200 dark:border-green-700 relative">
+
+                  <!-- Remove button (top right) -->
+                  <button @click="removeMapping(stepMappings.indexOf(mapping))"
+                    class="absolute top-3 right-3 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-600 transition text-lg hover:scale-110"
+                    title="حذف این نگاشت">
+                    <i class="fas fa-trash-alt"></i>
+                  </button>
+
+                  <!-- Badge for new mapping -->
+                  <div v-if="!mapping.id" class="absolute top-3 right-12 px-2 py-1 bg-green-100 text-green-800 text-xs font-bold rounded">
+                    جدید
+                  </div>
+
+                  <div class="space-y-3 pr-8">
+                    <!-- Name -->
+                    <div class="space-y-1">
+                      <label class="block font-semibold text-gray-700 dark:text-gray-200 text-right text-sm">
+                        نام <span class="text-red-500">*</span>
+                      </label>
+                      <input v-model="mapping.name" type="text" placeholder="مثال: Response Data"
+                        class="w-full px-3 py-2 rounded-lg border-2 border-green-200 dark:border-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white dark:bg-gray-800 dark:text-white shadow-sm transition duration-200 text-right text-sm" />
+                    </div>
+
+                    <!-- Service + Type -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div class="space-y-1">
+                        <label class="block font-semibold text-gray-700 dark:text-gray-200 text-right text-sm">
+                          سرویس <span class="text-red-500">*</span>
+                        </label>
+                        <select v-model="mapping.serviceId"
+                          class="w-full px-3 py-2 rounded-lg border-2 border-green-200 dark:border-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white dark:bg-gray-800 dark:text-white shadow-sm transition duration-200 text-right text-sm font-medium">
+                          <option value="">انتخاب کنید</option>
+                          <option v-for="service in services.items" :key="service.id" :value="service.id">
+                            {{ service.name }}
+                          </option>
+                        </select>
+                      </div>
+
+                      <div class="space-y-1">
+                        <label class="block font-semibold text-gray-700 dark:text-gray-200 text-right text-sm">
+                          نوع <span class="text-red-500">*</span>
+                        </label>
+                        <input v-model="mapping.type" type="text" placeholder="مثال: JSON"
+                          class="w-full px-3 py-2 rounded-lg border-2 border-green-200 dark:border-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white dark:bg-gray-800 dark:text-white shadow-sm transition duration-200 text-right text-sm" />
+                      </div>
+                    </div>
+
+                    <!-- Description -->
+                    <div class="space-y-1">
+                      <label class="block font-semibold text-gray-700 dark:text-gray-200 text-right text-sm">
+                        توضیحات
+                      </label>
+                      <textarea v-model="mapping.description" rows="2"
+                        class="w-full px-3 py-2 rounded-lg border-2 border-green-200 dark:border-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white dark:bg-gray-800 dark:text-white shadow-sm transition duration-200 text-right text-sm resize-none" />
+                    </div>
+
+                    <!-- Delete Button -->
+                    <div class="pt-3 border-t border-green-200 dark:border-green-700">
+                      <button @click="removeMapping(stepMappings.indexOf(mapping))"
+                        class="w-full px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-lg transition duration-200 flex items-center justify-center gap-2">
+                        <i class="fas fa-trash-alt"></i>
+                        حذف این نگاشت
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Footer Buttons -->
+            <div class="flex gap-2 w-full sm:w-auto">
               <button
                 class="flex-1 sm:flex-none px-4 sm:px-6 py-3 bg-gradient-to-r from-gray-400 via-gray-500 to-gray-600 text-white font-semibold rounded-xl shadow-lg hover:from-gray-500 hover:via-gray-600 hover:to-gray-700 transition duration-300 ease-in-out flex items-center justify-center gap-2"
                 @click="closeModalStepModal">
@@ -451,7 +543,7 @@
               </button>
               <button
                 class="flex-1 sm:flex-none px-4 sm:px-6 py-3 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 text-white font-semibold rounded-xl shadow-lg hover:from-orange-500 hover:via-orange-600 hover:to-orange-700 transition duration-300 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                @click="saveStepService" :disabled="!isStepMappingFormValid">
+                @click="saveStepService" :disabled="!stepMappings.length > 0 ">
                 <i class="fas fa-save"></i>
                 <span class="hidden sm:inline">{{ isEditMode ? 'بروزرسانی' : 'ایجاد' }}</span>
               </button>
@@ -471,9 +563,9 @@
 </template>
 
 <script setup>
-import { faCamera, faSun, faMoon, faPlus, faBars, faArrowLeft, faArrowRight, faExpand } from '@fortawesome/free-solid-svg-icons'
+import { faCamera, faSun, faMoon, faPlus, faBars, faArrowLeft, faArrowRight, faExpand, faBoxOpen } from '@fortawesome/free-solid-svg-icons'
 
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, toRaw } from 'vue'
 import { notify } from '@kyvg/vue3-notification'
 import serviceAggregatorClient from '@/utils/service-aggregator-client'
 import LogoutButton from '@/components/LogoutButton.vue'
@@ -520,7 +612,8 @@ const formDataStepMappingEdit = ref([])
 const isStepMappingEditMode = ref(false)
 
 const isStepMappingFormValid = computed(() => {
-  return formDataStepMapping.value.name && formDataStepMapping.value.serviceId
+  return formDataStepMapping.value.name && formDataStepMapping.value.type && formDataStepMapping.value.direction;
+  //&& formDataStepMapping.value.serviceId
 })
 
 const isFormValid = computed(() => {
@@ -636,26 +729,43 @@ const deleteModal = async (id) => {
 
 const AddStepMapping = async (id) => {
   // Implement your logic to add step mapping here
-  debugger
   //isLoading.value = true;
   var record = await serviceAggregatorClient.getServicesById(id);
-  if (record.id && record.inputs.length > 0) {
-    isEditModeStepMapping.value = true;
-    formDataStepMappingEdit.value = record.inputs;
+
+  // Combine inputs and outputs
+  const allMappings = [
+    ...(record.inputs || []).map(m => ({ ...m })),
+    ...(record.outputs || []).map(m => ({ ...m }))
+  ]
+
+  if (record.id && allMappings.length > 0) {
+    isEditMode.value = true;
+    // Populate stepMappings with both inputs and outputs
+    stepMappings.value = allMappings
+    originalMappings.value = allMappings.map(m => ({ ...m })) // track originals
   } else {
-    isEditModeStepMapping.value = false;
+    isEditMode.value = false;
+    stepMappings.value = [getEmptyMapping()]
+    originalMappings.value = [] // no originals in add mode
   }
   showModalStepMapping.value = true;
-  formDataStepMapping.value.serviceId = id;
+  formData.value.id = record.id;
+  formData.value.name = record.name;
+  formData.value.url = record.url;
+  formData.value.method = record.method;
+  formData.value.type = record.type;
+  formData.value.status = record.status;
 }
 
 
 // Instead of one object → array of mappings
 const stepMappings = ref([])           // all mappings user is creating/editing
+const originalMappings = ref([])       // track original mappings to detect changes
 
 // When opening modal in "add" mode → start with one empty item
 const openAddModal = () => {
   stepMappings.value = [getEmptyMapping()]
+  originalMappings.value = []          // no originals in add mode
   showModalStepMapping.value = true
   isEditMode.value = false
   resetForm()
@@ -664,10 +774,11 @@ const openAddModal = () => {
 
 // When opening in edit mode → load existing ones (example)
 const openEditModal = (existingMappings) => {
-  stepMappings.value = existingMappings.map(m => ({ ...m })) // deep copy
-  showModalStepMapping.value = true
+  stepMappings.value = JSON.parse(JSON.stringify(existingMappings))//[...existingMappings].map(m => ({ ...m })) // deep copy
+  originalMappings.value = JSON.parse(JSON.stringify(existingMappings)) // keep track of originals
+  //showModalStepMapping.value = true
   isEditMode.value = true
-  formData.value = JSON.parse(JSON.stringify(service))
+  formData.value = JSON.parse(JSON.stringify(existingMappings))
   showModal.value = true
 }
 
@@ -686,6 +797,8 @@ const addNewMapping = () => {
 
 const removeMapping = (index) => {
   if (confirm('آیا مطمئن هستید که این نگاشت را حذف کنید؟')) {
+    const removedMapping = stepMappings.value[index]
+    // If it has an ID, it exists on server and will be deleted during save
     stepMappings.value.splice(index, 1)
   }
 }
@@ -767,35 +880,88 @@ const saveStepService = async () => {
   )
 
   if (invalid) {
-    alert('لطفاً تمام فیلدهای اجباری را پر کنید')
+    notify({
+      title: 'خطا',
+      text: 'لطفاً تمام فیلدهای اجباری را پر کنید',
+      type: 'error'
+    })
     return
   }
 
   try {
-    // Example: send all at once (adjust to your API)
-    if (isEditMode.value) {
-      // Update multiple – or call update for each
-      await Promise.all(
-        stepMappings.value.map(mapping =>
-          serviceAggregatorClient.updateStepMapping(mapping.id, mapping)
-        )
-      )
-    } else {
-      // Create multiple
-      await Promise.all(
-        stepMappings.value.map(mapping =>
-          serviceAggregatorClient.addStepMapping(mapping)
-        )
-      )
+    const mappingsToSave = toRaw(stepMappings.value)
+
+    // Separate mappings into: new (no ID), updated (has ID and changed), deleted (was in original but not in current)
+    const newMappings = mappingsToSave.filter(m => !m.id)
+    const updatedMappings = mappingsToSave.filter(m => m.id && originalMappings.value.some(orig =>
+      orig.id === m.id && JSON.stringify(orig) !== JSON.stringify(m)
+    ))
+    const deletedMappings = originalMappings.value.filter(orig =>
+      !mappingsToSave.some(m => m.id === orig.id)
+    )
+
+    // Add new mappings
+    if (newMappings.length > 0) {
+      await serviceAggregatorClient.addServiceMapping(newMappings)
+      notify({
+        title: 'موفق',
+        text: `${newMappings.length} نگاشت جدید اضافه شد`,
+        type: 'success'
+      })
     }
 
-    // Success → close modal, refresh list, notify
-    notify({ title: 'موفق', text: 'نگاشت‌ها با موفقیت ذخیره شدند', type: 'success' })
+    // Update modified mappings
+    if (updatedMappings.length > 0) {
+      for (const mapping of updatedMappings) {
+        await serviceAggregatorClient.updateServiceMapping([mapping])
+      }
+      notify({
+        title: 'موفق',
+        text: `${updatedMappings.length} نگاشت بروزرسانی شد`,
+        type: 'success'
+      })
+    }
+
+    // Delete removed mappings
+    if (deletedMappings.length > 0) {
+      for (const mapping of deletedMappings) {
+        try {
+          await serviceAggregatorClient.deleteServiceMapping(mapping.id)
+        } catch (err) {
+          console.error('Error deleting mapping:', err)
+          notify({
+            title: 'اخطار',
+            text: `خطا در حذف نگاشت ${mapping.name}`,
+            type: 'warning'
+          })
+        }
+      }
+      notify({
+        title: 'موفق',
+        text: `${deletedMappings.length} نگاشت حذف شد`,
+        type: 'success'
+      })
+    }
+
+    // If nothing was added/updated/deleted, just close
+    if (newMappings.length === 0 && updatedMappings.length === 0 && deletedMappings.length === 0) {
+      notify({
+        title: 'توجه',
+        text: 'هیچ تغییری انجام نشد',
+        type: 'info'
+      })
+    }
+
     closeModalStepModal()
   } catch (err) {
-    notify({ title: 'خطا', text: 'ذخیره ناموفق بود', type: 'error' })
+    notify({
+      title: 'خطا',
+      text: 'خطا در ذخیره نگاشت‌ها',
+      type: 'error'
+    })
     console.error(err)
   }
+}
   // if (!isStepMappingFormValid.value) {
   //   notify({
   //     title: 'خطا',
@@ -837,7 +1003,6 @@ const saveStepService = async () => {
   //     type: 'error',
   //   })
   // }
-}
 const saveService = async () => {
   if (!isUrlOrPathValid.value) {
     notify({

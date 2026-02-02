@@ -99,9 +99,11 @@
           :nodes="store.nodes" :edges="store.edges" :zoom-on-scroll="true" :fit-view-on-init="true" :pan-on-drag="true"
           :pan-on-scroll="true" :pan-on-scroll-speed="0.8" :selection-on-click="false"
           :class="{ 'dark': themeStore.isDark }"
+          @edge-double-click="onEdgeDoubleClick"
           @nodes-change="onNodesChange" @edges-change="onEdgesChange"
           @connect="onConnect" @node-dblclick="onNodeDblClick" @drop="onDrop" @dragover="onDragOver"
-          :node-types="nodeTypes">
+          :node-types="nodeTypes"
+          :edges-updatable="true">
           <Background variant="dots" :gap="25" :size="3"/>
           <Panel position="top-center"></Panel>
           <Controls>
@@ -116,6 +118,9 @@
             </ControlButton> -->
           </Controls>
           <MiniMap />
+          <template #node-mappingEditorNode="nodeProps">
+             <MappingEditorNode v-bind="nodeProps" />
+          </template>
         </VueFlow>
       </div>
     </div>
@@ -125,6 +130,10 @@
     <StepEditModal :show="store.showModal && store.modalMode === 'edit'" :step-id="store.selectedNode" mode="edit"
       @update:show="(val) => { if (!val) store.clearSelected() }" @saved="handleStepSaved" />
     <notifications />
+    <MappingEditorModal
+      :edge="selectedEdgeForEditor"
+      @close="() => { selectedEdgeForEditor = null; showEditorModal = false }"
+    />
   </div>
 </template>
 
@@ -148,6 +157,8 @@ import StartNode from '@/components/nodes/StartNode.vue'
 import { faCamera, faSun, faMoon, faPlus, faBars, faArrowLeft, faArrowRight, faExpand, faPlay, faSpinner } from '@fortawesome/free-solid-svg-icons'
 import { useScreenshot } from '@/hooks/useScreenshot'
 import { useThemeStore } from '@/stores/useThemeStore' // Assuming you have a theme store
+import MappingEditorNode from './nodes/MappingEditorNode.vue'
+import MappingEditorModal from './modals/MappingEditorModal.vue'
 
 const themeStore = useThemeStore()
 const vueFlowInstance = useVueFlow()
@@ -179,6 +190,17 @@ function sortByConnectionOrder() {
   // Use the same layout function from the store
   store.applyConnectionOrderLayout()
 }
+
+const showEditorModal = ref(false)
+const selectedEdgeForEditor = ref(null)
+
+const onEdgeDoubleClick = ({ edge }) => {
+  console.log('Edge double-clicked:', edge)
+  selectedEdgeForEditor.value = edge
+  showEditorModal.value = true
+}
+
+
 // Check screen size on mount and resize
 const checkScreenSize = () => {
   const isMobile = window.innerWidth < 1024
