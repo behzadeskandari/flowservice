@@ -4,8 +4,7 @@
       'node-executing': data.isExecuting,
       'node-completed': executionStatus === 'completed',
       'node-error': executionStatus === 'error'
-    }" @contextmenu.prevent="onRightClick" @touchstart.passive="onTouchStart" @touchend.passive="onTouchEnd"
-      @touchmove.passive="onTouchCancel">
+    }" @contextmenu.prevent="onRightClick" @touchstart.passive="onTouchStart" @touchend.passive="onTouchEnd" @touchmove.passive="onTouchCancel">
       <div class="node-header" @dblclick="openEdit">
         <strong>{{ data.stepName || data.label }}</strong>
         <span v-if="data.isExecuting" class="execution-badge executing">
@@ -39,33 +38,9 @@
         </div>
       </div>
       <!-- connectors -->
-      <!-- <Handle type="target" position="top" id="in" class="vue-flow__handle-target" />
-      <Handle type="source" position="bottom" id="out" class="vue-flow__handle-source" /> -->
-      <div class="fields-wrapper" v-if="data.inputs?.length || data.outputs?.length">
-        <!-- LEFT: inputs / target handles -->
-        <div class="input-ports">
-          <div v-for="field in data.inputs || []" :key="`in-${field.key}`" class="port-row input">
-            <Handle :id="`in-${field.key}`" type="target" position="left" :style="{
-              backgroundColor: getTypeColor(field.type),
-              top: calculatePortPosition(data.inputs, field)
-            }" />
-            <span class="port-label">{{ field.key }}</span>
-            <span class="port-type">{{ field.type }}</span>
-          </div>
-        </div>
+      <Handle type="target" position="top" id="in" class="vue-flow__handle-target" />
+      <Handle type="source" position="bottom" id="out" class="vue-flow__handle-source" />
 
-        <!-- RIGHT: outputs / source handles -->
-        <div class="output-ports">
-          <div v-for="field in data.outputs || []" :key="`out-${field.key}`" class="port-row output">
-            <span class="port-label">{{ field.key }}</span>
-            <span class="port-type">{{ field.type }}</span>
-            <Handle :id="`out-${field.key}`" type="source" position="right" :style="{
-              backgroundColor: getTypeColor(field.type),
-              top: calculatePortPosition(data.outputs, field)
-            }" />
-          </div>
-        </div>
-      </div>
 
       <!-- Context Menu -->
       <div v-if="isContextMenuOpen" ref="menuRef" class="context-menu" :style="contextMenuStyles">
@@ -87,13 +62,17 @@
         </ul>
       </div>
     </div>
-    <ConfirmModal :visible="showConfirm" message="آیا از پاک کردن گره مطمئن هستید؟" @confirm="onConfirmDelete"
-      @cancel="onCancelDelete" />
+    <ConfirmModal
+  :visible="showConfirm"
+  message="آیا از پاک کردن گره مطمئن هستید؟"
+  @confirm="onConfirmDelete"
+  @cancel="onCancelDelete"
+/>
   </div>
 </template>
 
 <script setup>
-import { onBeforeUnmount, onMounted, toRefs, ref, computed } from 'vue'
+import { onBeforeUnmount, onMounted, toRefs, ref, computed, inject } from 'vue'
 import { Handle } from '@vue-flow/core'
 import { faEdit, faEye, faTrash, faSpinner } from '@fortawesome/free-solid-svg-icons'
 import ConfirmModal from '../modals/ConfirmModal.vue'
@@ -108,6 +87,10 @@ const props = defineProps({
 console.log('ServiceNode props data:', props.data)
 const { id, data } = toRefs(props)
 const store = useFlowStore()
+
+// Inject execution status from parent
+const parentExecutionStatus = inject('executionStatus', ref({}))
+
 const nodeRef = ref(null)
 const contextMenu = ref({
   visible: false,
@@ -118,9 +101,9 @@ const contextMenu = ref({
 const menuRef = ref(null)
 const openContextMenuId = ref(null)
 
-// Compute execution status based on store's executionStatus
+// Compute execution status based on injected executionStatus
 const executionStatus = computed(() => {
-  return store.executionStatus?.[id.value] || null
+  return parentExecutionStatus.value?.[id.value] || null
 })
 
 const previewFields = computed(() => {
@@ -159,24 +142,6 @@ function openEdit() {
   store.setSelectedNode(id.value, 'edit')
 }
 
-const getTypeColor = (type) => {
-  const colors = {
-    string: '#10b981',   // green
-    number: '#3b82f6',   // blue
-    boolean: '#f59e0b',  // amber
-    date: '#8b5cf6',     // purple
-    object: '#ec4899',   // pink
-    array: '#06b6d4',    // cyan
-    any: '#6b7280'
-  }
-  return colors[(type || 'any').toLowerCase()] || '#6b7280'
-}
-
-const calculatePortPosition = (fields, currentField) => {
-  if (!fields?.length) return '50%'
-  const idx = fields.findIndex(f => f.key === currentField.key)
-  return `${((idx + 1) / (fields.length + 1)) * 100}%`
-}
 
 
 function onRightClick(e) {
@@ -260,44 +225,6 @@ function onCancelDelete() {
 </script>
 
 <style scoped>
-
-.fields-wrapper {
-  display: flex;
-  justify-content: space-between;
-  padding: 8px 12px;
-  gap: 12px;
-}
-
-.input-ports, .output-ports {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  min-width: 110px;
-}
-
-.port-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-}
-
-.input { justify-content: flex-start; }
-.output { justify-content: flex-end; }
-
-.port-label {
-  font-weight: 500;
-  color: #333;
-}
-
-.port-type {
-  font-size: 10px;
-  color: #666;
-  background: #f1f5f9;
-  padding: 2px 6px;
-  border-radius: 4px;
-}
-
 .service-node {
   min-width: 180px;
   max-width: 260px;
@@ -376,13 +303,11 @@ function onCancelDelete() {
 }
 
 .vue-flow__handle-target {
-  background: #10b981 !important;
-  /* green for input */
+  background: #10b981 !important; /* green for input */
 }
 
 .vue-flow__handle-source {
-  background: #f59e0b !important;
-  /* amber for output */
+  background: #f59e0b !important; /* amber for output */
 }
 
 .vue-flow__handle:hover {
@@ -460,9 +385,7 @@ function onCancelDelete() {
 }
 
 @keyframes executing-glow {
-
-  0%,
-  100% {
+  0%, 100% {
     filter: drop-shadow(0 0 0px rgba(16, 185, 129, 0));
   }
 
@@ -482,9 +405,7 @@ function onCancelDelete() {
 }
 
 @keyframes error-shake {
-
-  0%,
-  100% {
+  0%, 100% {
     transform: translateX(0);
   }
 
@@ -498,9 +419,7 @@ function onCancelDelete() {
 }
 
 @keyframes pulse-execute {
-
-  0%,
-  100% {
+  0%, 100% {
     box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
   }
 

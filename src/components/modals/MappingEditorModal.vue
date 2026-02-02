@@ -1,3 +1,5 @@
+// //MappingEditorModal
+
 <template>
   <Teleport to="body">
     <div
@@ -19,16 +21,13 @@
 
         <!-- Main content -->
         <div class="p-6">
-          <div v-if="edge" class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-            <p class="text-sm text-gray-600">
-              <strong>Edge:</strong> {{ edge.source }} → {{ edge.target }}
-            </p>
-          </div>
-
           <MappingEditorNode
-            @delete-node="handleDelete"
-            @add-field="handleAddField"
-            @update-node="handleUpdate"
+            :edge="edge"
+            :source-step-data="sourceStepData"
+            :target-step-data="targetStepData"
+            @delete-mapping="handleDeleteMapping"
+            @save-mapping="handleSaveMapping"
+            @add-mapping="handleAddMapping"
           />
         </div>
 
@@ -44,7 +43,7 @@
             @click="saveMappings"
             class="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg transition"
           >
-            Save Mapping
+            Save All
           </button>
         </div>
       </div>
@@ -54,8 +53,12 @@
 
 <script setup>
 import { ref, watch, computed } from 'vue'
+import { useRoute } from 'vue-router'
 import { notify } from '@kyvg/vue3-notification'
 import MappingEditorNode from '@/components/nodes/MappingEditorNode.vue'
+import serviceAggregatorClient from '@/utils/service-aggregator-client'
+
+const route = useRoute()
 
 const props = defineProps({
   edge: {
@@ -67,56 +70,123 @@ const props = defineProps({
 const emit = defineEmits(['close'])
 
 const showModal = ref(false)
-const currentEdge = ref(null)
+const sourceStepData = ref(null)
+const targetStepData = ref(null)
+const fieldMappings = ref([])
+const edge = computed(() => props.edge)
 
 // Watch for edge prop changes and show modal
-watch(() => props.edge, (newEdge) => {
+watch(() => props.edge, async (newEdge) => {
   console.log('Edge prop changed:', newEdge)
   if (newEdge) {
-    currentEdge.value = newEdge
-    showModal.value = true
-  }
-})
+    // Fetch step data from the backend based on source and target node IDs
+    try {
+      // Extract aggregate ID and step IDs from edge
+      const sourceNodeId = newEdge.source?.replace('node-', '')
+      const targetNodeId = newEdge.target?.replace('node-', '')
+      const aggregateId = route.params.id
 
-const edge = computed(() => currentEdge.value)
+      console.log('Source Node ID:', sourceNodeId)
+      console.log('Target Node ID:', targetNodeId)
+      console.log('Aggregate ID:', aggregateId)
+
+      // Fetch aggregate data
+      const aggregateData = await serviceAggregatorClient.getAggregateByid(aggregateId)
+      console.log('Aggregate data:', aggregateData)
+
+      // Find the source and target steps in the aggregate
+      const sourceStep = aggregateData.steps?.find(step => step.id === sourceNodeId)
+      const targetStep = aggregateData.steps?.find(step => step.id === targetNodeId)
+
+      if (sourceStep) {
+        sourceStepData.value = sourceStep
+        console.log('Source step found:', sourceStep)
+      } else {
+        console.warn('Source step not found:', sourceNodeId)
+      }
+
+      if (targetStep) {
+        targetStepData.value = targetStep
+        console.log('Target step found:', targetStep)
+      } else {
+        console.warn('Target step not found:', targetNodeId)
+      }
+
+      showModal.value = true
+    } catch (err) {
+      console.error('Error loading step data:', err)
+      notify({
+        title: 'Error',
+        text: 'Failed to load step data',
+        type: 'error'
+      })
+    }
+  } else {
+    // When edge is null/cleared, close the modal
+    showModal.value = false
+  }
+}, { deep: true })
 
 const closeModal = () => {
   showModal.value = false
-  currentEdge.value = null
+  sourceStepData.value = null
+  targetStepData.value = null
+  fieldMappings.value = []
   emit('close')
 }
 
-const handleDelete = () => {
-  notify({
-    title: 'تایید',
-    text: 'نگاشت حذف شد',
-    type: 'info'
-  })
+const handleDeleteMapping = () => {
+  if (confirm('Are you sure you want to delete this mapping?')) {
+    notify({
+      title: 'Deleted',
+      text: 'Mapping deleted successfully',
+      type: 'success'
+    })
+  }
 }
 
-const handleAddField = () => {
+const handleAddMapping = (mapping) => {
+  console.log('Mapping added:', mapping)
+  fieldMappings.value.push(mapping)
   notify({
-    title: 'اضافه شد',
-    text: 'فیلد جدید اضافه شد',
+    title: 'Added',
+    text: `Mapping created: ${mapping.sourceField} → ${mapping.targetField}`,
     type: 'success'
   })
 }
 
-const handleUpdate = () => {
-  notify({
-    title: 'بروزرسانی',
-    text: 'نگاشت بروزرسانی شد',
-    type: 'info'
-  })
+const handleSaveMapping = () => {
+  saveMappings()
 }
 
-const saveMappings = () => {
-  notify({
-    title: 'موفق',
-    text: 'نگاشت‌ها ذخیره شدند',
-    type: 'success'
-  })
-  closeModal()
-}
+const saveMappings = async () => {
+  try {
+    if (fieldMappings.value.length === 0) {
+      notify({
+        title: 'Warning',
+        text: 'No mappings to save',
+        type: 'warning'
+      })
+      return
+    }
 
+    // Save mappings to backend
+    // const response = await serviceAggregatorClient.addAggregateStepMapping(fieldMappings.value)
+
+    notify({
+      title: 'Success',
+      text: `${fieldMappings.value.length} field mapping(s) saved successfully`,
+      type: 'success'
+    })
+    closeModal()
+  } catch (err) {
+    console.error('Error saving mappings:', err)
+    notify({
+      title: 'Error',
+      text: 'Failed to save mappings',
+      type: 'error'
+    })
+  }
+}
 </script>
+

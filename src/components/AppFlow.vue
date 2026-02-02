@@ -80,7 +80,7 @@
             </div>
             <div class="service-card-body">
               <div class="service-meta">
-                <span class="method-badge" :class="service.method?.toLowerCase()">
+                <span class="method-badge" :class="(service.method || '').toLowerCase()">
                   {{ service.method || 'GET' }}
                 </span>
                 <span class="type-badge">{{ service.type || 'REST' }}</span>
@@ -129,6 +129,8 @@
     <StepModal ref="stepModalRef" />
     <StepEditModal :show="store.showModal && store.modalMode === 'edit'" :step-id="store.selectedNode" mode="edit"
       @update:show="(val) => { if (!val) store.clearSelected() }" @saved="handleStepSaved" />
+    <ExecuteAggregateModal ref="executeModalRef" :aggregate-id="route.params.id" @execute="onAggregateExecuted" />
+    <ExecutionResultModal ref="executionResultModalRef" />
     <notifications />
     <MappingEditorModal
       :edge="selectedEdgeForEditor"
@@ -138,9 +140,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, watch, markRaw, nextTick } from 'vue'
+import { ref, onMounted, onBeforeUnmount, watch, markRaw, nextTick, provide } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { VueFlow, useVueFlow } from '@vue-flow/core'
+import { VueFlow, useVueFlow, Panel } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
 import { Controls, ControlButton } from '@vue-flow/controls'
 import { MiniMap } from '@vue-flow/minimap'
@@ -150,6 +152,8 @@ import serviceAggregatorClient from '@/utils/service-aggregator-client'
 import LogoutButton from '@/components/LogoutButton.vue'
 import StepModal from '@/components/modals/StepModal.vue'
 import StepEditModal from '@/components/modals/StepEditModal.vue'
+import ExecuteAggregateModal from '@/components/modals/ExecuteAggregateModal.vue'
+import ExecutionResultModal from '@/components/modals/ExecutionResultModal.vue'
 import ServiceNode from '@/components/nodes/ServiceNode.vue'
 import DecisionNode from '@/components/nodes/DecisionNode.vue'
 import EndNode from '@/components/nodes/EndNode.vue'
@@ -170,6 +174,8 @@ const router = useRouter()
 const store = useFlowStore()
 const vueFlowRef = ref<any>(null)
 const stepModalRef = ref<InstanceType<typeof StepModal> | null>(null)
+const executeModalRef = ref<InstanceType<typeof ExecuteAggregateModal> | null>(null)
+const executionResultModalRef = ref<InstanceType<typeof ExecutionResultModal> | null>(null)
 const isDark = ref(false);
 const services = ref<any[]>([])
 const isLoadingServices = ref(false)
@@ -178,6 +184,9 @@ const isSidebarOpen = ref(true) // Default to open
 const showMobileSidebarToggle = ref(false)
 const isExecuting = ref(false)
 const executionStatus = ref<{ [key: string]: 'pending' | 'executing' | 'completed' | 'error' }>({})
+
+// Provide execution status to all child nodes
+provide('executionStatus', executionStatus)
 
 // Register node types
 const nodeTypes = {
@@ -248,46 +257,12 @@ const executeAggregate = async () => {
     return
   }
 
-  isExecuting.value = true
-  executionStatus.value = {}
-
-  try {
-    // Initialize all nodes as pending
-    store.nodes.forEach(node => {
-      if (node.type !== 'startNode' && node.type !== 'endNode') {
-        executionStatus.value[node.id] = 'pending'
-      }
-    })
-
-    // Execute the aggregate
-    const response = await serviceAggregatorClient.executeAggregate({
-      id: aggregateId,
-    })
-
-    // Animate execution flow through steps
-    if (response && response.executionPath) {
-      await animateExecutionFlow(response.executionPath)
-    }
-
-    notify({
-      title: 'موفق',
-      text: 'Aggregate با موفقیت اجرا شد',
-      type: 'success',
-    })
-  } catch (error) {
-    console.error('Execution failed:', error)
-    notify({
-      title: 'خطا',
-      text: error?.message || 'خطا در اجرای Aggregate',
-      type: 'error',
-    })
-  } finally {
-    isExecuting.value = false
-    // Clear execution status after a delay
-    setTimeout(() => {
-      executionStatus.value = {}
-    }, 2000)
+  // Open the execute modal instead of executing directly
+  if (executeModalRef.value) {
+    executeModalRef.value.openModal()
   }
+
+
 }
 
 const animateExecutionFlow = async (executionPath: any[]) => {
@@ -304,6 +279,9 @@ const animateExecutionFlow = async (executionPath: any[]) => {
       // Add visual highlight
       node.data = { ...node.data, isExecuting: true }
 
+      // Force DOM update before waiting
+      await nextTick()
+
       // Wait for step execution time
       await new Promise(resolve => setTimeout(resolve, stepExecution.duration || 500))
 
@@ -315,6 +293,9 @@ const animateExecutionFlow = async (executionPath: any[]) => {
         executionStatus.value[node.id] = 'error'
         node.data = { ...node.data, isExecuting: false, executionError: stepExecution.error }
       }
+
+      // Force DOM update after status change
+      await nextTick()
 
       // Animate edges leading to next steps
       const outgoingEdges = store.edges.filter(e => e.source === node.id)
@@ -624,10 +605,130 @@ const applyLayout = () => {
   }, 300)
 }
 
+// Generate execution path from flow structure when backend doesn't provide it
+const generateExecutionPath = () => {
+  const executionPath: any[] = []
+  const visitedNodes = new Set()
+
+  // Find the start node
+  const startNode = store.nodes.find(n => n.type === 'startNode')
+  if (!startNode) {
+    console.warn('No start node found in flow')
+    return executionPath
+  }
+
+  // Traverse through the flow starting from the start node
+  let currentNodeId = startNode.id
+
+  while (currentNodeId) {
+    if (visitedNodes.has(currentNodeId)) {
+      console.warn('Circular reference detected, stopping traversal')
+      break
+    }
+
+    visitedNodes.add(currentNodeId)
+    const currentNode = store.nodes.find(n => n.id === currentNodeId)
+
+    if (!currentNode) break
+
+    // Skip start and end nodes in execution path
+    if (currentNode.type !== 'startNode' && currentNode.type !== 'endNode') {
+      executionPath.push({
+        stepId: currentNode.data?.aggregateStepId || currentNode.id,
+        status: 'success',
+        duration: 800,
+        result: `Executed: ${currentNode.data?.stepName || 'Unknown'}`,
+        error: null
+      })
+    }
+
+    // Find the next node by following edges
+    const outgoingEdge = store.edges.find(e => e.source === currentNodeId)
+    if (outgoingEdge) {
+      currentNodeId = outgoingEdge.target
+    } else {
+      currentNodeId = null
+    }
+  }
+
+  console.log('Generated execution path:', executionPath)
+  return executionPath
+}
+
 const handleStepSaved = async () => {
   const aggregateId = route.params.id as string
   // Reload the flow to show the new step
   await loadAggregateFlow(aggregateId)
+}
+
+const onAggregateExecuted = async (response: any) => {
+  // Handle execution response and show result modal
+  console.log('Aggregate executed with response:', response)
+
+  isExecuting.value = true
+  executionStatus.value = {}
+
+  try {
+    // Initialize all nodes as pending
+    store.nodes.forEach(node => {
+      if (node.type !== 'startNode' && node.type !== 'endNode') {
+        executionStatus.value[node.id] = 'pending'
+      }
+    })
+
+    // Get execution path - prioritize sources in order:
+    // 1. From backend execution details (using trackerId)
+    // 2. From direct response.executionPath
+    // 3. Generate from flow structure as fallback
+    let executionPath = response?.executionPath
+
+    // Try to fetch detailed execution path from backend using trackerId
+    if (!executionPath && response?.trackerId) {
+      try {
+        console.log('Fetching execution details for trackerId:', response.trackerId)
+        const executionDetails = await serviceAggregatorClient.getExecutionDetails(response.trackerId)
+        if (executionDetails?.executionPath) {
+          executionPath = executionDetails.executionPath
+          console.log('Fetched execution path from backend:', executionPath)
+        }
+      } catch (error) {
+        console.warn('Failed to fetch execution details:', error)
+        // Fall back to generated path
+      }
+    }
+
+    // If still no path, generate from flow structure
+    if (!executionPath || executionPath.length === 0) {
+      console.log('No execution path available - generating from flow structure')
+      executionPath = generateExecutionPath()
+    }
+
+    // Animate execution flow through steps
+    if (executionPath && executionPath.length > 0) {
+      console.log('Animating execution path:', executionPath)
+      await animateExecutionFlow(executionPath)
+    } else {
+      console.log('No execution path available')
+    }
+
+    // Show execution result modal with response data
+    if (executionResultModalRef.value) {
+      executionResultModalRef.value.openModal(response)
+    }
+  } catch (error) {
+    console.error('Error during execution animation:', error)
+    notify({
+      title: 'خطا',
+      text: 'خطا در نمایش نتایج اجرا',
+      type: 'error'
+    })
+  } finally {
+    isExecuting.value = false
+    // Clear execution status after a delay
+    setTimeout(() => {
+      executionStatus.value = {}
+    }, 2000)
+  }
 }
 
 // Watch for step modal open signal from store

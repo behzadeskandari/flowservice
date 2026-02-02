@@ -153,7 +153,16 @@ async addServiceMapping(data) {
   //#region Execute Aggregate
 
   async executeAggregate(data) {
-    const response = await httpClient.post(`/execute/${data.id}`, )
+    const payload = {
+      id: data.id,
+      ...data.data
+    }
+    const response = await httpClient.post(`/execute/${data.id}`, payload)
+    return response.data
+  }
+
+  async getExecutionDetails(trackerId) {
+    const response = await httpClient.get(`/executelog/get/${trackerId}`)
     return response.data
   }
   //#endregion Execute Aggregate
