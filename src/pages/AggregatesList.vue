@@ -108,7 +108,10 @@
                 <button class="btn-icon btn-delete" @click.stop="deleteModal(aggregate.id)" title="پاک کردن">
                   <font-awesome-icon :icon="faDeleteLeft" style="color: red;" />
                 </button>
-
+                <!-- 🔥 NEW: Add Mapping -->
+                <button class="btn-icon btn-add" title="Add Mapping" @click.stop="openAddMappingModal(aggregate.id)">
+                  <font-awesome-icon :icon="faPlus" />
+                </button>
               </td>
             </tr>
           </tbody>
@@ -125,7 +128,7 @@
         </span>
         <span class="btn-pagenumber-orange">{{ aggregates.pageNumber }}</span>
         <span class="btn-pagenumber" @click="fetchNextpage" v-if="aggregates.hasNextPage">{{ aggregates.pageNumber + 1
-          }}</span>
+        }}</span>
         <!-- <span class="btn-totalpage">{{ aggregates.totalPages }}</span> -->
         <!-- <span class="btn-pagenumber-grey">{{ aggregates.totalCount }} تعداد کل رکورد </span> -->
         <span class="btn-pagenumber" v-if="aggregates.hasNextPage" @click="fetchNextPage">
@@ -139,6 +142,8 @@
       @saved="handleModalSaved" />
     <ConfirmModal :visible="showConfirm" message="آیا از پاک کردن گره مطمئن هستید؟" @confirm="onConfirmDelete"
       @cancel="onCancelDelete" />
+    <AggregateMappingModal :show="showMappingModal" :mode="mappingMode" :aggregate-id="selectedAggregateId"
+      :mapping="selectedMapping" @close="showMappingModal = false" @saved="onMappingSaved" />
   </div>
 </template>
 
@@ -152,6 +157,12 @@ import AggregateModal from '@/components/modals/AggregateModal.vue'
 import { useFlowStore } from '@/stores/flowStore'
 import { faCamera, faSun, faMoon, faPlus, faBars, faArrowLeft, faArrowRight, faExpand, faDeleteLeft, faArrowsLeftRight } from '@fortawesome/free-solid-svg-icons'
 import ConfirmModal from '@/components/modals/ConfirmModal.vue'
+import AggregateMappingModal from '@/components/modals/AggregateMappingModal.vue'
+
+const showMappingModal = ref(false)
+const selectedAggregateId = ref<string | null>(null)
+const selectedMapping = ref<any>(null)
+const mappingMode = ref<'add' | 'edit'>('add')
 
 const router = useRouter()
 const store = useFlowStore()
@@ -179,6 +190,18 @@ const isLoading = ref(false)
 const showModal = ref(false)
 const isEditMode = ref(false)
 const selectedId = ref("");
+
+
+const onMappingSaved = () => {
+  debugger
+  showMappingModal.value = false
+  notify({
+    title: 'موفق',
+    text: 'Mapping با موفقیت ذخیره شد',
+    type: 'success'
+  })
+}
+
 
 async function onConfirmDelete() {
   showConfirm.value = false
@@ -303,6 +326,28 @@ const navigateToEditor = (aggregateId: string) => {
 onMounted(() => {
   loadAggregates()
 })
+
+const openAddMappingModal = (aggregateId: string) => {
+  selectedAggregateId.value = aggregateId
+  selectedMapping.value = null
+  mappingMode.value = 'add'
+  showMappingModal.value = true
+}
+
+const openEditMappingModal = (mapping: any) => {
+  selectedMapping.value = mapping
+  mappingMode.value = 'edit'
+  showMappingModal.value = true
+}
+
+const confirmDeleteMapping = async (mappingId: string) => {
+  await serviceAggregatorClient.deleteAggregateMapping(mappingId)
+  notify({
+    title: 'موفق',
+    text: 'Mapping حذف شد',
+    type: 'success'
+  })
+}
 </script>
 
 <style scoped lang="postcss">

@@ -53,11 +53,11 @@
             <font-awesome-icon :icon="faTrash" />
             پاک کردن
           </li>
-          <li @click="onContextSelect('json')">
+          <!-- <li @click="onContextSelect('json')">
             <font-awesome-icon :icon="faEye" />
             نمایش بصورت
             JSON
-          </li>
+          </li> -->
 
         </ul>
       </div>

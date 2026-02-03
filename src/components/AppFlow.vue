@@ -106,11 +106,14 @@
       </div>
 
       <!-- Main Canvas: Vue Flow -->
+         <!-- @edge-double-click="onEdgeDoubleClick" -->
       <div class="canvas-container">
         <VueFlow ref="vueFlowRef" :default-viewport="{ x: 0, y: 0, zoom: 0.8 }" :max-zoom="2" :min-zoom="0.1"
           :nodes="store.nodes" :edges="store.edges" :zoom-on-scroll="true" :fit-view-on-init="true" :pan-on-drag="true"
           :pan-on-scroll="true" :pan-on-scroll-speed="0.8" :selection-on-click="false"
-          :class="{ 'dark': themeStore.isDark }" @edge-double-click="onEdgeDoubleClick" @nodes-change="onNodesChange"
+          :class="{ 'dark': themeStore.isDark }"
+
+            @nodes-change="onNodesChange"
           @edges-change="onEdgesChange" @connect="onConnect" @node-dblclick="onNodeDblClick" @drop="onDrop"
           @dragover="onDragOver" :node-types="nodeTypes" :edges-updatable="true">
           <Background variant="dots" :gap="25" :size="3" />

@@ -119,7 +119,7 @@ class ServiceAggregatorClient {
   }
 
   async deleteAggregateMapping(id) {
-    const response = await httpClient.post(`/aggregate-mapping/delete`, id)
+    const response = await httpClient.post(`/aggregate-mapping/delete`, {id: id})
     return response.data
   }
 

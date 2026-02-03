@@ -70,6 +70,8 @@
             <th>URL</th>
             <th>متد</th>
             <th>نوع</th>
+            <th>احراز هویت</th>
+            <th>فرمت احراز</th>
             <th>وضعیت</th>
             <th>اقدامات</th>
           </tr>
@@ -86,6 +88,23 @@
               </span>
             </td>
             <td class="type-cell">{{ service.type }}</td>
+            <td class="auth-mode-cell">
+              <span v-if="!service.authenticationMode" class="text-gray-400">—</span>
+              <span v-else-if="service.authenticationMode === 'Header'"
+                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-300">
+                Header
+              </span>
+              <span v-else-if="service.authenticationMode === 'QueryString'"
+                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300">
+                Query
+              </span>
+            </td>
+            <td class="auth-format-cell">
+              <code v-if="service.authenticationFormat" class="text-xs break-all">
+        {{ service.authenticationFormat }}
+      </code>
+              <span v-else class="text-gray-400">—</span>
+            </td>
             <td class="status-cell">
               <span class="status-badge" :class="{ active: service.status, inactive: !service.status }">
                 {{ service.status ? 'فعال' : 'غیرفعال' }}
@@ -180,14 +199,6 @@
                    bg-white dark:bg-gray-800 dark:text-white shadow-sm transition duration-200 text-right" />
               </div>
 
-              <!-- URL -->
-              <!-- <div class="space-y-2">
-                <label class="block font-semibold text-gray-700 dark:text-gray-200 text-right">URL <span
-                    class="text-red-500">*</span></label>
-                <input v-model="formData.url" type="text" placeholder="https://api.example.com/endpoint" class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700
-                   focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
-                   bg-white dark:bg-gray-800 dark:text-white shadow-sm transition duration-200 text-right text-sm" />
-              </div> -->
               <div class="space-y-2">
                 <label class="block font-semibold text-gray-700 dark:text-gray-200 text-right">
                   URL <span class="text-red-500">*</span>
@@ -232,7 +243,55 @@
                   </select>
                 </div>
               </div>
+              <!-- Authentication Settings -->
+              <div class="space-y-5 mt-6 pt-6 border-t border-orange-200 dark:border-orange-800">
+                <h4
+                  class="text-lg sm:text-xl font-bold text-gray-800 dark:text-gray-100 pb-3 border-b border-orange-200">
+                  🔐 تنظیمات احراز هویت
+                </h4>
 
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                  <!-- Authentication Mode -->
+                  <div class="space-y-2">
+                    <label class="block font-semibold text-gray-700 dark:text-gray-200 text-right">
+                      نوع احراز هویت
+                    </label>
+                    <select v-model="formData.authenticationMode" class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700
+               focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
+               bg-white dark:bg-gray-800 dark:text-white shadow-sm transition duration-200 text-right font-medium">
+                      <option value="">بدون احراز هویت</option>
+                      <option value="Header">در هدر (Header)</option>
+                      <option value="QueryString">در کوئری استرینگ (Query String)</option>
+                    </select>
+                  </div>
+
+                  <!-- Authentication Format / Template -->
+                  <div class="space-y-2">
+                    <label class="block font-semibold text-gray-700 dark:text-gray-200 text-right">
+                      فرمت احراز هویت
+                      <span v-if="formData.authenticationMode" class="text-red-500">*</span>
+                    </label>
+                    <input v-model="formData.authenticationFormat" type="text"
+                      placeholder="مثال: Bearer {token}   یا   X-API-Key: {key}"
+                      :disabled="!formData.authenticationMode" class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700
+               focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
+               bg-white dark:bg-gray-800 dark:text-white shadow-sm transition duration-200 text-right
+               disabled:opacity-50 disabled:cursor-not-allowed" />
+                    <p v-if="formData.authenticationMode && !formData.authenticationFormat?.trim()"
+                      class="text-red-500 text-xs text-right mt-1">
+                      این فیلد اجباری است
+                    </p>
+                  </div>
+                </div>
+
+                <!-- Optional helper text -->
+                <div class="text-sm text-gray-600 dark:text-gray-400 bg-orange-50 dark:bg-orange-950/30 p-3 rounded-xl">
+                  <strong>نمونه‌ها:</strong><br>
+                  • Header → <code>Bearer {token}</code><br>
+                  • Header → <code>ApiKey {api_key}</code><br>
+                  • Query → <code>access_token={token}</code>
+                </div>
+              </div>
               <!-- Status -->
               <div
                 class="bg-gradient-to-r from-orange-50 to-amber-50 dark:from-gray-800 dark:to-gray-700 rounded-xl p-4 flex items-center justify-between border-2 border-orange-100 dark:border-orange-800">
@@ -255,7 +314,8 @@
     <div v-if="showModalStepMapping"
       class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 animate-fadeIn p-4 m-y-2 overflow-y-auto"
       @click.self="closeModalStepModal">
-      <div class="bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 p-[2px] rounded-3xl w-full max-w-2xl -translate-y-5">
+      <div
+        class="bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 p-[2px] rounded-3xl w-full max-w-2xl -translate-y-5">
         <div class="bg-white dark:bg-gray-900 shadow-2xl rounded-3xl w-full animate-scaleIn " style="padding:20px">
           <!-- Header -->
           <header
@@ -265,103 +325,6 @@
               {{ isEditMode ? 'مپ ویرایش سرویس' : ' مپ سرویس جدید' }}
             </h3>
           </header>
-
-          <!-- Body -->
-          <!-- <div class="space-y-5 max-h-[70vh] overflow-y-auto pr-2">
-            <div class="space-y-5" v-if="!isEditModeStepMapping">
-              <h4 class="text-lg sm:text-xl font-bold text-gray-800 dark:text-gray-100 pb-3 border-b border-orange-200">
-                📋 اطلاعات نگاشت مرحله</h4>
-
-              <div class="space-y-2">
-                <label class="block font-semibold text-gray-700 dark:text-gray-200 text-right">نام نگاشت مرحله <span
-                    class="text-red-500">*</span></label>
-                <input v-model="formDataStepMapping.name" type="text" placeholder="مثال: Shahkar Step Mapping" class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700
-                   focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
-                   bg-white dark:bg-gray-800 dark:text-white shadow-sm transition duration-200 text-right" />
-              </div>
-
-              <div class="space-y-2">
-                <label class="block font-semibold text-gray-700 dark:text-gray-200 text-right">سرویس نگاشت مرحله <span
-                    class="text-red-500">*</span></label>
-                <select v-model="formDataStepMapping.serviceId" class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700
-                   focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
-                   bg-white dark:bg-gray-800 dark:text-white shadow-sm transition duration-200 text-right font-medium">
-                  <option v-for="service in services.items" :key="service.id" :value="service.id">
-                    {{ service.name }}
-                  </option>
-                </select>
-              </div>
-
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div class="space-y-2">
-                  <label class="block font-semibold text-gray-700 dark:text-gray-200 text-right">نوع نگاشت مرحله <span
-                      class="text-red-500">*</span></label>
-                  <input v-model="formDataStepMapping.type" type="text" placeholder="مثال: Shahkar Step Mapping" class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700
-                   focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
-                   bg-white dark:bg-gray-800 dark:text-white shadow-sm transition duration-200 text-right" />
-                </div>
-
-                <div class="space-y-2">
-                  <label class="block font-semibold text-gray-700 dark:text-gray-200 text-right">جهت نگاشت مرحله <span
-                      class="text-red-500">*</span></label>
-                  <select v-model="formDataStepMapping.direction"
-                    class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700
-                     focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
-                     bg-white dark:bg-gray-800 dark:text-white shadow-sm transition duration-200 text-right font-medium">
-                    <option :value="1">ورودی</option>
-                    <option :value="2">خروجی</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-            <div v-else>
-              <div v-for="formdataStep in formDataStepMappingEdit" :key="formdataStep.id">
-                <div class="space-y-2">
-                  <label class="block font-semibold text-gray-700 dark:text-gray-200 text-right">نام نگاشت مرحله <span
-                      class="text-red-500">*</span></label>
-                  <input v-model="formdataStep.name" type="text" placeholder="مثال: Shahkar Step Mapping" class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700
-                   focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
-                   bg-white dark:bg-gray-800 dark:text-white shadow-sm transition duration-200 text-right" />
-                </div>
-
-                <div class="space-y-2">
-                  <label class="block font-semibold text-gray-700 dark:text-gray-200 text-right">سرویس نگاشت مرحله <span
-                      class="text-red-500">*</span></label>
-                  <select v-model="formdataStep.serviceId" class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700
-                   focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
-                   bg-white dark:bg-gray-800 dark:text-white shadow-sm transition duration-200 text-right font-medium">
-                    <option v-for="service in services.items" :key="service.id" :value="service.id">
-                      {{ service.name }}
-                    </option>
-                  </select>
-                </div>
-
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div class="space-y-2">
-                    <label class="block font-semibold text-gray-700 dark:text-gray-200 text-right">نوع نگاشت مرحله <span
-                        class="text-red-500">*</span></label>
-                    <input v-model="formdataStep.type" type="text" placeholder="مثال: Shahkar Step Mapping" class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700
-                   focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
-                   bg-white dark:bg-gray-800 dark:text-white shadow-sm transition duration-200 text-right" />
-
-                  </div>
-
-                  <div class="space-y-2">
-                    <label class="block font-semibold text-gray-700 dark:text-gray-200 text-right">جهت نگاشت مرحله <span
-                        class="text-red-500">*</span></label>
-                    <select v-model="formdataStep.direction"
-                      class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700
-                     focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
-                     bg-white dark:bg-gray-800 dark:text-white shadow-sm transition duration-200 text-right font-medium">
-                      <option :value="1">ورودی</option>
-                      <option :value="2">خروجی</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div> -->
-          <!-- Footer -->
           <div class="space-y-6" :key="mappingUpdateKey">
             <div class="flex items-center justify-between">
               <h4 class="text-lg sm:text-xl font-bold text-gray-800 dark:text-gray-100 pb-3 border-b border-orange-200">
@@ -396,10 +359,13 @@
                   </button>
 
                   <!-- Badge for new mapping -->
-                  <div v-if="!mapping.id" class="absolute top-3 right-12 px-2 py-1 bg-green-100 text-green-800 text-xs font-bold rounded">
+                  <div v-if="!mapping.id"
+                    class="absolute top-3 right-12 px-2 py-1 bg-green-100 text-green-800 text-xs font-bold rounded">
                     جدید
                   </div>
-
+                  <div class="text-xs text-gray-500 dark:text-gray-400 text-right mb-2">
+                    Parent Service ID: <strong>{{ mapping.parentId || '—' }}</strong>
+                  </div>
                   <div class="space-y-3 pr-8">
                     <!-- Name -->
                     <div class="space-y-1">
@@ -473,7 +439,8 @@
                   </button>
 
                   <!-- Badge for new mapping -->
-                  <div v-if="!mapping.id" class="absolute top-3 right-12 px-2 py-1 bg-green-100 text-green-800 text-xs font-bold rounded">
+                  <div v-if="!mapping.id"
+                    class="absolute top-3 right-12 px-2 py-1 bg-green-100 text-green-800 text-xs font-bold rounded">
                     جدید
                   </div>
 
@@ -543,7 +510,7 @@
               </button>
               <button
                 class="flex-1 sm:flex-none px-4 sm:px-6 py-3 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 text-white font-semibold rounded-xl shadow-lg hover:from-orange-500 hover:via-orange-600 hover:to-orange-700 transition duration-300 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                @click="saveStepService" :disabled="!stepMappings.length > 0 ">
+                @click="saveStepService" :disabled="!stepMappings.length > 0">
                 <i class="fas fa-save"></i>
                 <span class="hidden sm:inline">{{ isEditMode ? 'بروزرسانی' : 'ایجاد' }}</span>
               </button>
@@ -602,6 +569,8 @@ const formData = ref({
   method: 'GET',
   type: 'REST',
   status: true,
+  authenticationMode: "",
+  authenticationFormat: "",
 })
 const formDataStepMapping = ref({
   id: null,
@@ -645,9 +614,19 @@ const isUrlOrPathValid = computed(() => {
 const urlRegex = /^(?:(?:(?:https?|ftp):)?\/\/)(?:\S+(?::\S*)?@)?(?:(?!(?:10|127)(?:\.\d{1,3}){3})(?!(?:169\.254|192\.168)(?:\.\d{1,3}){2})(?!172\.(?:1[6-9]|2\d|3[0-1])(?:\.\d{1,3}){2})(?:[1-9]\d?|1\d\d|2[01]\d|22[0-3])(?:\.(?:1?\d{1,2}|2[0-4]\d|25[0-5])){2}(?:\.(?:[1-9]\d?|1\d\d|2[0-4]\d|25[0-4]))|(?:(?:[a-z0-9\u00a1-\uffff][a-z0-9\u00a1-\uffff_-]{0,62})?[a-z0-9\u00a1-\uffff]\.)+(?:[a-z\u00a1-\uffff]{2,}\.?))(?::\d{2,5})?(?:[/?#]\S*)?$/i;
 
 const isUrlValid = computed(() => {
-  const input = formData.value.url?.trim();
-  if (!input) return false;
-  return urlRegex.test(input);
+  debugger
+   const input = formData.value.url?.trim()
+  if (!input) return false
+
+  // protocol-less domains (example.com, api.test.ir:8080/path)
+  const domainOnlyRegex =
+    /^(?:[a-z0-9-]+\.)+[a-z]{2,}(?::\d{1,5})?(?:\/[^\s]*)?$/i
+
+  // full URLs with protocol
+  const fullUrlRegex =
+    /^(https?:\/\/)(?:[a-z0-9-]+\.)+[a-z]{2,}(?::\d{1,5})?(?:\/[^\s]*)?$/i
+
+  return domainOnlyRegex.test(input) || fullUrlRegex.test(input)
 });
 
 
@@ -736,18 +715,24 @@ const AddStepMapping = async (id) => {
 
   // Combine inputs and outputs
   const allMappings = [
-    ...(record.inputs || []).map(m => ({ ...m ,__key: m.id ?? crypto.randomUUID()})),
-    ...(record.outputs || []).map(m => ({ ...m,__key: m.id ?? crypto.randomUUID() }))
+    ...(record.inputs || []).map(m => ({ ...m, __key: m.id ?? crypto.randomUUID() })),
+    ...(record.outputs || []).map(m => ({ ...m, __key: m.id ?? crypto.randomUUID() }))
   ]
+
+  const mappedWithParent = allMappings.map(m => ({
+    ...m,
+    parentId: record.id   // ← this is the key change
+  }));
+
 
   if (record.id && allMappings.length > 0) {
     isEditMode.value = true;
     // Populate stepMappings with both inputs and outputs
-    stepMappings.value = allMappings
-    originalMappings.value = allMappings.map(m => ({ ...m })) // track originals
+    stepMappings.value = mappedWithParent
+    originalMappings.value = mappedWithParent.map(m => ({ ...m })) // track originals
   } else {
     isEditMode.value = false;
-    stepMappings.value = [getEmptyMapping()]
+    stepMappings.value = [{ ...getEmptyMapping(), parentId: record.id }]
     originalMappings.value = [] // no originals in add mode
   }
   showModalStepMapping.value = true;
@@ -757,6 +742,8 @@ const AddStepMapping = async (id) => {
   formData.value.method = record.method;
   formData.value.type = record.type;
   formData.value.status = record.status;
+  formData.value.authenticationMode = record.authenticationMode || "";
+  formData.value.authenticationFormat = record.authenticationFormat || "";
 }
 
 
@@ -791,7 +778,8 @@ const getEmptyMapping = () => ({
   serviceId: null,
   type: '',
   direction: 1,
-  description:""   // 1 = input, 2 = output
+  description: "",
+  parentId: null,   // 1 = input, 2 = output
   // ... add other fields if needed (id, status, etc.)
 })
 
@@ -969,49 +957,49 @@ const saveStepService = async () => {
     console.error(err)
   }
 }
-  // if (!isStepMappingFormValid.value) {
-  //   notify({
-  //     title: 'خطا',
-  //     text: 'تمام فیلدهای الزامی را پر کنید',
-  //     type: 'error',
-  //   })
-  //   return
-  // }
+// if (!isStepMappingFormValid.value) {
+//   notify({
+//     title: 'خطا',
+//     text: 'تمام فیلدهای الزامی را پر کنید',
+//     type: 'error',
+//   })
+//   return
+// }
 
-  // try {
-  //   if (isEditMode.value) {
-  //     await serviceAggregatorClient.updateServiceMapping(formDataStepMapping.value)
-  //     notify({
-  //       title: 'موفقیت',
-  //       text: 'سرویس بروزرسانی شد',
-  //       type: 'success',
-  //     })
-  //   } else {
-  //     await serviceAggregatorClient.addServiceMapping({
-  //       name: formDataStepMapping.value.name,
-  //       serviceId: formDataStepMapping.value.serviceId,
-  //       type: formData.value.type,
-  //       description: formDataStepMapping.value.description,
-  //       direction: formDataStepMapping.value.direction
-  //     })
-  //     notify({
-  //       title: 'موفقیت',
-  //       text: 'سرویس ایجاد شد',
-  //       type: 'success',
-  //     })
-  //   }
-  //   closeModalStepModal()
-  //   await loadServices()
-  // } catch (error) {
-  //   console.error('Error saving service:', error)
-  //   notify({
-  //     title: 'خطا',
-  //     text: isEditMode.value ? 'خطا در بروزرسانی سرویس' : 'خطا در ایجاد سرویس',
-  //     type: 'error',
-  //   })
-  // }
+// try {
+//   if (isEditMode.value) {
+//     await serviceAggregatorClient.updateServiceMapping(formDataStepMapping.value)
+//     notify({
+//       title: 'موفقیت',
+//       text: 'سرویس بروزرسانی شد',
+//       type: 'success',
+//     })
+//   } else {
+//     await serviceAggregatorClient.addServiceMapping({
+//       name: formDataStepMapping.value.name,
+//       serviceId: formDataStepMapping.value.serviceId,
+//       type: formData.value.type,
+//       description: formDataStepMapping.value.description,
+//       direction: formDataStepMapping.value.direction
+//     })
+//     notify({
+//       title: 'موفقیت',
+//       text: 'سرویس ایجاد شد',
+//       type: 'success',
+//     })
+//   }
+//   closeModalStepModal()
+//   await loadServices()
+// } catch (error) {
+//   console.error('Error saving service:', error)
+//   notify({
+//     title: 'خطا',
+//     text: isEditMode.value ? 'خطا در بروزرسانی سرویس' : 'خطا در ایجاد سرویس',
+//     type: 'error',
+//   })
+// }
 const saveService = async () => {
-  if (!isUrlOrPathValid.value) {
+  if (!isUrlValid.value) {
     notify({
       title: 'خطا',
       text: ',URL را بدرستی پر کنید',
@@ -1361,6 +1349,7 @@ onMounted(() => {
   font-size: 12px;
   font-weight: 600;
   color: white;
+  background-color: orange;
   min-height: 30px;
 }
 
