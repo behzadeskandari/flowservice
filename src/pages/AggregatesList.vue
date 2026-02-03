@@ -110,7 +110,7 @@
                 </button>
                 <!-- 🔥 NEW: Add Mapping -->
                 <button class="btn-icon btn-add" title="Add Mapping" @click.stop="openAddMappingModal(aggregate.id)">
-                  <font-awesome-icon :icon="faPlus" />
+                  <font-awesome-icon :icon="faPlus" style="color : orange" />
                 </button>
               </td>
             </tr>
@@ -645,7 +645,10 @@ const confirmDeleteMapping = async (mappingId: string) => {
   background: #e7f3ff;
   color: red;
 }
-
+.btn-add{
+  background: #E7F3FF;
+  color: e7f3ff;
+}
 .btn-edit:hover {
   background: #ffa600;
   color: white;
