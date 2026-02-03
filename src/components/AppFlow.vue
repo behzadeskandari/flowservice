@@ -605,6 +605,36 @@ const applyLayout = () => {
   }, 300)
 }
 
+
+const buildExecutionPathFromLogs = (logs: any[]) => {
+  return logs
+    .slice()
+    .sort(
+      (a, b) =>
+        new Date(a.executionDate).getTime() -
+        new Date(b.executionDate).getTime()
+    )
+    .map((log, index) => ({
+      index,
+      stepId: log.stepId,
+      serviceId: log.serviceId,
+      duration: log.duration ?? 500,
+      status: log.responseStatusCode === 200 ? 'success' : 'error',
+      request: safeJson(log.requestJson),
+      response: safeJson(log.responseJson),
+    }))
+}
+
+const safeJson = (value?: string) => {
+  try {
+    return value ? JSON.parse(value) : {}
+  } catch {
+    return {}
+  }
+}
+
+
+
 // Generate execution path from flow structure when backend doesn't provide it
 const generateExecutionPath = () => {
   const executionPath: any[] = []

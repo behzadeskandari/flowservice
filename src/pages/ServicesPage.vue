@@ -362,7 +362,7 @@
             </div>
           </div> -->
           <!-- Footer -->
-          <div class="space-y-6">
+          <div class="space-y-6" :key="mappingUpdateKey">
             <div class="flex items-center justify-between">
               <h4 class="text-lg sm:text-xl font-bold text-gray-800 dark:text-gray-100 pb-3 border-b border-orange-200">
                 📋 نگاشت‌های مرحله
@@ -385,7 +385,7 @@
                 <i class="fas fa-arrow-down text-blue-500"></i> نگاشت‌های ورودی (Input)
               </h5>
               <div class="space-y-4">
-                <div v-for="(mapping, index) in stepMappings.filter(m => m.direction === 1)" :key="mapping.id || `new-${index}`"
+                <div v-for="(mapping, index) in stepMappings.filter(m => m.direction === 1)" :key="mapping.__key"
                   class="bg-blue-50 dark:bg-blue-900/20 p-5 rounded-xl border-2 border-blue-200 dark:border-blue-700 relative">
 
                   <!-- Remove button (top right) -->
@@ -462,7 +462,7 @@
                 <i class="fas fa-arrow-up text-green-500"></i> نگاشت‌های خروجی (Output)
               </h5>
               <div class="space-y-4">
-                <div v-for="(mapping, index) in stepMappings.filter(m => m.direction === 2)" :key="mapping.id || `new-${index}`"
+                <div v-for="(mapping, index) in stepMappings.filter(m => m.direction === 2)" :key="mapping.__key"
                   class="bg-green-50 dark:bg-green-900/20 p-5 rounded-xl border-2 border-green-200 dark:border-green-700 relative">
 
                   <!-- Remove button (top right) -->
@@ -565,7 +565,7 @@
 <script setup>
 import { faCamera, faSun, faMoon, faPlus, faBars, faArrowLeft, faArrowRight, faExpand, faBoxOpen } from '@fortawesome/free-solid-svg-icons'
 
-import { ref, computed, onMounted, toRaw } from 'vue'
+import { ref, computed, onMounted, toRaw, nextTick } from 'vue'
 import { notify } from '@kyvg/vue3-notification'
 import serviceAggregatorClient from '@/utils/service-aggregator-client'
 import LogoutButton from '@/components/LogoutButton.vue'
@@ -579,6 +579,9 @@ const services = ref({
   totalCount: 0,
   totalPages: 0
 })
+
+const mappingUpdateKey = ref(0)
+
 const name = ref("");
 const url = ref("");
 const status = ref(null);
@@ -671,7 +674,6 @@ async function fetchPrevouisPage() {
   services.value = record;
 }
 
-
 async function fetchNextPage() {
   var data = {
     PageIndex: services.value.pageNumber + 1,
@@ -681,8 +683,8 @@ async function fetchNextPage() {
   services.value = record;
 
 }
-async function resetSearch() {
 
+async function resetSearch() {
   url.value = '';
   name.value = '';
   status.value = null;
@@ -691,7 +693,6 @@ async function resetSearch() {
     PageSize: 10,
   }
   resetKey.value++
-
   var record = await serviceAggregatorClient.getServicesWithParams(data);
   services.value = record;
 
@@ -730,12 +731,13 @@ const deleteModal = async (id) => {
 const AddStepMapping = async (id) => {
   // Implement your logic to add step mapping here
   //isLoading.value = true;
+  debugger
   var record = await serviceAggregatorClient.getServicesById(id);
 
   // Combine inputs and outputs
   const allMappings = [
-    ...(record.inputs || []).map(m => ({ ...m })),
-    ...(record.outputs || []).map(m => ({ ...m }))
+    ...(record.inputs || []).map(m => ({ ...m ,__key: m.id ?? crypto.randomUUID()})),
+    ...(record.outputs || []).map(m => ({ ...m,__key: m.id ?? crypto.randomUUID() }))
   ]
 
   if (record.id && allMappings.length > 0) {
@@ -764,9 +766,9 @@ const originalMappings = ref([])       // track original mappings to detect chan
 
 // When opening modal in "add" mode → start with one empty item
 const openAddModal = () => {
-  stepMappings.value = [getEmptyMapping()]
-  originalMappings.value = []          // no originals in add mode
-  showModalStepMapping.value = true
+  //stepMappings.value = [getEmptyMapping()]
+  //originalMappings.value = []          // no originals in add mode
+  //showModalStepMapping.value = true
   isEditMode.value = false
   resetForm()
   showModal.value = true
@@ -784,22 +786,27 @@ const openEditModal = (existingMappings) => {
 
 
 const getEmptyMapping = () => ({
+  __key: crypto.randomUUID(),
   name: '',
   serviceId: null,
   type: '',
-  direction: null,   // 1 = input, 2 = output
+  direction: 1,
+  description:""   // 1 = input, 2 = output
   // ... add other fields if needed (id, status, etc.)
 })
 
-const addNewMapping = () => {
+const addNewMapping = async () => {
   stepMappings.value.push(getEmptyMapping())
+  mappingUpdateKey.value++
+  await nextTick()
 }
 
-const removeMapping = (index) => {
+const removeMapping = async (index) => {
   if (confirm('آیا مطمئن هستید که این نگاشت را حذف کنید؟')) {
     const removedMapping = stepMappings.value[index]
     // If it has an ID, it exists on server and will be deleted during save
     stepMappings.value.splice(index, 1)
+    await serviceAggregatorClient.deleteAggregateMapping(removedMapping.id)
   }
 }
 
