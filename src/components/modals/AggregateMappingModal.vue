@@ -163,7 +163,7 @@
 // Your existing script logic remains 100% unchanged
 // ──────────────────────────────────────────────
 
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, nextTick, watch } from 'vue'
 import serviceAggregatorClient from '@/utils/service-aggregator-client'
 import { notify } from '@kyvg/vue3-notification';
 
@@ -181,17 +181,41 @@ const visibleMappings = computed(() =>
 )
 
 onMounted(async () => {
+  debugger
+
   if (!props.aggregateId) return
 
   const aggregate = await serviceAggregatorClient.getAggregateByid(props.aggregateId)
 
-  mappings.value = (aggregate.mappings || []).map(m => ({
+  const newMappings = (aggregate.mappings || []).map(m => ({
     ...m,
     tempId: crypto.randomUUID(),
     __status: undefined
   }))
-})
 
+  mappings.value = newMappings
+  await nextTick()           // wait for DOM update
+  await nextTick()
+})
+watch(
+  () => [props.show, props.aggregateId],
+  async ([show, id], [oldShow]) => {
+    if (!show || !id || show === oldShow) return
+
+    console.log('Modal became visible with ID:', id)
+
+    const aggregate = await serviceAggregatorClient.getAggregateByid(id)
+
+    mappings.value = (aggregate.mappings || []).map(m => ({
+      ...m,
+      tempId: crypto.randomUUID(),
+      __status: undefined
+    }))
+
+    await nextTick()
+  },
+  { immediate: true }
+)
 const addMapping = () => {
   mappings.value.unshift({
     tempId: crypto.randomUUID(),
