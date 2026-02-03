@@ -70,9 +70,21 @@
           <p>هیچ سرویسی موجود نیست</p>
         </div>
         <div v-else class="services-list">
-          <div class="service-card" style="color:green">Start Node</div>
-          <div class="service-card" style="color:green">If Node</div>
-          <div class="service-card" style="color:green">End Node</div>
+          <div class="service-card" style="color:green" draggable="true"
+            @dragstart="onDragStartStatic($event, { id: 'start-node', name: 'Start Node', type: 'startNode' })"
+            @dragend="onDragEnd">
+            Start Node
+          </div>
+          <div class="service-card" style="color:green" draggable="true"
+            @dragstart="onDragStartStatic($event, { id: 'if-node', name: 'If Node', type: 'decisionNode' })"
+            @dragend="onDragEnd">
+            If Node
+          </div>
+          <div class="service-card" style="color:green" draggable="true"
+            @dragstart="onDragStartStatic($event, { id: 'end-node', name: 'End Node', type: 'endNode' })"
+            @dragend="onDragEnd">
+            End Node
+          </div>
           <div v-for="service in services.items" :key="service.id" class="service-card" :draggable="true"
             @dragstart="onDragStart($event, service)" @dragend="onDragEnd" @dblclick="onServiceDoubleClick(service)">
             <div class="service-card-header">
@@ -98,13 +110,10 @@
         <VueFlow ref="vueFlowRef" :default-viewport="{ x: 0, y: 0, zoom: 0.8 }" :max-zoom="2" :min-zoom="0.1"
           :nodes="store.nodes" :edges="store.edges" :zoom-on-scroll="true" :fit-view-on-init="true" :pan-on-drag="true"
           :pan-on-scroll="true" :pan-on-scroll-speed="0.8" :selection-on-click="false"
-          :class="{ 'dark': themeStore.isDark }"
-          @edge-double-click="onEdgeDoubleClick"
-          @nodes-change="onNodesChange" @edges-change="onEdgesChange"
-          @connect="onConnect" @node-dblclick="onNodeDblClick" @drop="onDrop" @dragover="onDragOver"
-          :node-types="nodeTypes"
-          :edges-updatable="true">
-          <Background variant="dots" :gap="25" :size="3"/>
+          :class="{ 'dark': themeStore.isDark }" @edge-double-click="onEdgeDoubleClick" @nodes-change="onNodesChange"
+          @edges-change="onEdgesChange" @connect="onConnect" @node-dblclick="onNodeDblClick" @drop="onDrop"
+          @dragover="onDragOver" :node-types="nodeTypes" :edges-updatable="true">
+          <Background variant="dots" :gap="25" :size="3" />
           <Panel position="top-center"></Panel>
           <Controls>
             <ControlButton @click.prevent="toggleTheme">
@@ -119,7 +128,7 @@
           </Controls>
           <MiniMap />
           <template #node-mappingEditorNode="nodeProps">
-             <MappingEditorNode v-bind="nodeProps" />
+            <MappingEditorNode v-bind="nodeProps" />
           </template>
         </VueFlow>
       </div>
@@ -132,10 +141,8 @@
     <ExecuteAggregateModal ref="executeModalRef" :aggregate-id="route.params.id" @execute="onAggregateExecuted" />
     <ExecutionResultModal ref="executionResultModalRef" />
     <notifications />
-    <MappingEditorModal
-      :edge="selectedEdgeForEditor"
-      @close="() => { selectedEdgeForEditor = null; showEditorModal = false }"
-    />
+    <MappingEditorModal :edge="selectedEdgeForEditor"
+      @close="() => { selectedEdgeForEditor = null; showEditorModal = false }" />
   </div>
 </template>
 
@@ -388,10 +395,47 @@ const onDragStart = (event: DragEvent, service: any) => {
     event.dataTransfer.setData('application/json', JSON.stringify(service))
   }
 }
+const canAddNode = (nodeType: string): { allowed: boolean; message?: string } => {
+  debugger
+  const nodeCount = store.nodes.length
 
+  if (nodeType === 'decisionNode') {
+    // IF node: can be first, but condition required (enforce condition in StepModal form validation)
+    // So here allow always to add IF node. Condition validation should be separate.
+
+    return { allowed: true }
+  }
+
+  if (nodeType === 'startNode') {
+    // Start node can be first as is
+    return { allowed: true }
+  }
+
+  if (nodeType === 'endNode') {
+    // End node only allowed if 2 or more nodes exist already
+    if (nodeCount >= 2) {
+      return { allowed: true }
+    } else {
+      return { allowed: false, message: 'برای اضافه کردن End Node ابتدا باید حداقل ۲ گام اضافه شود.' }
+    }
+  }
+
+  // Default allow for other nodes
+  return { allowed: true }
+}
 const onDragEnd = () => {
   draggedService.value = null
 }
+
+
+const onDragStartStatic = (event: DragEvent, service: any) => {
+  draggedService.value = service
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = 'copy'
+    event.dataTransfer.setData('application/json', JSON.stringify(service))
+  }
+}
+
 
 const onDragOver = (event: DragEvent) => {
   event.preventDefault()
@@ -421,6 +465,15 @@ const onDrop = async (event: DragEvent) => {
   }
 
   if (!draggedService.value) return
+
+
+  const { allowed, message } = canAddNode(draggedService.value.type)
+  if (!allowed) {
+    notify({ title: 'خطا', text: message || 'امکان اضافه کردن این گام وجود ندارد', type: 'error' })
+    draggedService.value = null
+    return
+  }
+
 
   // Get drop position in flow coordinates
   let dropPosition = { x: 100, y: 100 } // Default position
@@ -453,6 +506,11 @@ const onDrop = async (event: DragEvent) => {
 }
 
 const onServiceDoubleClick = (service: any) => {
+  const { allowed, message } = canAddNode(service.type)
+  if (!allowed) {
+    notify({ title: 'خطا', text: message || 'امکان اضافه کردن این گام وجود ندارد', type: 'error' })
+    return
+  }
   // Open StepModal with pre-filled service (useful for mobile where drag-drop is difficult)
   // Use default position since no drop occurred
   const aggregateId = route.params.id as string

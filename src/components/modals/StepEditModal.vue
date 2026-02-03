@@ -328,20 +328,66 @@
 
           <!-- Mapping Modal Body -->
           <section class="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
+            <!-- Source Type Selection -->
             <div>
-              <label class="block font-medium text-gray-500 mb-1 text-right px-1 py-1">Source *</label>
-              <input
+              <label class="block font-medium text-gray-500 mb-1 text-right px-1 py-1">Source Type *</label>
+              <select
                 v-model="currentMapping.source"
-                type="text"
-                placeholder="مثال: response, request, constant"
                 class="w-full px-4 py-2 rounded-xl border border-gray-300
                        focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
                        bg-white shadow-sm transition text-right"
                 required
-              />
+                @change="onSourceTypeChange"
+              >
+                <option value="">-- نوع منبع را انتخاب کنید --</option>
+                <option value="Constant">Constant</option>
+                <option value="AggregateInput">Aggregate Input</option>
+                <option value="StepOutput">Step Output</option>
+              </select>
               <small class="block mt-1 text-gray-600 text-right">
-                منبع داده (مثال: response, request, constant)
+                نوع منبع داده را انتخاب کنید
               </small>
+            </div>
+
+            <!-- Step Selection (shown when source is StepOutput) -->
+            <div v-if="currentMapping.source === 'StepOutput'">
+              <label class="block font-medium text-gray-500 mb-1 text-right px-1 py-1">Select Step *</label>
+              <select
+                v-model="currentMapping.inputStepId"
+                class="w-full px-4 py-2 rounded-xl border border-gray-300
+                       focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
+                       bg-white shadow-sm transition text-right"
+                required
+              >
+                <option value="">-- Select Step --</option>
+                <option v-for="step in availableSteps" :key="step.id" :value="step.id">
+                  {{ step.stepName || `Step ${step.id.slice(0, 8)}` }}
+                </option>
+              </select>
+            </div>
+
+            <!-- Aggregate Field Selection (shown when source is AggregateInput)   && aggregateFields.length > 0-->
+            <div v-if="currentMapping.source === 'AggregateInput'">
+               <label class="block font-medium text-gray-500 mb-1 text-right px-1 py-1">فیلد منبع (از Aggregate)</label>
+                <select
+                  v-model="currentMapping.sourceField"
+                  class="w-full px-4 py-2 rounded-xl border border-gray-300
+                       focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
+                       bg-white shadow-sm transition text-right"
+                  :disabled="isLoadingAggregate"
+                  required
+                >
+                  <option value="" disabled>لطفا یک فیلد انتخاب کنید</option>
+                  <option
+                    v-for="field in aggregateFields"
+                    :key="field.id"
+                    :value="field.name"
+                  >
+                    {{ field.name }} ({{ field.type }})
+                  </option>
+                  <option v-if="isLoadingAggregate" disabled>در حال بارگذاری فیلدها...</option>
+                  <option v-if="!isLoadingAggregate && aggregateFields.length === 0" disabled>هیچ فیلدی یافت نشد</option>
+                </select>
             </div>
 
             <div>
@@ -357,49 +403,76 @@
               />
             </div>
 
-            <div>
-              <label class="block font-medium text-gray-500 mb-1 text-right px-1 py-1">Source Field</label>
+            <!-- Source Field (shown when source is not AggregateInput) -->
+            <div v-if="currentMapping.source && currentMapping.source !== 'AggregateInput'">
+              <label class="block font-medium text-gray-500 mb-1 text-right px-1 py-1">
+                {{ currentMapping.source === 'StepOutput' ? 'Source Field *' : 'Source Field' }}
+              </label>
               <input
                 v-model="currentMapping.sourceField"
                 type="text"
-                placeholder="نام فیلد منبع (اختیاری)"
+                :placeholder="currentMapping.source === 'StepOutput' ? 'نام فیلد منبع' : 'نام فیلد منبع (اختیاری)'"
                 class="w-full px-4 py-2 rounded-xl border border-gray-300
                        focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
                        bg-white shadow-sm transition text-right"
+                :required="currentMapping.source === 'StepOutput'"
               />
-              <small class="block mt-1 text-gray-600 text-right">
-                نام فیلد در منبع (برای response یا request)
+              <small v-if="currentMapping.source === 'StepOutput'" class="block mt-1 text-gray-600 text-right">
+                نام فیلد در خروجی مرحله انتخاب شده
               </small>
             </div>
 
-            <div>
-              <label class="block font-medium text-gray-500 mb-1 text-right px-1 py-1">Value</label>
+            <!-- Value (shown when source is Constant) -->
+            <div v-if="currentMapping.source === 'Constant'">
+              <label class="block font-medium text-gray-500 mb-1 text-right px-1 py-1">Value *</label>
               <input
                 v-model="currentMapping.value"
                 type="text"
-                placeholder="مقدار (برای constant یا مقدار پیش‌فرض)"
+                placeholder="مقدار ثابت"
                 class="w-full px-4 py-2 rounded-xl border border-gray-300
                        focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
                        bg-white shadow-sm transition text-right"
+                required
               />
               <small class="block mt-1 text-gray-600 text-right">
-                مقدار ثابت یا مقدار پیش‌فرض (اختیاری)
+                مقدار ثابت برای این فیلد
               </small>
             </div>
 
             <div>
-              <label class="block font-medium text-gray-500 mb-1 text-right px-1 py-1">Value Type</label>
-              <input
+              <label class="block font-medium text-gray-500 mb-1 text-right px-1 py-1">Value Type *</label>
+              <select
                 v-model="currentMapping.valueType"
-                type="text"
-                placeholder="مثال: string, number, boolean, object, array"
                 class="w-full px-4 py-2 rounded-xl border border-gray-300
                        focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
                        bg-white shadow-sm transition text-right"
-              />
+                required
+              >
+                <option value="">-- Select Type --</option>
+                <option value="String">String</option>
+                <option value="Number">Number</option>
+                <option value="Object">Object</option>
+                <option value="Array">Array</option>
+                <option value="Boolean">Boolean</option>
+              </select>
               <small class="block mt-1 text-gray-600 text-right">
-                نوع مقدار (مثال: string, number, boolean, object, array)
+                نوع مقدار را انتخاب کنید
               </small>
+            </div>
+
+            <!-- Mapping Type -->
+            <div>
+              <label class="block font-medium text-gray-500 mb-1 text-right px-1 py-1">Mapping Type *</label>
+              <select
+                v-model="currentMapping.mappingType"
+                class="w-full px-4 py-2 rounded-xl border border-gray-300
+                       focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
+                       bg-white shadow-sm transition text-right"
+                required
+              >
+                <option value="Body">Body</option>
+                <option value="Authentication">Authentication</option>
+              </select>
             </div>
 
             <div class="flex items-center justify-end">
@@ -430,7 +503,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useFlowStore } from '@/stores/flowStore'
 import serviceAggregatorClient from '@/utils/service-aggregator-client'
 import { notify } from '@kyvg/vue3-notification'
@@ -447,7 +520,7 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['update:show', 'saved'])
-
+const aggregateFields = ref([])
 const store = useFlowStore()
 const availableServices = ref([])
 const isLoadingServices = ref(false)
@@ -465,7 +538,7 @@ const stepData = ref({
   fields: [],
   mappings: [],
 })
-
+const isLoadingAggregate = ref(false)
 const showMappingModal = ref(false)
 const mappingModalMode = ref('add') // 'add' or 'edit'
 const currentMapping = ref({
@@ -473,8 +546,10 @@ const currentMapping = ref({
   source: '',
   targetField: '',
   sourceField: '',
+  inputStepId: null,
   value: '',
-  valueType: '',
+  valueType: 'String',
+  mappingType: 'Body',
   status: true,
 })
 
@@ -483,22 +558,154 @@ const selectedService = computed(() => {
   if (!stepData.value.serviceId) return null
   return availableServices.value.find(s => s.id === stepData.value.serviceId) || null
 })
-
 // Get available next steps (all except current step)
-const availableNextSteps = computed(() => {
+const availableSteps = computed(() => {
   return store.nodes
     .filter(node => {
-      // Exclude combined nodes
+      // Exclude combined nodes and current step
       if (node.type === 'combinedServiceNode') return false
-      // Exclude current step
       if (props.mode === 'edit' && node.id === props.stepId) return false
       return true
     })
     .map(node => ({
       id: node.data.aggregateStepId || node.id,
-      stepName: node.data.stepName || node.data.label || 'Unknown',
+      stepName: node.data.stepName || node.data.label || `Step ${node.id.slice(0, 8)}`,
     }))
 })
+
+const availableNextSteps = computed(() => availableSteps.value)
+
+// Get available aggregate fields
+// const aggregateFields = computed(() => {
+//   if (!store.currentAggregate || !store.currentAggregate.mappings) return []
+//   return store.currentAggregate.mappings.map(mapping => ({
+//     id: mapping.id,
+//     name: mapping.name,
+//     type: mapping.type || 'String',
+//     description: mapping.description || ''
+//   }))
+// })
+
+
+// const aggregateFields = computed(() => {
+//   // Try to get the aggregate ID from the current step
+//   const aggregateId = stepData.value?.aggregateId ||
+//                      store.nodes.find(n => n.id === props.stepId)?.data?.aggregateId
+
+//   if (!aggregateId) {
+//     console.warn('No aggregate ID found for the current step')
+//     return []
+//   }
+
+//   // If we have the aggregate ID, try to find it in the store
+//   const aggregate = store.aggregates?.find(a => a.id === aggregateId)
+
+//   console.log('Aggregate ID:', aggregateId)
+//   console.log('Aggregate mappings:', aggregate?.mappings)
+//   if (!aggregate?.mappings) {
+//     console.warn('No mappings found for aggregate:', aggregateId)
+//     return []
+//   }
+
+//   return aggregate.mappings.map(mapping => ({
+//     id: mapping.id,
+//     name: mapping.name,
+//     type: mapping.type || 'String',
+//     description: mapping.description || ''
+//   }))
+// })
+
+// Add this function to fetch aggregate by ID
+const fetchAggregateById = async (aggregateId) => {
+  try {
+    const response = await serviceAggregatorClient.getAggregate(aggregateId)
+    if (response && response.mappings) {
+      // Update the store or local state with the fetched aggregate
+      // This depends on your store implementation
+      // For now, we'll just return the mappings
+      return response.mappings
+    }
+    return []
+  } catch (error) {
+    console.error('Error fetching aggregate:', error)
+    return []
+  }
+}
+
+// Update the aggregateFields computed property
+// const aggregateFields = computed(async () => {
+//   // Try to get the aggregate ID from the current step
+//   const aggregateId = stepData.value?.aggregateId ||
+//                      store.nodes.find(n => n.id === props.stepId)?.data?.aggregateId
+
+//   if (!aggregateId) {
+//     console.warn('No aggregate ID found for the current step')
+//     return []
+//   }
+
+//   // First, try to find in the store
+//   const aggregate = store.aggregates?.find(a => a.id === aggregateId)
+
+//   if (aggregate?.mappings) {
+//     return aggregate.mappings.map(mapping => formatMapping(mapping))
+//   }
+
+//   // If not found in store, try to fetch it
+//   console.log('Aggregate not found in store, fetching...')
+//   const mappings = await fetchAggregateById(aggregateId)
+//   return mappings.map(mapping => formatMapping(mapping))
+// })
+
+// Helper function to format mapping
+const formatMapping = (mapping) => ({
+  id: mapping.id,
+  name: mapping.name,
+  type: mapping.type || 'String',
+  description: mapping.description || ''
+})
+
+
+const loadAggregateFields = async () => {
+  debugger
+  store.loadAggregates();
+  const aggregate = store.aggregates;
+  console.log('aggregate aggregate aggregate:', stepData.value.aggregateId)
+  if (!aggregate) {
+    aggregateFields.value = []
+    return
+  }
+  isLoadingAggregate.value = true
+  try {
+    // Try to find in store first
+    //const aggregate = store.aggregates?.find(a => a.id === aggregateId)
+    const aggregate = store.aggregates
+    if (aggregate?.mappings) {
+      aggregateFields.value = aggregate.mappings.map(formatMapping)
+      return
+    }
+    // If not in store, fetch it
+    const response = await serviceAggregatorClient.getAggregateByid(stepData.value.aggregateId)
+    if (response?.mappings) {
+      aggregateFields.value = response.mappings.map(formatMapping)
+      // Optionally update the store here if needed
+    } else {
+      aggregateFields.value = []
+    }
+  } catch (error) {
+    console.error('Error loading aggregate fields:', error)
+    aggregateFields.value = []
+  } finally {
+    isLoadingAggregate.value = false
+  }
+}
+// Call this when the component is mounted or when stepData changes
+onMounted(loadAggregateFields)
+watch(() => stepData.value.aggregateId, (newVal) => {
+  if (showMappingModal.value && currentMapping.value.source === 'AggregateInput') {
+    loadAggregateFields()
+  }
+}, { immediate: true })
+
 
 // Load available services from backend
 const loadServices = async () => {
@@ -656,11 +863,13 @@ const openAddMappingModal = () => {
     targetField: '',
     sourceField: '',
     value: '',
-    valueType: '',
+    valueType: 'String',
+    mappingType: 'Body',
     status: true,
   }
   mappingModalMode.value = 'add'
   showMappingModal.value = true
+  loadAggregateFields()
 }
 
 const openEditMappingModal = (mapping) => {
@@ -669,12 +878,22 @@ const openEditMappingModal = (mapping) => {
     source: mapping.source || '',
     targetField: mapping.targetField || '',
     sourceField: mapping.sourceField || '',
+    inputStepId: mapping.inputStepId || null,
     value: mapping.value || '',
-    valueType: mapping.valueType || '',
+    valueType: mapping.valueType || 'String',
+    mappingType: mapping.mappingType || 'Body',
     status: mapping.status !== undefined ? mapping.status : true,
   }
   mappingModalMode.value = 'edit'
   showMappingModal.value = true
+  loadAggregateFields()
+}
+
+const onSourceTypeChange = () => {
+  // Reset related fields when source type changes
+  currentMapping.value.sourceField = ''
+  currentMapping.value.inputStepId = null
+  currentMapping.value.value = ''
 }
 
 const closeMappingModal = () => {
@@ -684,50 +903,94 @@ const closeMappingModal = () => {
     source: '',
     targetField: '',
     sourceField: '',
+    inputStepId: null,
     value: '',
-    valueType: '',
+    valueType: 'String',
+    mappingType: 'Body',
     status: true,
   }
 }
 
 const saveMapping = async () => {
-  // if (!currentMapping.value.targetField || !currentMapping.value.targetField.trim()) {
-  //   notify({
-  //     title: 'خطا',
-  //     text: 'فیلد هدف الزامی است',
-  //     type: 'error',
-  //   })
-  //   return
-  // }
-
-  // if (!stepData.value.aggregateStepId) {
-  //   notify({
-  //     title: 'خطا',
-  //     text: 'aggregateStepId یافت نشد',
-  //     type: 'error',
-  //   })
-  //   return
-  // }
-
   try {
-    // Prepare mapping data - convert empty strings to null for optional fields
+    // Validate required fields based on source type
+    if (!currentMapping.value.targetField?.trim()) {
+      notify({
+        title: 'خطا',
+        text: 'فیلد هدف الزامی است',
+        type: 'error'
+      })
+      return
+    }
+    if (currentMapping.value.source === 'StepOutput' && !currentMapping.value.sourceField?.trim()) {
+      notify({
+        title: 'خطا',
+        text: 'فیلد منبع برای Step Output الزامی است',
+        type: 'error'
+      })
+      return
+    }
+    // Prepare mapping data based on source type
     const mappingData = {
-      source: currentMapping.value.source || 'response',
+      aggregateStepId: stepData.value.aggregateStepId,
+      mappingType: currentMapping.value.mappingType || 'Body',
+      source: currentMapping.value.source,
       targetField: currentMapping.value.targetField.trim(),
       sourceField: currentMapping.value.sourceField?.trim() || null,
-      value: currentMapping.value.value?.trim() || null,
-      valueType: currentMapping.value.valueType?.trim() || 'string',
+      value: null,  // Will be set based on source type
+      valueType: currentMapping.value.valueType || 'String',
       status: currentMapping.value.status,
+      inputStepId: null  // Will be set for StepOutput
     }
-
+    // Handle different source types
+    if (currentMapping.value.source === 'Constant') {
+      if (!currentMapping.value.value?.trim()) {
+        notify({
+          title: 'خطا',
+          text: 'مقدار ثابت الزامی است',
+          type: 'error'
+        })
+        return
+      }
+      mappingData.value = currentMapping.value.value.trim()
+      // mappingData.sourceField = null
+      delete mappingData.sourceField
+    } else if (currentMapping.value.source === 'StepOutput') {
+      if (!currentMapping.value.inputStepId) {
+        notify({
+          title: 'خطا',
+          text: 'انتخاب مرحله مبدا الزامی است',
+          type: 'error'
+        })
+        return
+      }
+      mappingData.inputStepId = currentMapping.value.inputStepId
+      // Remove value for StepOutput
+      delete mappingData.value
+    } else if (currentMapping.value.source === 'AggregateInput') {
+        delete mappingData.value
+      if (!currentMapping.value.sourceField?.trim()) {
+        notify({
+          title: 'خطا',
+          text: 'انتخاب فیلد از Aggregate الزامی است',
+          type: 'error'
+        })
+        return
+      }
+    }
+    // Make the API call
     if (mappingModalMode.value === 'add') {
-      const newMapping = await store.addStepMapping(stepData.value.aggregateStepId, mappingData)
+      const newMapping = await serviceAggregatorClient.addAggregateStepMapping(mappingData)
       if (newMapping) {
         stepData.value.mappings.push(newMapping)
+        notify({
+          title: 'موفقیت',
+          text: 'Mapping با موفقیت اضافه شد',
+          type: 'success'
+        })
       }
     } else {
-      const updatedMapping = await store.updateStepMapping(
-        stepData.value.aggregateStepId,
+      const updatedMapping = await serviceAggregatorClient.updateAggregateStepMapping(
         currentMapping.value.id,
         mappingData
       )
@@ -736,11 +999,22 @@ const saveMapping = async () => {
         if (index !== -1) {
           stepData.value.mappings[index] = updatedMapping
         }
+        notify({
+          title: 'موفقیت',
+          text: 'Mapping با موفقیت به‌روزرسانی شد',
+          type: 'success'
+        })
       }
     }
     closeMappingModal()
   } catch (error) {
-    console.error('Error saving mapping:', error)
+    console.error('خطا در ذخیره‌سازی Mapping:', error)
+    const errorMessage = error.response?.data?.title || 'خطا در ذخیره‌سازی Mapping'
+    notify({
+      title: 'خطا',
+      text: errorMessage,
+      type: 'error'
+    })
   }
 }
 
