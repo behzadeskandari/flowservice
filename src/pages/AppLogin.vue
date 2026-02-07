@@ -33,7 +33,7 @@ AppLogin
                 placeholder="رمز عبور خود را وارد کنید" />
             </div>
             <div class="flex flex-col">
-              <Captcha ref="captchaRef" />
+              <Captcha ref="captchaRef"  @update="onCaptchaUpdate" />
             </div>
             <button tabindex="3" type="submit"
               class="w-full h-12 mt-4 rounded-lg text-white font-bold text-lg shadow-lg hover:shadow-xl bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 active:scale-98 transition-all duration-200">
@@ -69,33 +69,43 @@ const errorMessage = ref('')
 const authStore = useAuthStore()
 const captchaRef = ref(null)
 
+
+const captcha = ref('')
+const captchaKey = ref('')
+
+function onCaptchaUpdate(payload) {
+  captcha.value = payload.captcha
+  captchaKey.value = payload.key
+}
+
 async function hanldeLogin() {
-  // Validate CAPTCHA first
-  const isCaptchaValid = captchaRef.value.validateCaptcha()
-  if (!isCaptchaValid) {
-    errorMessage.value = 'لطفا کد امنیتی را تایید کنید.'
+  if (!captcha.value || !captchaKey.value) {
+    errorMessage.value = 'لطفا کد امنیتی را وارد کنید.'
     return
   }
+
   try {
-    const success = await authStore.login(username.value, password.value)
-    if (success) {
-      errorMessage.value = ''
-      notify({
-        title: 'ورود موفقیت آمیز',
-        text: 'شما با موفقیت وارد شدید.',
-        type: 'success',
-        duration: 3000,
-      })
-      // Navigate after showing the success message
-      setTimeout(() => {
-        router.push('/aggregates')
-      }, 1000)
-    } else {
-      errorMessage.value = 'نام کاربری یا رمز عبور اشتباه است.'
-    }
-  } catch (error) {
-    console.error('Login error:', error)
-    errorMessage.value = 'خطایی در ارتباط با سرور رخ داد. لطفاً دوباره تلاش کنید.'
+    await authStore.loginWithCaptcha({
+      username: username.value,
+      password: password.value,
+      captcha: captcha.value,
+      key: captchaKey.value,
+    })
+
+    notify({
+      title: 'ورود موفقیت آمیز',
+      text: 'شما با موفقیت وارد شدید.',
+      type: 'success',
+      duration: 3000,
+    })
+
+    setTimeout(() => router.push('/aggregates'), 800)
+  } catch (err) {
+    errorMessage.value =
+      err?.response?.data?.message || 'کد امنیتی یا اطلاعات ورود اشتباه است.'
+
+    // 🔁 refresh captcha after error
+    captchaRef.value?.fetchCaptcha()
   }
 }
 router.beforeEach((to, from, next) => {

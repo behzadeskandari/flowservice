@@ -19,14 +19,14 @@ export const useAuthStore = defineStore('auth', () => {
     }
   })
 
-  async function login(username, password) {
+  async function loginWithCaptcha(payload) {
     // Validate input
-    if (!username || !password || username.trim() === '' || password.trim() === '') {
+    if (!payload.username || !payload.password || payload.username.trim() === '' || payload.password.trim() === '') {
       return false;
     }
 
     try {
-      const response = await createHttpClient().post('/Auth/login', { username, password });
+      const response = await createHttpClient().post('/Auth/loginwithcaptcha', payload);
 
       if (response.data && response.status === StatusCode.OK) {
         const userRecord = response.data;
@@ -68,5 +68,5 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  return { logout, login, isAuthenticated, user }
+  return { logout, loginWithCaptcha, isAuthenticated, user }
 })

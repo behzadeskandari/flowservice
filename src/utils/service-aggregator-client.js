@@ -166,6 +166,11 @@ async addServiceMapping(data) {
     return response.data
   }
   //#endregion Execute Aggregate
+
+  async getCaptcha(){
+    const response = await httpClient.get('/auth/captcha')
+    return response.data
+  }
 }
 
 export default new ServiceAggregatorClient()
