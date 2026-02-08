@@ -106,16 +106,14 @@
       </div>
 
       <!-- Main Canvas: Vue Flow -->
-         <!-- @edge-double-click="onEdgeDoubleClick" -->
+      <!-- @edge-double-click="onEdgeDoubleClick" -->
       <div class="canvas-container">
         <VueFlow ref="vueFlowRef" :default-viewport="{ x: 0, y: 0, zoom: 0.8 }" :max-zoom="2" :min-zoom="0.1"
           :nodes="store.nodes" :edges="store.edges" :zoom-on-scroll="true" :fit-view-on-init="true" :pan-on-drag="true"
           :pan-on-scroll="true" :pan-on-scroll-speed="0.8" :selection-on-click="false"
-          :class="{ 'dark': themeStore.isDark }"
-
-            @nodes-change="onNodesChange"
-          @edges-change="onEdgesChange" @connect="onConnect" @node-dblclick="onNodeDblClick" @drop="onDrop"
-          @dragover="onDragOver" :node-types="nodeTypes" :edges-updatable="true">
+          :class="{ 'dark': themeStore.isDark }" @nodes-change="onNodesChange" @edges-change="onEdgesChange"
+          @connect="onConnect" @node-dblclick="onNodeDblClick" @drop="onDrop" @dragover="onDragOver"
+          :node-types="nodeTypes" :edges-updatable="true">
           <Background variant="dots" :gap="25" :size="3" />
           <Panel position="top-center"></Panel>
           <Controls>
@@ -194,7 +192,10 @@ const isSidebarOpen = ref(true) // Default to open
 const showMobileSidebarToggle = ref(false)
 const isExecuting = ref(false)
 const executionStatus = ref<{ [key: string]: 'pending' | 'executing' | 'completed' | 'error' }>({})
-
+const executingStepId = ref<string | null>(null)
+const executedSteps = ref<Set<string>>(new Set())
+const activeEdgeIds = ref<Set<string>>(new Set())
+const conditionResultMap = ref<Record<string, boolean>>({})
 // Provide execution status to all child nodes
 provide('executionStatus', executionStatus)
 
@@ -275,50 +276,286 @@ const executeAggregate = async () => {
 
 }
 
-const animateExecutionFlow = async (executionPath: any[]) => {
-  // Animate through each executed step
-  for (const stepExecution of executionPath) {
-    // Find the node corresponding to this step
-    const node = store.nodes.find(
-      n => n.data?.aggregateStepId === stepExecution.stepId || n.id === stepExecution.stepId
+// const animateExecutionFlow = async (executionSteps, initialResponse) => {
+//   // Reset previous execution state
+//   store.resetExecution()   // ← make sure this exists in store (see below)
+
+//   // ─── Handle Start Node first ─────────────────────────────────────
+//   const startNode = store.nodes.find(n =>
+//     n.type === 'startNode' ||
+//     n.data?.type === 'startNode' ||
+//     n.type?.toLowerCase().includes('start') ||
+//     n.data?.label?.toLowerCase().includes('شروع') ||
+//     n.data?.stepName?.toLowerCase().includes('شروع') ||
+//     n.id.toLowerCase().includes('start')
+//   )
+
+//   if (startNode) {
+//     console.log("Start node found:", startNode.id, startNode.data)
+
+//     store.setNodeStatus(startNode.id, 'success')
+//     await nextTick()
+//     await new Promise(r => setTimeout(r, 400))
+//   } else {
+//     console.warn("No start node detected")
+//   }
+
+//   // ─── Main loop over real execution steps ─────────────────────────
+//   for (const logEntry of executionSteps) {
+//     const stepId = logEntry.stepId
+//     console.log("Animating step:", stepId)
+
+//     // Find node — your current logic is good
+//     const node = store.nodes.find(n =>
+//       n.data?.aggregateStepId === stepId ||
+//       n.id === `node-${stepId}`
+//     )
+
+//     if (!node) {
+//       console.warn(`Node not found for stepId: ${stepId}`)
+//       continue
+//     }
+
+//     console.log("→ Found node:", node.id, node.data?.stepName || node.data?.label)
+
+//     // Executing state
+//     store.setNodeStatus(node.id, 'executing')
+//     // Force Vue Flow reactivity if needed
+//     node.data = { ...node.data, isExecuting: true }
+
+//     await nextTick()
+
+//     // Real or minimum delay
+//     const delayMs = Math.max(logEntry.duration || 600, 400)
+//     await new Promise(r => setTimeout(r, delayMs))
+
+//     // Final status
+//     const isSuccess = logEntry.responseStatusCode >= 200 && logEntry.responseStatusCode < 300
+
+//     store.setNodeStatus(node.id, isSuccess ? 'success' : 'error')
+
+//     // Update node.data (optional — only if some nodes still read from data)
+//     node.data = {
+//       ...node.data,
+//       isExecuting: false,
+//       executionStatus: isSuccess ? 'success' : 'error',
+//       executionResult: isSuccess ? JSON.pa(logEntry.responseJson) : null,
+//       executionError: !isSuccess ? logEntry.responseJson : null,
+//       duration: logEntry.duration
+//     }
+
+//     await nextTick()
+
+//     // Animate outgoing edges on success
+//     if (isSuccess) {
+//       const outgoing = store.edges.filter(e => e.source === node.id)
+//       for (const edge of outgoing) {
+//         edge.animated = true
+//         edge.style = { stroke: '#10b981', strokeWidth: 3 }
+//         await new Promise(r => setTimeout(r, 280))
+//         edge.animated = false
+//         edge.style = {}
+//         await nextTick()
+//       }
+//     }
+//   }
+
+//   // Open result modal
+//   if (executionResultModalRef.value) {
+//     executionResultModalRef.value.openModal(initialResponse)
+//   }
+// }
+
+// Small helper
+
+
+const animateExecutionFlow = async (executionSteps, initialResponse) => {
+  // executionSteps is now array of log entries like:
+  // [{ stepId: "...", duration: 144, responseStatusCode: 200, ... }, ...]
+  store.resetExecution()
+  console.log("Statuses after reset:", { ...store.executionStatus })
+
+
+  const startNode = store.nodes.find(n =>
+    n.type === 'startNode' ||
+    n.data?.type === 'startNode' ||
+    n.type?.toLowerCase().includes('start') ||
+    n.data?.label?.toLowerCase().includes('شروع') ||
+    n.data?.stepName?.toLowerCase().includes('شروع') ||
+    n.id.toLowerCase().includes('start')
+  );
+
+  if (startNode) {
+     store.setNodeStatus(startNode.id, 'success')
+    //     await nextTick()
+    //     await new Promise(r => setTimeout(r, 400))
+    //executionStatus.value[startNode.id] = 'completed';
+    startNode.data = {
+      ...startNode.data,
+      isExecuting: false,
+      executionStatus: 'success',   // or 'completed'
+      // Optional: add a fake duration for animation feel
+      duration: 300
+    };
+
+    // Force small delay so user sees it
+    await nextTick();
+    await new Promise(r => setTimeout(r, 400));
+  }
+  // Before the loop
+  console.log("Start node:", startNode?.id, startNode?.data)
+
+  for (const logEntry of executionSteps) {
+    const stepId = logEntry.stepId
+
+    console.log("Nodes in store:", store.nodes.map(n => ({
+      id: n.id,
+      aggregateStepId: n.data?.aggregateStepId,
+      label: n.data?.label || n.data?.stepName
+    })))
+    // Find node by aggregateStepId or id
+    const node = store.nodes.find(n =>
+      n.data?.aggregateStepId === stepId ||
+      n.id === stepId ||
+      n.data?.id === stepId
     )
+    console.log("Animating step:", stepId, "→ node:", node?.id, node?.data?.stepName)
+    if (!node) {
+      console.warn(`Node not found for stepId: ${stepId}`)
+      continue
+    }
 
-    if (node) {
-      // Mark as executing
-      executionStatus.value[node.id] = 'executing'
-      // Add visual highlight
-      node.data = { ...node.data, isExecuting: true }
+    // ─── Visual feedback: executing ───────────────────────
+    executionStatus.value[node.id] = 'executing'
+    node.data = {
+      ...node.data,
+      isExecuting: true,
+      executionStatus: 'running'
+    }
 
-      // Force DOM update before waiting
-      await nextTick()
+    await nextTick()
 
-      // Wait for step execution time
-      await new Promise(resolve => setTimeout(resolve, stepExecution.duration || 500))
 
-      // Mark as completed
-      if (stepExecution.status === 'success') {
-        executionStatus.value[node.id] = 'completed'
-        node.data = { ...node.data, isExecuting: false, executionResult: stepExecution.result }
-      } else {
-        executionStatus.value[node.id] = 'error'
-        node.data = { ...node.data, isExecuting: false, executionError: stepExecution.error }
+    // Simulate real timing (or use a fixed minimum delay)
+    const delay = logEntry.duration || 600
+    await new Promise(r => setTimeout(r, Math.max(delay, 400)))
+
+    // ─── Determine final status ────────────────────────────
+    const isSuccess = logEntry.responseStatusCode >= 200 && logEntry.responseStatusCode < 300
+
+    if (isSuccess) {
+      executionStatus.value[node.id] = 'completed'
+      node.data = {
+        ...node.data,
+        isExecuting: false,
+        executionStatus: 'success',
+        executionResult: logEntry.responseJson ? JSON.parse(logEntry.responseJson) : null,
+        duration: logEntry.duration
       }
+    } else {
+      executionStatus.value[node.id] = 'error'
+      node.data = {
+        ...node.data,
+        isExecuting: false,
+        executionStatus: 'error',
+        executionError: logEntry.responseJson || "خطا در اجرا",
+        duration: logEntry.duration
+      }
+    }
 
-      // Force DOM update after status change
-      await nextTick()
+    await nextTick()
 
-      // Animate edges leading to next steps
-      const outgoingEdges = store.edges.filter(e => e.source === node.id)
-      for (const edge of outgoingEdges) {
+    // Animate outgoing edges (only if success – or always?)
+    if (isSuccess) {
+      const outgoing = store.edges.filter(e => e.source === node.id)
+      for (const edge of outgoing) {
         edge.animated = true
         edge.style = { stroke: '#10b981', strokeWidth: 3 }
-        await new Promise(resolve => setTimeout(resolve, 300))
+        await new Promise(r => setTimeout(r, 280))
         edge.animated = false
         edge.style = {}
       }
     }
   }
+
+  // ─── After all steps ────────────────────────────────────
+  if (executionResultModalRef.value) {
+    executionResultModalRef.value.openModal(initialResponse)
+  }
 }
+
+// const animateExecutionFlow = async (executionSteps, initialResponse) => {
+//   for (const logEntry of executionSteps) {
+//     const stepId = logEntry.stepId
+
+//     // Find node by aggregateStepId or id
+//     const node = store.nodes.find(n =>
+//       n.data?.aggregateStepId === stepId ||
+//       n.id === stepId ||
+//       n.data?.id === stepId
+//     )
+
+//     if (!node) {
+//       console.warn(`Node not found for stepId: ${stepId}`)
+//       continue
+//     }
+
+//     // ─── Visual feedback: executing ───────────────────────
+//     executionStatus.value[node.id] = 'executing'
+//     node.data = {
+//       ...node.data,
+//       isExecuting: true,
+//       executionStatus: 'running'
+//     }
+
+//     await nextTick()
+
+//     // Simulate real timing (or use a fixed minimum delay)
+//     const delay = logEntry.duration || 600
+//     await new Promise(r => setTimeout(r, Math.max(delay, 400)))
+
+//     // ─── Determine final status ────────────────────────────
+//     const isSuccess = logEntry.responseStatusCode >= 200 && logEntry.responseStatusCode < 300
+
+//     if (isSuccess) {
+//       executionStatus.value[node.id] = 'completed'
+//       node.data = {
+//         ...node.data,
+//         isExecuting: false,
+//         executionStatus: 'success',
+//         executionResult: logEntry.responseJson ? JSON.parse(logEntry.responseJson) : null,
+//         duration: logEntry.duration
+//       }
+//     } else {
+//       executionStatus.value[node.id] = 'error'
+//       node.data = {
+//         ...node.data,
+//         isExecuting: false,
+//         executionStatus: 'error',
+//         executionError: logEntry.responseJson || "خطا در اجرا",
+//         duration: logEntry.duration
+//       }
+//     }
+
+//     await nextTick()
+
+//     // Animate outgoing edges (only if success – or always?)
+//     if (isSuccess) {
+//       const outgoing = store.edges.filter(e => e.source === node.id)
+//       for (const edge of outgoing) {
+//         edge.animated = true
+//         edge.style = { stroke: '#10b981', strokeWidth: 3 }
+//         await new Promise(r => setTimeout(r, 280))
+//         edge.animated = false
+//         edge.style = {}
+//       }
+//     }
+//     // ─── After all steps ────────────────────────────────────
+//     if (executionResultModalRef.value) {
+//       executionResultModalRef.value.openModal(initialResponse)
+//     }
+//   }
+// }
 function toggleTheme() {
   isDark.value = !isDark.value
   console.log(isDark.value, 'isDark')
@@ -597,42 +834,6 @@ onNodeDragStop((event) => {
 
   updatePosition()
 })
-// const aggregateId = route.params.id as string
-// if (!aggregateId) return
-
-// const node = event.node
-// if (!node || !node.data?.aggregateStepId) {
-//   // No step ID, skip backend save (might be a placeholder node)
-//   return
-// }
-// // Save to backend
-// const updatePosition = async () => {
-//   try {
-//     const payload = {
-//       id: node.data.aggregateStepId,
-//       stepName: node.data.stepName || '',
-//       aggregateId: aggregateId,
-//       serviceId: node.data.serviceId || null,
-//       nextStepId: node.data.nextStepId || null,
-//       trueStepId: node.data.trueStepId || null,
-//       falseStepId: node.data.falseStepId || null,
-//       condition: node.data.condition || '',
-//       conditionParameters: node.data.conditionParameters || '',
-//       status: node.data.status !== undefined ? node.data.status : true,
-//       positionX: Math.round(node.position.x),
-//       positionY: Math.round(node.position.y),
-//     }
-//     await serviceAggregatorClient.updateAggregateStep(payload)
-//   } catch (error) {
-//     console.error('Failed to save node position to backend:', error)
-//     notify({
-//       title: 'خطا',
-//       text: 'خطا در ذخیره موقعیت Node',
-//       type: 'error',
-//     })
-//   }
-// }
-// updatePosition()
 
 const onNodesChange = (changes: any[]) => {
   // Handle node changes if needed (for other operations)
@@ -752,74 +953,110 @@ const handleStepSaved = async () => {
   await loadAggregateFlow(aggregateId)
 }
 
-const onAggregateExecuted = async (response: any) => {
-  // Handle execution response and show result modal
-  console.log('Aggregate executed with response:', response)
+const onAggregateExecuted = async (initialResponse: any) => {
 
-  isExecuting.value = true
-  executionStatus.value = {}
+  const trackerId = initialResponse?.trackerId
+  if (!trackerId) {
+    console.warn("No trackerId received")
+    return
+  }
+
+  // ────────────────────────────────────────────────
+  //   Important: fetch real execution path
+  // ────────────────────────────────────────────────
 
   try {
-    // Initialize all nodes as pending
-    store.nodes.forEach(node => {
-      if (node.type !== 'startNode' && node.type !== 'endNode') {
-        executionStatus.value[node.id] = 'pending'
-      }
-    })
+    // Adjust endpoint name according to your API
+    const executionLogs = await serviceAggregatorClient.getExecutionDetails(trackerId)
+    // or: .getAggregateExecutionSteps(aggregateId, trackerId)
+    console.log("Execution log stepIds:", executionLogs.map(l => l.stepId))
 
-    // Get execution path - prioritize sources in order:
-    // 1. From backend execution details (using trackerId)
-    // 2. From direct response.executionPath
-    // 3. Generate from flow structure as fallback
-    let executionPath = response?.executionPath
-
-    // Try to fetch detailed execution path from backend using trackerId
-    if (!executionPath && response?.trackerId) {
-      try {
-        console.log('Fetching execution details for trackerId:', response.trackerId)
-        const executionDetails = await serviceAggregatorClient.getExecutionDetails(response.trackerId)
-        if (executionDetails?.executionPath) {
-          executionPath = executionDetails.executionPath
-          console.log('Fetched execution path from backend:', executionPath)
-        }
-      } catch (error) {
-        console.warn('Failed to fetch execution details:', error)
-        // Fall back to generated path
-      }
+    if (!Array.isArray(executionLogs) || executionLogs.length === 0) {
+      console.warn("No execution logs returned")
+      // fallback
+      return
     }
 
-    // If still no path, generate from flow structure
-    if (!executionPath || executionPath.length === 0) {
-      console.log('No execution path available - generating from flow structure')
-      executionPath = generateExecutionPath()
-    }
+    // Sort just in case backend didn't sort
+    executionLogs.sort((a, b) => new Date(a.executionDate) - new Date(b.executionDate))
 
-    // Animate execution flow through steps
-    if (executionPath && executionPath.length > 0) {
-      console.log('Animating execution path:', executionPath)
-      await animateExecutionFlow(executionPath)
-    } else {
-      console.log('No execution path available')
-    }
+    console.log("Real execution order:", executionLogs.map(log => log.stepId))
 
-    // Show execution result modal with response data
-    if (executionResultModalRef.value) {
-      executionResultModalRef.value.openModal(response)
-    }
-  } catch (error) {
-    console.error('Error during execution animation:', error)
-    notify({
-      title: 'خطا',
-      text: 'خطا در نمایش نتایج اجرا',
-      type: 'error'
-    })
-  } finally {
-    isExecuting.value = false
-    // Clear execution status after a delay
-    setTimeout(() => {
-      executionStatus.value = {}
-    }, 2000)
+    // Now animate using REAL order
+    await animateExecutionFlow(executionLogs, initialResponse)
+
+  } catch (err) {
+    console.error("Failed to load execution logs", err)
+    notify({ type: 'warning', text: 'نمی‌توان مسیر واقعی اجرا را بارگذاری کرد' })
   }
+
+  // Handle execution response and show result modal
+  // console.log('Aggregate executed with response:', response)
+
+  // isExecuting.value = true
+  // executionStatus.value = {}
+
+  // try {
+  //   // Initialize all nodes as pending
+  //   store.nodes.forEach(node => {
+  //     if (node.type !== 'startNode' && node.type !== 'endNode') {
+  //       executionStatus.value[node.id] = 'pending'
+  //     }
+  //   })
+
+  //   // Get execution path - prioritize sources in order:
+  //   // 1. From backend execution details (using trackerId)
+  //   // 2. From direct response.executionPath
+  //   // 3. Generate from flow structure as fallback
+  //   let executionPath = response?.executionPath
+
+  //   // Try to fetch detailed execution path from backend using trackerId
+  //   if (!executionPath && response?.trackerId) {
+  //     try {
+  //       console.log('Fetching execution details for trackerId:', response.trackerId)
+  //       const executionDetails = await serviceAggregatorClient.getExecutionDetails(response.trackerId)
+  //       if (executionDetails?.executionPath) {
+  //         executionPath = executionDetails.executionPath
+  //         console.log('Fetched execution path from backend:', executionPath)
+  //       }
+  //     } catch (error) {
+  //       console.warn('Failed to fetch execution details:', error)
+  //       // Fall back to generated path
+  //     }
+  //   }
+
+  //   // If still no path, generate from flow structure
+  //   if (!executionPath || executionPath.length === 0) {
+  //     console.log('No execution path available - generating from flow structure')
+  //     executionPath = generateExecutionPath()
+  //   }
+
+  //   // Animate execution flow through steps
+  //   if (executionPath && executionPath.length > 0) {
+  //     console.log('Animating execution path:', executionPath)
+  //     await animateExecutionFlow(executionPath)
+  //   } else {
+  //     console.log('No execution path available')
+  //   }
+
+  //   // Show execution result modal with response data
+  //   if (executionResultModalRef.value) {
+  //     executionResultModalRef.value.openModal(response)
+  //   }
+  // } catch (error) {
+  //   console.error('Error during execution animation:', error)
+  //   notify({
+  //     title: 'خطا',
+  //     text: 'خطا در نمایش نتایج اجرا',
+  //     type: 'error'
+  //   })
+  // } finally {
+  //   isExecuting.value = false
+  //   // Clear execution status after a delay
+  //   setTimeout(() => {
+  //     executionStatus.value = {}
+  //   }, 2000)
+  // }
 }
 
 // Watch for step modal open signal from store

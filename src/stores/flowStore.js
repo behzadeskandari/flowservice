@@ -30,7 +30,32 @@ export const useFlowStore = defineStore('flow', () => {
   const stepModalOpen = ref(false)
   const stepModalInitialData = ref(null)
   const isProcessingConnection = ref(false)
-  const executionStatus = ref({}) // Track execution status for each node
+  const executionStatus = reactive({}) // Track execution status for each node
+
+  function setNodeStatus(nodeId, status) {
+    executionStatus[nodeId] = status
+  }
+
+  function resetExecution() {
+    // Clear store statuses
+    Object.keys(executionStatus).forEach(k => delete executionStatus[k]);
+
+    // Create a **new array reference** + new data objects to force Vue Flow re-render
+    nodes.value = nodes.value.map(node => ({
+      ...node,
+      data: {
+        ...node.data,
+        isExecuting: false,
+        executionStatus: undefined,
+        executionResult: undefined,
+        executionError: undefined,
+        // Force reactivity & re-mount
+        _resetKey: Date.now() + Math.random()
+      }
+    }));
+
+    console.log("Reset complete — nodes refreshed");
+  }
 
   watch(autoSave, (newVal) => {
     localStorage.setItem('AutoSave', newVal)
@@ -2595,7 +2620,10 @@ export const useFlowStore = defineStore('flow', () => {
     clearSelected,
     exportFlow,
     importFlow,
-    getAggregateByid
+    getAggregateByid,
+    executionStatus,
+    setNodeStatus,
+    resetExecution,
   }
 
 })

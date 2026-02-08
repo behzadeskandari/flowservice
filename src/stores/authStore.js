@@ -5,10 +5,6 @@ import StatusCode from './../constant/StatusCode';
 import { notify } from '@kyvg/vue3-notification';
 export const useAuthStore = defineStore('auth', () => {
 
-  const count = ref(0)
-  function increment() {
-    count.value++
-  }
   const user = ref(null)
   const isAuthenticated = computed(() => {
     if (localStorage.getItem('isAuthenticated') === 'true') {

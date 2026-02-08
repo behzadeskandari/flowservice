@@ -3,7 +3,8 @@
     <div class="service-node" :class="{
       'node-executing': data.isExecuting,
       'node-completed': executionStatus === 'completed',
-      'node-error': executionStatus === 'error'
+      'node-error': executionStatus === 'error',
+      'node-idle': executionStatus === 'idle'|| !executionStatus
     }" @contextmenu.prevent="onRightClick" @touchstart.passive="onTouchStart" @touchend.passive="onTouchEnd" @touchmove.passive="onTouchCancel">
       <div class="node-header" @dblclick="openEdit">
         <strong>{{ data.stepName || data.label }}</strong>
@@ -382,6 +383,18 @@ function onCancelDelete() {
 
 .icon-spin {
   animation: spin 1s linear infinite;
+}
+
+.node-idle {
+  /* Reset to default appearance */
+  background: default !important;
+  border-color:  default !important;
+  animation: none !important;
+  box-shadow: default !important;
+}
+
+.node-idle .execution-badge {
+  display: none;
 }
 
 @keyframes executing-glow {

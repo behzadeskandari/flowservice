@@ -47,7 +47,7 @@ AppLogin
 
         </div>
           <div class="version">
-            <p class="text-white text-sm py-2">نسخه 1.0.0</p>
+            <p class="text-white text-sm py-2">نسخه 1.0.1</p>
           </div>
       </div>
     </div>
