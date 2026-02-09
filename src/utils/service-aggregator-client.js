@@ -6,7 +6,7 @@ class ServiceAggregatorClient {
 
   //#region services
   async getServices() {
-    const response = await httpClient.get('/service/get')
+    const response = await httpClient.get('/service/get?PageSize=10000')
     return response.data
   }
   async getServicesById(id) {

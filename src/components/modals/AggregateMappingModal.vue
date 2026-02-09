@@ -189,7 +189,7 @@ onMounted(async () => {
 
   const newMappings = (aggregate.mappings || []).map(m => ({
     ...m,
-    tempId: crypto.randomUUID(),
+    tempId: new Date() + Math.random().toString(),
     __status: undefined
   }))
 
@@ -208,7 +208,7 @@ watch(
 
     mappings.value = (aggregate.mappings || []).map(m => ({
       ...m,
-      tempId: crypto.randomUUID(),
+      tempId: new Date() + Math.random().toString(),
       __status: undefined
     }))
 
@@ -218,7 +218,7 @@ watch(
 )
 const addMapping = () => {
   mappings.value.unshift({
-    tempId: crypto.randomUUID(),
+    tempId: new Date() + Math.random().toString(), //crypto.randomUUID(),
     aggregateId: props.aggregateId!,
     name: '',
     type: '',

@@ -284,12 +284,18 @@ const onSave = async () => {
 
     // Update the aggregate's firstStepId if this is the first node
     if (store.nodes.length === 0 || store.nodes.length === 1) {
+      debugger
       const aggregateRecord = await store.getAggregateByid(payload.aggregateId);
-      await serviceAggregatorClient.updateAggregate({
-        ...aggregateRecord,
-        firstStepId: stepResult.id,
-        status: true
-      });
+      if (aggregateRecord.firstStepId && aggregateRecord.firstStepId != null && aggregateRecord.firstStepId != undefined) {
+
+      } else {
+        await serviceAggregatorClient.updateAggregate({
+          ...aggregateRecord,
+          firstStepId: stepResult.id,
+          status: true
+        });
+      }
+
     }
 
     // Find the node in the store to update the UI

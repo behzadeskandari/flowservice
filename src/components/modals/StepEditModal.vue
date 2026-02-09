@@ -572,7 +572,7 @@ const availableSteps = computed(() => {
       stepName: node.data.stepName || node.data.label || `Step ${node.id.slice(0, 8)}`,
     }))
 })
-
+console.log('availableSteps:', availableSteps.value)
 const availableNextSteps = computed(() => availableSteps.value)
 
 // Get available aggregate fields

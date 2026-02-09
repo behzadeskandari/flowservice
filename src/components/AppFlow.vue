@@ -71,17 +71,17 @@
         </div>
         <div v-else class="services-list">
           <div class="service-card" style="color:green" draggable="true"
-            @dragstart="onDragStartStatic($event, { id: 'start-node', name: 'Start Node', type: 'startNode' })"
+            @dragstart="onDragStartStatic($event, { id: null, name: 'Start Node', type: 'startNode' })"
             @dragend="onDragEnd">
             Start Node
           </div>
           <div class="service-card" style="color:green" draggable="true"
-            @dragstart="onDragStartStatic($event, { id: 'if-node', name: 'If Node', type: 'decisionNode' })"
+            @dragstart="onDragStartStatic($event, { id: null, name: 'If Node', type: 'decisionNode' })"
             @dragend="onDragEnd">
             If Node
           </div>
           <div class="service-card" style="color:green" draggable="true"
-            @dragstart="onDragStartStatic($event, { id: 'end-node', name: 'End Node', type: 'endNode' })"
+            @dragstart="onDragStartStatic($event, { id: null, name: 'End Node', type: 'endNode' })"
             @dragend="onDragEnd">
             End Node
           </div>

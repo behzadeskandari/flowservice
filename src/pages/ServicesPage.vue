@@ -614,19 +614,23 @@ const isUrlOrPathValid = computed(() => {
 const urlRegex = /^(?:(?:(?:https?|ftp):)?\/\/)(?:\S+(?::\S*)?@)?(?:(?!(?:10|127)(?:\.\d{1,3}){3})(?!(?:169\.254|192\.168)(?:\.\d{1,3}){2})(?!172\.(?:1[6-9]|2\d|3[0-1])(?:\.\d{1,3}){2})(?:[1-9]\d?|1\d\d|2[01]\d|22[0-3])(?:\.(?:1?\d{1,2}|2[0-4]\d|25[0-5])){2}(?:\.(?:[1-9]\d?|1\d\d|2[0-4]\d|25[0-4]))|(?:(?:[a-z0-9\u00a1-\uffff][a-z0-9\u00a1-\uffff_-]{0,62})?[a-z0-9\u00a1-\uffff]\.)+(?:[a-z\u00a1-\uffff]{2,}\.?))(?::\d{2,5})?(?:[/?#]\S*)?$/i;
 
 const isUrlValid = computed(() => {
-  debugger
-   const input = formData.value.url?.trim()
+const input = formData.value.url?.trim()
   if (!input) return false
 
-  // protocol-less domains (example.com, api.test.ir:8080/path)
   const domainOnlyRegex =
     /^(?:[a-z0-9-]+\.)+[a-z]{2,}(?::\d{1,5})?(?:\/[^\s]*)?$/i
 
-  // full URLs with protocol
-  const fullUrlRegex =
+  const fullDomainUrlRegex =
     /^(https?:\/\/)(?:[a-z0-9-]+\.)+[a-z]{2,}(?::\d{1,5})?(?:\/[^\s]*)?$/i
 
-  return domainOnlyRegex.test(input) || fullUrlRegex.test(input)
+  const ipUrlRegex =
+    /^(https?:\/\/)?(?:\d{1,3}\.){3}\d{1,3}(?::\d{1,5})?(?:\/[^\s]*)?$/
+
+  return (
+    domainOnlyRegex.test(input) ||
+    fullDomainUrlRegex.test(input) ||
+    ipUrlRegex.test(input)
+  )
 });
 
 
@@ -715,8 +719,8 @@ const AddStepMapping = async (id) => {
 
   // Combine inputs and outputs
   const allMappings = [
-    ...(record.inputs || []).map(m => ({ ...m, __key: m.id ?? crypto.randomUUID() })),
-    ...(record.outputs || []).map(m => ({ ...m, __key: m.id ?? crypto.randomUUID() }))
+    ...(record.inputs || []).map(m => ({ ...m, __key: m.id ?? new Date() + Math.random().toString() })),
+    ...(record.outputs || []).map(m => ({ ...m, __key: m.id ?? new Date() + Math.random().toString() }))
   ]
 
   const mappedWithParent = allMappings.map(m => ({
@@ -773,7 +777,7 @@ const openEditModal = (existingMappings) => {
 
 
 const getEmptyMapping = () => ({
-  __key: crypto.randomUUID(),
+  __key: new Date() + Math.random().toString(),
   name: '',
   serviceId: null,
   type: '',

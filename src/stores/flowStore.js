@@ -1807,40 +1807,6 @@ export const useFlowStore = defineStore('flow', () => {
     const mode = stepData.id ? 'edit' : 'add';
     openStepModal(mode, stepData);
 
-    // debugger
-    // if (params.sourceHandle !== 'out' || params.targetHandle !== 'in') {
-    //   return
-    // }
-    // const { source, target } = params
-    // if (!source || !target) return
-
-    // const nodeA = nodes.value.find((n) => n.id === source)
-    // const nodeB = nodes.value.find((n) => n.id === target)
-    // if (!nodeA || !nodeB) return
-
-    // if (!nodeA.position) nodeA.position = { x: 0, y: 0 }
-    // if (!nodeB.position) nodeB.position = { x: 200, y: 200 }
-
-    // await ensureAggregate()
-
-    // // Initialize step data with fields from nodeB
-    // const stepData = {
-    //   stepName: nodeB.data.stepName || nodeB.data.serviceName || 'Step',
-    //   aggregateId: currentAggregateId.value,
-    //   serviceId: nodeB.data.serviceId || null,
-    //   nextStepId: null,
-    //   trueStepId: null,
-    //   falseStepId: null,
-    //   condition: '',
-    //   conditionParameters: '',
-    // }
-
-    // // Store the pending connection and step data
-    // pendingConnection.value = { source, target, nodeA, nodeB }
-    // connectionStepData.value = stepData
-
-    // // Open StepModal with the initial data
-    // openStepModal(stepData)
   }
 
   /**
