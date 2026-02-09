@@ -6,9 +6,9 @@
       <div class="header-content">
         <LogoutButton />
         <h1>مدیریت </h1>
-        <h3>Aggregates</h3>
+        <h3>تجمیع سرویس</h3>
         <p>مدیریت و مشاهده تمام </p>
-        <p>Aggregates</p>
+        <p> تجمیع ها</p>
       </div>
       <div class="header-actions">
 
@@ -21,7 +21,7 @@
           bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600
           hover:to-amber-700 active:scale-98 transition-all duration-200" @click="openAddModal">
           <span class="l-hight" style="margin-inline : 20px;">
-            Aggregate جدید
+            تجمیع سرویس جدید
           </span>
         </button>
       </div>
@@ -75,9 +75,9 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="aggregate in aggregates.items" :key="aggregate.id" @click="navigateToEditor(aggregate.id)"
+            <tr v-for="(aggregate, index) in aggregates.items" :key="aggregate.id" @click="navigateToEditor(aggregate.id)"
               class="clickable-row">
-              <td></td>
+              <td class="name-cell">{{ index + 1 }}</td>
               <td class="name-cell">{{ aggregate.name || 'بدون نام' }}</td>
               <td class="description-cell">{{ truncateDescription(aggregate.description) }}</td>
               <td class="status-cell">
@@ -122,7 +122,7 @@
         <span>{{ aggregates.totalCount }}</span>
       </div>
 
-      <div style="display:block">
+      <div style="display:block" dir="ltr">
         <span class="btn-pagenumber" v-if="aggregates.hasPreviousPage" @click="fetchPrevouisPage">
           <font-awesome-icon :icon="faArrowLeft" style="color: orange;" />
         </span>
@@ -261,16 +261,16 @@ async function resetSearch() {
   aggregates.value = record;
 }
 async function SearchAgg(params) {
-  if (name.value == "") {
-    notify({
-      title: 'نام را وارد کنید',
-      text: 'نام را وارد کنید',
-      type: 'error',
-    })
-  }
-  if (status.value === null || status.value === undefined) {
-    status.value = true;
-  }
+  // if (name.value == "") {
+  //   notify({
+  //     title: 'نام را وارد کنید',
+  //     text: 'نام را وارد کنید',
+  //     type: 'error',
+  //   })
+  // }
+  // if (status.value === null || status.value === undefined) {
+  //   status.value = true;
+  // }
   var data = {
     PageIndex: aggregates.value.pageNumber,
     PageSize: 10,
@@ -294,7 +294,7 @@ const loadAggregates = async () => {
     console.error('Error loading aggregates:', error)
     notify({
       title: 'خطا',
-      text: 'خطا در بارگذاری Aggregates',
+      text: 'خطا در بارگذاری تجمیع سرویس',
       type: 'error',
     })
   } finally {
@@ -373,6 +373,7 @@ const confirmDeleteMapping = async (mappingId: string) => {
 }
 
 .search_holder {
+  direction: ltr;
   display: flex;
   background-color: #f7f7f7;
   height: 150px;
@@ -443,6 +444,7 @@ const confirmDeleteMapping = async (mappingId: string) => {
   border-radius: 12px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
   box-sizing: border-box;
+  direction: ltr;
 }
 
 .header-content h1 {
@@ -580,6 +582,7 @@ const confirmDeleteMapping = async (mappingId: string) => {
 
 .name-cell {
   font-weight: 500;
+  font-size: 13px;
   color: #2c3e50;
   text-align: center;
 }

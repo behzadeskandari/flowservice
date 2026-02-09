@@ -6,8 +6,8 @@ import router from './router'
 import Notifications from '@kyvg/vue3-notification'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faPlus, faMoon, faSun, faCamera,  faEdit, faTrash ,faEye,faArrowDown ,faDeleteLeft,faArrowsLeftRight, faExpand,faArrowLeft,faBoxOpen,faArrowRight,faMobileButton} from '@fortawesome/free-solid-svg-icons'
-library.add(faPlus, faTrash, faMoon, faSun, faCamera,  faEdit,faEye,faArrowDown,faDeleteLeft,faArrowsLeftRight,faExpand,faArrowLeft,faBoxOpen,faArrowRight ,faMobileButton)
+import { faPlus, faMoon, faSun, faCamera,  faEdit, faTrash ,faEye,faArrowDown ,faDeleteLeft,faArrowsLeftRight, faExpand,faArrowLeft,faBoxOpen,faArrowRight,faMobileButton,faToggleOff } from '@fortawesome/free-solid-svg-icons'
+library.add(faPlus, faTrash, faMoon, faSun, faCamera,  faEdit,faEye,faArrowDown,faDeleteLeft,faArrowsLeftRight,faExpand,faArrowLeft,faBoxOpen,faArrowRight ,faMobileButton,faToggleOff)
 
 const app = createApp(App)
 app.use(createPinia())

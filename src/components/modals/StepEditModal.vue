@@ -2,8 +2,9 @@
   <div
     v-if="show"
     class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 animate-fadeIn"
-    @click.self="onClose"
+
   >
+  <!-- @click.self="onClose" -->
     <div class="bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 p-[2px] rounded-3xl">
       <div
         class="bg-white dark:bg-gray-900 shadow-2xl rounded-3xl w-full max-w-2xl animate-scaleIn"
@@ -58,6 +59,7 @@
               <label class="block font-medium text-gray-500 mb-1 text-right px-1 py-1">خدمات (اختیاری)</label>
               <select
                 v-model="stepData.serviceId"
+                disabled
                 class="w-full px-4 py-2 rounded-xl border border-gray-300
                        focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
                        bg-white shadow-sm transition text-right"
@@ -712,7 +714,7 @@ const loadServices = async () => {
   isLoadingServices.value = true
   try {
     const data = await serviceAggregatorClient.getServices()
-    availableServices.value = Array.isArray(data) ? data : []
+    availableServices.value = data.items ? data.items : []
   } catch (error) {
     console.error('Error loading services:', error)
     notify({

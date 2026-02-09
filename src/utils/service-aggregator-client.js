@@ -9,6 +9,11 @@ class ServiceAggregatorClient {
     const response = await httpClient.get('/service/get?PageSize=10000')
     return response.data
   }
+
+   async getServicesWithPagination() {
+    const response = await httpClient.get('/service/get')
+    return response.data
+  }
   async getServicesById(id) {
     const response = await httpClient.get(`/service/get/${id}`)
     return response.data
@@ -19,7 +24,13 @@ class ServiceAggregatorClient {
     return record.data;
   }
   async getServicesWithParamsWithSearch(data) {
-    var record = await httpClient.get(`/service/get?PageIndex=${data.PageIndex}&PageSize=${data.PageSize}&Status=${data.Status}&Name=${data.Name}&URL=${data.URL}`)
+     let record = '';
+    if(data.Status == null){
+      record = await httpClient.get(`/service/get?PageIndex=${data.PageIndex}&PageSize=${data.PageSize}&Name=${data.Name}&URL=${data.URL}`)
+    }
+    else{
+      record = await httpClient.get(`/service/get?PageIndex=${data.PageIndex}&PageSize=${data.PageSize}&Status=${data.Status}&Name=${data.Name}&URL=${data.URL}`)
+    }
     return record.data;
   }
 
@@ -63,7 +74,12 @@ class ServiceAggregatorClient {
   }
 
   async getAggregatesWithParamsWithSearch(data) {//?Name=refe12&Status=true&PageIndex=1&PageSize=10
-    const response = await httpClient.get(`/aggregate/get?PageIndex=${data.PageIndex}&PageSize=${data.PageSize}&Name=${data.Name}&Status=${data.Status}`)
+    let response = '';
+    if(data.Status == null){
+      response = await httpClient.get(`/aggregate/get?PageIndex=${data.PageIndex}&PageSize=${data.PageSize}&Name=${data.Name}`)
+    }else{
+      response = await httpClient.get(`/aggregate/get?PageIndex=${data.PageIndex}&PageSize=${data.PageSize}&Name=${data.Name}&Status=${data.Status}`)
+    }
     return response.data
   }
   async getAggregateByid(id) {
@@ -85,7 +101,7 @@ class ServiceAggregatorClient {
   }
 
   async deleteAggregateStep(id) {
-    const response = await httpClient.post(`/step/delete`, { id: id })
+    const response = await httpClient.post(`/step/delete`, { deleteAggregateStep: id })
     return response.data
   }
   //#endregion Aggregate-step

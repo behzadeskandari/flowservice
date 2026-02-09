@@ -28,7 +28,7 @@
             </button>
           </div>
           <h3 class="text-xl font-bold text-gray-800 dark:text-gray-100 p-3">
-            {{ isEditMode ? 'ویرایش Aggregate' : 'ایجاد Aggregate جدید' }}
+            {{ isEditMode ? 'ویرایش تجمیع سرویس' : 'ایجاد تجمیع سرویس جدید' }}
           </h3>
         </header>
 
@@ -36,7 +36,7 @@
         <section class="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
           <!-- Aggregate Information Section -->
           <div class="space-y-4">
-            <h4 class="text-lg font-semibold text-gray-700 dark:text-gray-200">اطلاعات Aggregate</h4>
+            <h4 class="text-lg font-semibold text-gray-700 dark:text-gray-200">اطلاعات تجمیع سرویس</h4>
 
             <!-- Name Field -->
             <div>
@@ -44,7 +44,7 @@
               <input
                 v-model="formData.name"
                 type="text"
-                placeholder="نام Aggregate را وارد کنید"
+                placeholder="نام تجمیع سرویس را وارد کنید"
                 class="w-full px-4 py-2 rounded-xl border border-gray-300
                        focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
                        bg-white shadow-sm transition text-right"
@@ -142,7 +142,7 @@ const onSave = async () => {
   if (!formData.value.name) {
     notify({
       title: 'خطا',
-      text: 'نام Aggregate مورد نیاز است',
+      text: 'نام تجمیع سرویس مورد نیاز است',
       type: 'error',
     })
     return
@@ -159,7 +159,7 @@ const onSave = async () => {
       })
       notify({
         title: 'موفق',
-        text: 'Aggregate با موفقیت به‌روزرسانی شد',
+        text: 'تجمیع سرویس با موفقیت به‌روزرسانی شد',
         type: 'success',
       })
     } else {
@@ -174,7 +174,7 @@ const onSave = async () => {
 
       notify({
         title: 'موفق',
-        text: 'Aggregate با موفقیت ایجاد شد',
+        text: 'تجمیع سرویس با موفقیت ایجاد شد',
         type: 'success',
       })
     }
@@ -186,7 +186,7 @@ const onSave = async () => {
     console.error('Error saving aggregate:', error)
     notify({
       title: 'خطا',
-      text: isEditMode.value ? 'خطا در به‌روزرسانی Aggregate' : 'خطا در ایجاد Aggregate',
+      text: isEditMode.value ? 'خطا در به‌روزرسانی تجمیع سرویس' : 'خطا در ایجاد تجمیع سرویس',
       type: 'error',
     })
   }

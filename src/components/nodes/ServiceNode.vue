@@ -203,7 +203,7 @@ async function onContextSelect(action) {
     store.setSelectedNode(id.value, 'edit')
   } else if (action === 'delete') {
     showConfirm.value = true
-    await serviceAggregatorClient.deleteAggregate(id.value);
+    await serviceAggregatorClient.deleteAggregateStep(id.value);
 
   } else if (action === 'json') {
     store.setSelectedNode(id.value, 'view')

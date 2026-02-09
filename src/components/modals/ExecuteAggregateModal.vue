@@ -101,7 +101,7 @@ const executeAggregate = async () => {
   if (!props.aggregateId) {
     notify({
       title: 'خطا',
-      text: 'Aggregate ID یافت نشد',
+      text: 'تجمیع سرویس ID یافت نشد',
       type: 'error'
     })
     return

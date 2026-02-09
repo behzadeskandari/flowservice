@@ -43,7 +43,7 @@
             <!-- Service Dropdown -->
             <div>
               <label class="block font-medium text-gray-500 mb-1 text-right px-1 py-1">سرویس (اختیاری)</label>
-              <select v-model="stepData.serviceId" class="w-full px-4 py-2 rounded-xl border border-gray-300
+              <select v-model="stepData.serviceId" disabled class="w-full px-4 py-2 rounded-xl border border-gray-300
                focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
                bg-white shadow-sm transition text-right" required>
                 <option :value="null">-- بدون سرویس --</option>

@@ -7,21 +7,21 @@
         class="px-3 py-2 bg-gradient-to-r from-blue-400 via-blue-500 to-blue-600 text-white font-semibold rounded-xl shadow-lg hover:from-blue-500 hover:via-blue-600 hover:to-blue-700 transition duration-300 ease-in-out">
         <font-awesome-icon :icon="faArrowLeft" style="color: white" />
 
-        <span class="toolbar-text">بازگشت به لیست</span>
+        <span class="toolbar-text"> جدول تجمیع سرویس</span>
       </router-link>
       <router-link to="/services" class="px-3 py-2 bg-gradient-to-r from-blue-400 via-blue-500
         to-blue-600 text-white font-semibold rounded-xl shadow-lg
         hover:from-blue-500 hover:via-blue-600 hover:to-blue-700
         transition duration-300 ease-in-out">
         <font-awesome-icon :icon="faArrowRight" style="color: white" />
-        <span class="toolbar-text"> لیست سرویس ها</span>
+        <span class="toolbar-text"> جدول سرویس </span>
       </router-link>
       <button class="px-3 py-2 bg-gradient-to-r from-green-400 via-green-500
         to-green-600 text-white font-semibold rounded-xl shadow-lg
         hover:from-green-500 hover:via-green-600 hover:to-green-700
         transition duration-300 ease-in-out" @click="onAddStep">
         <font-awesome-icon :icon="faPlus" style="color: white" />
-        <span class="toolbar-text">Step ایجاد</span>
+        <span class="toolbar-text">قدم ایجاد</span>
       </button>
 
       <button class="px-3 py-2 bg-gradient-to-r from-orange-400 via-orange-500

@@ -13,7 +13,7 @@
         <router-link to="/aggregates"
           class="px-3 py-2 bg-gradient-to-r from-blue-400 via-blue-500 to-blue-600 text-white font-semibold rounded-xl shadow-lg hover:from-blue-500 hover:via-blue-600 hover:to-blue-700 transition duration-300 ease-in-out">
           <font-awesome-icon :icon="faArrowRight" style="color: white" />
-          <span class="toolbar-text"> جدول aggregate</span>
+          <span class="toolbar-text"> جدول تجمیع سرویس ها</span>
         </router-link>
         <button class="w-full h-12 mt-4 rounded-lg text-white text-sm  leading-7 font-bold text-lg shadow-lg hover:shadow-xl
           bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600
@@ -38,7 +38,7 @@
 
       <div>
         <label class="block font-medium text-orange-500 mb-1 text-right px-1 py-1">URL </label>
-        <input v-model="url" type="text" placeholder="URL را وارد کنید" class="w-[300px] h-[50px] px-4 py-2 rounded-xl border border-gray-300
+        <input dir="rtl" v-model="url" type="text" placeholder="URL را وارد کنید" class="w-[300px] h-[50px] px-4 py-2 rounded-xl border border-gray-300
                        focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
                        bg-white shadow-sm transition text-right" required />
       </div>
@@ -66,6 +66,7 @@
       <table v-else class="services-table">
         <thead>
           <tr>
+            <th>ردیف</th>
             <th>نام</th>
             <th>URL</th>
             <th>متد</th>
@@ -77,7 +78,8 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="service in services.items" :key="service.id">
+          <tr v-for="(service, index) in services.items" :key="service.id">
+            <td class="name-cell">{{ index + 1 }}</td>
             <td class="name-cell">{{ service.name }}</td>
             <td class="url-cell">
               <code>{{ truncateUrl(service.url) }}</code>
@@ -114,8 +116,8 @@
               <button class="btn-icon btn-edit" @click="openEditModal(service)" title="ویرایش">
                 <font-awesome-icon :icon="['fas', 'pen-to-square']" style="color: orange;" class="pen" />
               </button>
-              <button class="btn-icon btn-delete" @click="changeStatus(service.id)" title="حذف">
-                <font-awesome-icon :icon="['fas', 'eye']" style="color: grey;" />
+              <button class="btn-icon btn-delete" @click="changeStatus(service.id)" title="تغییر وضعیت">
+                <font-awesome-icon :icon="['fas', 'toggle-off']" style="color: grey;" />
               </button>
               <button class="btn-icon btn-delete" @click="deleteModal(service.id)" title="حذف">
                 <font-awesome-icon :icon="['fas', 'trash']" style="color: red;" />
@@ -143,20 +145,20 @@
           <font-awesome-icon :icon="faArrowRight" style="color: orange;" @click="fetchNextPage" />
         </span>
         <span class="btn-pagenumber" @click="fetchNextpage" v-if="services.hasNextPage">{{ services.pageNumber + 1
-          }}</span>
+        }}</span>
         <span class="btn-pagenumber-orange">{{ services.pageNumber }}</span>
         <!--  -->
         <!-- <span class="btn-totalpage">{{ aggregates.totalPages }}</span> -->
         <span class="btn-pagenumber" v-if="services.hasPreviousPage" @click="fetchPrevouisPage">
-          <font-awesome-icon :icon="faExpand" style="color: orange;" />
+          <font-awesome-icon :icon="faArrowLeft" style="color: orange;" />
         </span>
       </div>
     </div>
 
     <!-- Service Modal -->
     <div v-if="showModal"
-      class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 animate-fadeIn p-4"
-      @click.self="closeModal">
+      class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 animate-fadeIn p-4">
+      <!-- @click.self="closeModal" -->
       <div class="bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 p-[2px] rounded-3xl w-full max-w-2xl">
         <div class="bg-white dark:bg-gray-900 shadow-2xl rounded-3xl w-full animate-scaleIn" style="padding:20px">
 
@@ -271,7 +273,7 @@
                       فرمت احراز هویت
                       <span v-if="formData.authenticationMode" class="text-red-500">*</span>
                     </label>
-                    <input v-model="formData.authenticationFormat" type="text"
+                    <textarea dir="rtl" v-model="formData.authenticationFormat" type="text"
                       placeholder="مثال: Bearer {token}   یا   X-API-Key: {key}"
                       :disabled="!formData.authenticationMode" class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700
                focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
@@ -312,8 +314,8 @@
       </div>
     </div>
     <div v-if="showModalStepMapping"
-      class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 animate-fadeIn p-4 m-y-2 overflow-y-auto"
-      @click.self="closeModalStepModal">
+      class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 animate-fadeIn p-4 m-y-2 overflow-y-auto">
+      <!-- @click.self="closeModalStepModal" -->
       <div
         class="bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 p-[2px] rounded-3xl w-full max-w-2xl -translate-y-5">
         <div class="bg-white dark:bg-gray-900 shadow-2xl rounded-3xl w-full animate-scaleIn " style="padding:20px">
@@ -328,7 +330,8 @@
           <div class="space-y-6" :key="mappingUpdateKey">
             <div class="flex items-center justify-between">
               <h4 class="text-lg sm:text-xl font-bold text-gray-800 dark:text-gray-100 pb-3 border-b border-orange-200">
-                📋 نگاشت‌های مرحله
+                📋
+                نگاشت سرویس
               </h4>
               <button type="button" @click="addNewMapping"
                 class="px-5 py-2.5 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl shadow hover:from-green-600 hover:to-emerald-700 transition flex items-center gap-2 text-sm font-medium">
@@ -614,7 +617,7 @@ const isUrlOrPathValid = computed(() => {
 const urlRegex = /^(?:(?:(?:https?|ftp):)?\/\/)(?:\S+(?::\S*)?@)?(?:(?!(?:10|127)(?:\.\d{1,3}){3})(?!(?:169\.254|192\.168)(?:\.\d{1,3}){2})(?!172\.(?:1[6-9]|2\d|3[0-1])(?:\.\d{1,3}){2})(?:[1-9]\d?|1\d\d|2[01]\d|22[0-3])(?:\.(?:1?\d{1,2}|2[0-4]\d|25[0-5])){2}(?:\.(?:[1-9]\d?|1\d\d|2[0-4]\d|25[0-4]))|(?:(?:[a-z0-9\u00a1-\uffff][a-z0-9\u00a1-\uffff_-]{0,62})?[a-z0-9\u00a1-\uffff]\.)+(?:[a-z\u00a1-\uffff]{2,}\.?))(?::\d{2,5})?(?:[/?#]\S*)?$/i;
 
 const isUrlValid = computed(() => {
-const input = formData.value.url?.trim()
+  const input = formData.value.url?.trim()
   if (!input) return false
 
   const domainOnlyRegex =
@@ -681,19 +684,19 @@ async function resetSearch() {
 
 }
 async function SearchAgg(params) {
-  if (name.value == "") {
-    notify({
-      title: 'نام را وارد کنید',
-      text: 'نام را وارد کنید',
-      type: 'error',
-    })
-  }
-  if (url.value == "") {
-    url.value = "";
-  }
-  if (status.value === null || status.value === undefined) {
-    status.value = true;
-  }
+  // if (name.value == "") {
+  //   notify({
+  //     title: 'نام را وارد کنید',
+  //     text: 'نام را وارد کنید',
+  //     type: 'error',
+  //   })
+  // }
+  // if (url.value == "") {
+  //   url.value = "";
+  // }
+  // if (status.value === null || status.value === undefined) {
+  //   status.value = true;
+  // }
   var data = {
     PageIndex: services.value.pageNumber,
     PageSize: 10,
@@ -819,7 +822,7 @@ function close() {
 const loadServices = async () => {
   isLoading.value = true
   try {
-    const data = await serviceAggregatorClient.getServices()
+    const data = await serviceAggregatorClient.getServicesWithPagination()
     services.value = data ? data : [];
     notify({
       title: 'موفقیت',
@@ -1324,6 +1327,7 @@ onMounted(() => {
   font-weight: 500;
   color: #2c3e50;
   text-align: center;
+  font-size: 13px;
 }
 
 .url-cell {
@@ -1411,7 +1415,7 @@ onMounted(() => {
 
 .actions-cell {
   display: flex;
-  gap: 8px;
+  gap: 3px;
   justify-content: center;
   align-items: center;
 }
@@ -1648,6 +1652,7 @@ onMounted(() => {
   .services-table th,
   .services-table td {
     text-align: center;
+    margin-top: 28px;
   }
 
   .actions-cell {
@@ -1781,6 +1786,7 @@ onMounted(() => {
     .services-table th,
     .services-table td {
       text-align: center;
+
     }
 
     .actions-cell {
