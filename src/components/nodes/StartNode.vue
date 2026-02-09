@@ -70,9 +70,7 @@ const menuRef = ref(null)
 const openContextMenuId = ref(null)
 const isContextMenuOpen = computed(() => openContextMenuId.value === props.id)
 const contextMenuStyles = computed(() => {
-
    if (!menuRef.value) return {}
-
   const rect = menuRef.value.getBoundingClientRect()
   return {
     position: 'fixed',

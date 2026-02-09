@@ -177,6 +177,25 @@ svg {
 }
 
 /* custom tooltip */
+/* RTL Form Elements - Ensure proper text direction for inputs and textareas */
+input[type="text"],
+input[type="email"],
+input[type="url"],
+input[type="password"],
+input[type="number"],
+textarea,
+select {
+  direction: rtl;
+  text-align: right;
+  /* unicode-bidi: bidi-override; */
+}
+
+/* Ensure RTL placeholder text alignment */
+input::placeholder,
+textarea::placeholder {
+  text-align: right;
+}
+
 .tooltip:hover::after {
   content: attr(data-tooltip);
   position: absolute;

@@ -13,9 +13,10 @@
           <label class="block text-sm font-medium text-gray-700 mb-2">داده‌های ورودی (JSON)</label>
           <textarea
             v-model="jsonInput"
-            placeholder='{"nationalId": "0069713421", "mobileNumber": "09122717837"}'
+            placeholder='{"nationalId": "0079714422", "mobileNumber": "09331007051"}'
             class="w-full h-64 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent font-mono text-sm"
             :class="{ 'border-red-500 focus:ring-red-500': jsonError }"
+            dir="ltr"
           />
           <small v-if="jsonError" class="text-red-600 mt-1 block">{{ jsonError }}</small>
           <small class="text-gray-600 mt-1 block">یک JSON معتبر وارد کنید یا خالی بگذارید برای بدون داده</small>
@@ -24,7 +25,7 @@
         <!-- Preview -->
         <div v-if="parsedJson" class="bg-gray-50 p-4 rounded-lg border border-gray-200">
           <h3 class="font-semibold text-gray-700 mb-2">پیش‌نمایش:</h3>
-          <pre class="text-xs text-gray-600 overflow-auto max-h-32">{{ JSON.stringify(parsedJson, null, 2) }}</pre>
+          <pre dir="ltr" class="text-xs text-gray-600 overflow-auto max-h-32">{{ JSON.stringify(parsedJson, null, 2) }}</pre>
         </div>
       </div>
 

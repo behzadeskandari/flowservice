@@ -101,7 +101,7 @@ class ServiceAggregatorClient {
   }
 
   async deleteAggregateStep(id) {
-    const response = await httpClient.post(`/step/delete`, { deleteAggregateStep: id })
+    const response = await httpClient.post(`/step/delete`, { id: id })
     return response.data
   }
   //#endregion Aggregate-step
@@ -170,7 +170,7 @@ async addServiceMapping(data) {
 
   async executeAggregate(data) {
     const payload = {
-      id: data.id,
+      //id: data.id,
       ...data.data
     }
     const response = await httpClient.post(`/execute/${data.id}`, payload)

@@ -806,20 +806,20 @@ const onSave = async () => {
         await serviceAggregatorClient.updateAggregateStep(payload)
 
         // Update node in store
-        await store.updateNode(props.stepId, {
-          data: {
-            ...node.data,
-            stepName: payload.stepName,
-            serviceId: payload.serviceId,
-            condition: payload.condition,
-            conditionParameters: payload.conditionParameters,
-            nextStepId: payload.nextStepId,
-            trueStepId: payload.trueStepId,
-            falseStepId: payload.falseStepId,
-            fields: stepData.value.fields || [],
-            mappings: stepData.value.mappings || [],
-          }
-        })
+        // await store.updateNode(props.stepId, {
+        //   data: {
+        //     ...node.data,
+        //     stepName: payload.stepName,
+        //     serviceId: payload.serviceId,
+        //     condition: payload.condition,
+        //     conditionParameters: payload.conditionParameters,
+        //     nextStepId: payload.nextStepId,
+        //     trueStepId: payload.trueStepId,
+        //     falseStepId: payload.falseStepId,
+        //     fields: stepData.value.fields || [],
+        //     mappings: stepData.value.mappings || [],
+        //   }
+        // })
 
         notify({
           title: 'موفقیت',
@@ -934,6 +934,7 @@ const saveMapping = async () => {
     }
     // Prepare mapping data based on source type
     const mappingData = {
+      id: currentMapping.value.id,
       aggregateStepId: stepData.value.aggregateStepId,
       mappingType: currentMapping.value.mappingType || 'Body',
       source: currentMapping.value.source,
@@ -993,7 +994,6 @@ const saveMapping = async () => {
       }
     } else {
       const updatedMapping = await serviceAggregatorClient.updateAggregateStepMapping(
-        currentMapping.value.id,
         mappingData
       )
       if (updatedMapping) {

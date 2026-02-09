@@ -314,11 +314,11 @@
       </div>
     </div>
     <div v-if="showModalStepMapping"
-      class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 animate-fadeIn p-4 m-y-2 overflow-y-auto">
+      class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 animate-fadeIn p-4 overflow-y-auto">
       <!-- @click.self="closeModalStepModal" -->
       <div
-        class="bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 p-[2px] rounded-3xl w-full max-w-2xl -translate-y-5">
-        <div class="bg-white dark:bg-gray-900 shadow-2xl rounded-3xl w-full animate-scaleIn " style="padding:20px">
+        class="bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 p-[2px] rounded-3xl w-full max-w-2xl my-auto">
+        <div class="bg-white dark:bg-gray-900 shadow-2xl rounded-3xl w-full animate-scaleIn overflow-y-auto max-h-[90vh]" style="padding:20px">
           <!-- Header -->
           <header
             class="flex flex-col sm:flex-row items-center justify-between border-b border-gray-200 pb-4 mb-6 gap-4">
@@ -333,6 +333,28 @@
                 📋
                 نگاشت سرویس
               </h4>
+            </div>
+
+            <!-- Direction Selector -->
+            <div class="flex gap-4 items-center justify-between bg-gray-50 dark:bg-gray-800 p-4 rounded-xl">
+              <div class="flex gap-2">
+                <button
+                  @click="selectedDirection = 1"
+                  :class="selectedDirection === 1
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'"
+                  class="px-4 py-2 rounded-lg font-semibold transition">
+                  <i class="fas fa-arrow-down mr-2"></i> نگاشت ورودی (Input)
+                </button>
+                <button
+                  @click="selectedDirection = 2"
+                  :class="selectedDirection === 2
+                    ? 'bg-green-500 text-white'
+                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'"
+                  class="px-4 py-2 rounded-lg font-semibold transition">
+                  <i class="fas fa-arrow-up mr-2"></i> نگاشت خروجی (Output)
+                </button>
+              </div>
               <button type="button" @click="addNewMapping"
                 class="px-5 py-2.5 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl shadow hover:from-green-600 hover:to-emerald-700 transition flex items-center gap-2 text-sm font-medium">
                 <i class="fas fa-plus"></i>
@@ -385,7 +407,15 @@
                         <label class="block font-semibold text-gray-700 dark:text-gray-200 text-right text-sm">
                           سرویس <span class="text-red-500">*</span>
                         </label>
-                        <select v-model="mapping.serviceId"
+                        <select v-if="isEditMode" disabled v-model="mapping.serviceId"
+                          class="w-full px-3 py-2 rounded-lg border-2 border-blue-200 dark:border-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-800 dark:text-white shadow-sm transition duration-200 text-right text-sm font-medium">
+                          <option value="">انتخاب کنید</option>
+                          <option v-for="service in services.items" :key="service.id" :value="service.id">
+                            {{ service.name }}
+                          </option>
+                        </select>
+
+                        <select v-else-if="!isEditMode" v-model="mapping.serviceId"
                           class="w-full px-3 py-2 rounded-lg border-2 border-blue-200 dark:border-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-800 dark:text-white shadow-sm transition duration-200 text-right text-sm font-medium">
                           <option value="">انتخاب کنید</option>
                           <option v-for="service in services.items" :key="service.id" :value="service.id">
@@ -398,8 +428,20 @@
                         <label class="block font-semibold text-gray-700 dark:text-gray-200 text-right text-sm">
                           نوع <span class="text-red-500">*</span>
                         </label>
-                        <input v-model="mapping.type" type="text" placeholder="مثال: String"
-                          class="w-full px-3 py-2 rounded-lg border-2 border-blue-200 dark:border-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-800 dark:text-white shadow-sm transition duration-200 text-right text-sm" />
+                        <select v-model="mapping.type"
+                          class="w-full px-3 py-2 rounded-lg border-2 border-blue-200 dark:border-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-800 dark:text-white shadow-sm transition duration-200 text-right text-sm font-medium">
+                          <option value="">انتخاب کنید</option>
+                          <option value="String">رشته (String)</option>
+                          <option value="Integer">عدد صحیح (Integer)</option>
+                          <option value="Double">عدد اعشاری (Double)</option>
+                          <option value="Boolean">بولی (Boolean)</option>
+                          <option value="JSON">JSON</option>
+                          <option value="Array">آرایه (Array)</option>
+                          <option value="Object">شی (Object)</option>
+                          <option value="Date">تاریخ (Date)</option>
+                          <option value="DateTime">تاریخ و زمان (DateTime)</option>
+                          <option value="File">فایل (File)</option>
+                        </select>
                       </div>
                     </div>
 
@@ -476,8 +518,20 @@
                         <label class="block font-semibold text-gray-700 dark:text-gray-200 text-right text-sm">
                           نوع <span class="text-red-500">*</span>
                         </label>
-                        <input v-model="mapping.type" type="text" placeholder="مثال: JSON"
-                          class="w-full px-3 py-2 rounded-lg border-2 border-green-200 dark:border-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white dark:bg-gray-800 dark:text-white shadow-sm transition duration-200 text-right text-sm" />
+                        <select v-model="mapping.type"
+                          class="w-full px-3 py-2 rounded-lg border-2 border-green-200 dark:border-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white dark:bg-gray-800 dark:text-white shadow-sm transition duration-200 text-right text-sm font-medium">
+                          <option value="">انتخاب کنید</option>
+                          <option value="String">رشته (String)</option>
+                          <option value="Int">عدد صحیح (Integer)</option>
+                          <option value="Double">عدد اعشاری (Double)</option>
+                          <option value="Boolean">بولی (Boolean)</option>
+                          <option value="JSON">JSON</option>
+                          <option value="Array">آرایه (Array)</option>
+                          <option value="Object">شی (Object)</option>
+                          <option value="Date">تاریخ (Date)</option>
+                          <option value="DateTime">تاریخ و زمان (DateTime)</option>
+                          <option value="File">فایل (File)</option>
+                        </select>
                       </div>
                     </div>
 
@@ -559,6 +613,7 @@ const isLoading = ref(false)
 const showModal = ref(false)
 const showModalStepMapping = ref(false)
 const resetKey = ref(0)
+const selectedDirection = ref(1) // 1 for input, 2 for output
 
 const isEditMode = ref(false)
 const isEditModeStepMapping = ref(false)
@@ -791,7 +846,7 @@ const getEmptyMapping = () => ({
 })
 
 const addNewMapping = async () => {
-  stepMappings.value.push(getEmptyMapping())
+  stepMappings.value.push({ ...getEmptyMapping(), direction: selectedDirection.value })
   mappingUpdateKey.value++
   await nextTick()
 }
@@ -866,6 +921,7 @@ const resetStepMappingForm = () => {
 }
 const closeModalStepModal = () => {
   showModalStepMapping.value = false
+  selectedDirection.value = 1
   resetStepMappingForm()
 }
 const closeModal = () => {

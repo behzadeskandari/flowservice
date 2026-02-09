@@ -213,9 +213,9 @@ async function onContextSelect(action) {
 
 
 
-function onConfirmDelete() {
-  store.deleteNode(id.value)
-  showConfirm.value = false
+async function onConfirmDelete() {
+   await serviceAggregatorClient.deleteAggregateStep(id.value);
+   showConfirm.value = false
 }
 
 function onCancelDelete() {
