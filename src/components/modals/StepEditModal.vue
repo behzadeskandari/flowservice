@@ -622,9 +622,6 @@ const fetchAggregateById = async (aggregateId) => {
   try {
     const response = await serviceAggregatorClient.getAggregate(aggregateId)
     if (response && response.mappings) {
-      // Update the store or local state with the fetched aggregate
-      // This depends on your store implementation
-      // For now, we'll just return the mappings
       return response.mappings
     }
     return []
