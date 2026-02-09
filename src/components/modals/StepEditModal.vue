@@ -577,45 +577,6 @@ const availableSteps = computed(() => {
 console.log('availableSteps:', availableSteps.value)
 const availableNextSteps = computed(() => availableSteps.value)
 
-// Get available aggregate fields
-// const aggregateFields = computed(() => {
-//   if (!store.currentAggregate || !store.currentAggregate.mappings) return []
-//   return store.currentAggregate.mappings.map(mapping => ({
-//     id: mapping.id,
-//     name: mapping.name,
-//     type: mapping.type || 'String',
-//     description: mapping.description || ''
-//   }))
-// })
-
-
-// const aggregateFields = computed(() => {
-//   // Try to get the aggregate ID from the current step
-//   const aggregateId = stepData.value?.aggregateId ||
-//                      store.nodes.find(n => n.id === props.stepId)?.data?.aggregateId
-
-//   if (!aggregateId) {
-//     console.warn('No aggregate ID found for the current step')
-//     return []
-//   }
-
-//   // If we have the aggregate ID, try to find it in the store
-//   const aggregate = store.aggregates?.find(a => a.id === aggregateId)
-
-//   console.log('Aggregate ID:', aggregateId)
-//   console.log('Aggregate mappings:', aggregate?.mappings)
-//   if (!aggregate?.mappings) {
-//     console.warn('No mappings found for aggregate:', aggregateId)
-//     return []
-//   }
-
-//   return aggregate.mappings.map(mapping => ({
-//     id: mapping.id,
-//     name: mapping.name,
-//     type: mapping.type || 'String',
-//     description: mapping.description || ''
-//   }))
-// })
 
 // Add this function to fetch aggregate by ID
 const fetchAggregateById = async (aggregateId) => {
@@ -630,30 +591,6 @@ const fetchAggregateById = async (aggregateId) => {
     return []
   }
 }
-
-// Update the aggregateFields computed property
-// const aggregateFields = computed(async () => {
-//   // Try to get the aggregate ID from the current step
-//   const aggregateId = stepData.value?.aggregateId ||
-//                      store.nodes.find(n => n.id === props.stepId)?.data?.aggregateId
-
-//   if (!aggregateId) {
-//     console.warn('No aggregate ID found for the current step')
-//     return []
-//   }
-
-//   // First, try to find in the store
-//   const aggregate = store.aggregates?.find(a => a.id === aggregateId)
-
-//   if (aggregate?.mappings) {
-//     return aggregate.mappings.map(mapping => formatMapping(mapping))
-//   }
-
-//   // If not found in store, try to fetch it
-//   console.log('Aggregate not found in store, fetching...')
-//   const mappings = await fetchAggregateById(aggregateId)
-//   return mappings.map(mapping => formatMapping(mapping))
-// })
 
 // Helper function to format mapping
 const formatMapping = (mapping) => ({
@@ -801,22 +738,6 @@ const onSave = async () => {
         payload.positionX = node.position?.x ?? 100
         payload.positionY = node.position?.y ?? 100
         await serviceAggregatorClient.updateAggregateStep(payload)
-
-        // Update node in store
-        // await store.updateNode(props.stepId, {
-        //   data: {
-        //     ...node.data,
-        //     stepName: payload.stepName,
-        //     serviceId: payload.serviceId,
-        //     condition: payload.condition,
-        //     conditionParameters: payload.conditionParameters,
-        //     nextStepId: payload.nextStepId,
-        //     trueStepId: payload.trueStepId,
-        //     falseStepId: payload.falseStepId,
-        //     fields: stepData.value.fields || [],
-        //     mappings: stepData.value.mappings || [],
-        //   }
-        // })
 
         notify({
           title: 'موفقیت',
@@ -1006,6 +927,7 @@ const saveMapping = async () => {
       }
     }
     closeMappingModal()
+    await loadAggregateFields();
   } catch (error) {
     console.error('خطا در ذخیره‌سازی Mapping:', error)
     const errorMessage = error.response?.data?.title || 'خطا در ذخیره‌سازی Mapping'
