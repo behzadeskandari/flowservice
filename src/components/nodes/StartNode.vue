@@ -63,8 +63,8 @@ const nodeResult = computed(() => store.nodeResults?.[props.id] || null)
 
 const contextMenu = ref({
   visible: false,
-  x: 10,
-  y: 10,
+  x: "200",
+  y: "100",
 })
 const menuRef = ref(null)
 const openContextMenuId = ref(null)
@@ -227,7 +227,7 @@ function onCancelDelete() {
   display: block;
   margin-bottom: 2px;
   font-weight: 600;
-  font-size: 17px;
+  font-size: 14px;
 }
 
 .start-content small {

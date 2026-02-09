@@ -297,8 +297,8 @@
     <div
       v-if="showMappingModal"
       class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[60] animate-fadeIn"
-      @click.self="closeMappingModal"
     >
+      <!-- @click.self="closeMappingModal" -->
       <div class="bg-gradient-to-r from-blue-400 via-blue-500 to-blue-600 p-[2px] rounded-3xl">
         <div
           class="bg-white dark:bg-gray-900 shadow-2xl rounded-3xl w-full max-w-md animate-scaleIn"
