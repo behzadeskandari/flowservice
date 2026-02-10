@@ -2,16 +2,17 @@
   <div
     v-if="show"
     class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 animate-fadeIn"
-
   >
-  <!-- @click.self="onClose" -->
-    <div class="bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 p-[2px] rounded-3xl">
+    <!-- @click.self="onClose" -->
+    <div
+      class="bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 p-[2px] rounded-3xl"
+    >
       <div
         class="bg-white dark:bg-gray-900 shadow-2xl rounded-3xl w-full max-w-2xl animate-scaleIn"
         style="width: 90vw; padding: 17px"
       >
         <!-- Header -->
-        <header class="flex items-center justify-between border-b pb-3 mb-4" >
+        <header class="flex items-center justify-between border-b pb-3 mb-4">
           <div class="flex gap-2">
             <button
               class="px-6 py-3 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 text-white font-semibold rounded-xl shadow-lg hover:from-orange-500 hover:via-orange-600 hover:to-orange-700 transition duration-300 ease-in-out"
@@ -30,39 +31,41 @@
             </button>
           </div>
           <h3 class="text-xl font-bold text-gray-800 dark:text-gray-100 p-3">
-            {{ mode === 'add' ? 'ایجاد مرحله' : 'ویرایش مرحله' }}
+            {{ mode === "add" ? "ایجاد مرحله" : "ویرایش مرحله" }}
           </h3>
         </header>
 
         <!-- Body -->
-        <section class="space-y-4 max-h-[60vh] overflow-y-auto pr-2" >
+        <section class="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
           <!-- Step Information Section -->
           <div class="space-y-4">
-            <h4 class="text-lg font-semibold text-gray-700 dark:text-gray-200">اطلاعات مرحله</h4>
+            <h4 class="text-lg font-semibold text-gray-700 dark:text-gray-200">
+              اطلاعات مرحله
+            </h4>
 
             <!-- Step Name -->
             <div>
-              <label class="block font-medium text-gray-500 mb-1 text-right px-1 py-1">نام مرحله *</label>
+              <label class="block font-medium text-gray-500 mb-1 text-right px-1 py-1"
+                >نام مرحله *</label
+              >
               <input
                 v-model="stepData.stepName"
                 type="text"
                 placeholder="نام مرحله را وارد کنید"
-                class="w-full px-4 py-2 rounded-xl border border-gray-300
-                       focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
-                       bg-white shadow-sm transition text-right"
+                class="w-full px-4 py-2 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white shadow-sm transition text-right"
                 required
               />
             </div>
 
             <!-- Service Selection -->
             <div>
-              <label class="block font-medium text-gray-500 mb-1 text-right px-1 py-1">خدمات (اختیاری)</label>
+              <label class="block font-medium text-gray-500 mb-1 text-right px-1 py-1"
+                >خدمات (اختیاری)</label
+              >
               <select
                 v-model="stepData.serviceId"
                 disabled
-                class="w-full px-4 py-2 rounded-xl border border-gray-300
-                       focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
-                       bg-white shadow-sm transition text-right"
+                class="w-full px-4 py-2 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white shadow-sm transition text-right"
               >
                 <option :value="null">-- بدون سرویس --</option>
                 <option
@@ -74,13 +77,19 @@
                 </option>
               </select>
               <small class="block mt-1 text-gray-600 text-right">
-                از بین سرویس‌های موجود انتخاب کنید. سرویس‌ها به صورت جداگانه مدیریت می‌شوند.
+                از بین سرویس‌های موجود انتخاب کنید. سرویس‌ها به صورت جداگانه مدیریت
+                می‌شوند.
               </small>
             </div>
 
             <!-- Service Preview -->
-            <div v-if="selectedService" class="bg-gray-50 dark:bg-gray-800 p-4 rounded-xl">
-              <p class="font-semibold text-gray-700 dark:text-gray-200 mb-2">سرویس انتخاب شده:</p>
+            <div
+              v-if="selectedService"
+              class="bg-gray-50 dark:bg-gray-800 p-4 rounded-xl"
+            >
+              <p class="font-semibold text-gray-700 dark:text-gray-200 mb-2">
+                سرویس انتخاب شده:
+              </p>
               <ul class="space-y-1 text-sm text-gray-600 dark:text-gray-300">
                 <li><strong>Name:</strong> {{ selectedService.name }}</li>
                 <li><strong>URL:</strong> {{ selectedService.url }}</li>
@@ -92,32 +101,35 @@
 
           <!-- Condition Section -->
           <div class="space-y-4 pt-4 border-t border-gray-300">
-            <h4 class="text-lg font-semibold text-gray-700 dark:text-gray-200">شرایط (اختیاری)</h4>
+            <h4 class="text-lg font-semibold text-gray-700 dark:text-gray-200">
+              شرایط (اختیاری)
+            </h4>
 
             <div>
-              <label class="block font-medium text-gray-500 mb-1 text-right px-1 py-1">بیان شرط</label>
+              <label class="block font-medium text-gray-500 mb-1 text-right px-1 py-1"
+                >بیان شرط</label
+              >
               <input
                 v-model="stepData.condition"
                 type="text"
                 placeholder="مثال: response.status === 200"
-                class="w-full px-4 py-2 rounded-xl border border-gray-300
-                       focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
-                       bg-white shadow-sm transition text-right"
+                class="w-full px-4 py-2 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white shadow-sm transition text-right"
               />
               <small class="block mt-1 text-gray-600 text-right">
-                برای مراحل معمولی خالی بگذارید. برای ایجاد یک گره تصمیم، یک شرط اضافه کنید.
+                برای مراحل معمولی خالی بگذارید. برای ایجاد یک گره تصمیم، یک شرط اضافه
+                کنید.
               </small>
             </div>
 
             <div v-if="stepData.condition">
-              <label class="block font-medium text-gray-500 mb-1 text-right px-1 py-1">پارامترهای شرایط</label>
+              <label class="block font-medium text-gray-500 mb-1 text-right px-1 py-1"
+                >پارامترهای شرایط</label
+              >
               <input
                 v-model="stepData.conditionParameters"
                 type="text"
                 placeholder="مثال: status,code"
-                class="w-full px-4 py-2 rounded-xl border border-gray-300
-                       focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
-                       bg-white shadow-sm transition text-right"
+                class="w-full px-4 py-2 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white shadow-sm transition text-right"
               />
               <small class="block mt-1 text-gray-600 text-right">
                 فهرست پارامترهای استفاده شده در عبارت شرط که با کاما از هم جدا شده‌اند.
@@ -127,7 +139,9 @@
 
           <!-- Fields Section -->
           <div v-if="selectedService" class="space-y-4 pt-4 border-t border-gray-300">
-            <h4 class="text-lg font-semibold text-gray-700 dark:text-gray-200">جزئیات فیلدها</h4>
+            <h4 class="text-lg font-semibold text-gray-700 dark:text-gray-200">
+              جزئیات فیلدها
+            </h4>
             <div v-if="stepData.fields && stepData.fields.length > 0" class="space-y-2">
               <div
                 v-for="(field, index) in stepData.fields"
@@ -135,7 +149,9 @@
                 class="bg-gray-50 dark:bg-gray-800 p-3 rounded-xl border border-gray-200 dark:border-gray-700"
               >
                 <div class="flex items-center justify-between mb-2">
-                  <strong class="text-gray-700 dark:text-gray-200">{{ field.name || 'Unnamed Field' }}</strong>
+                  <strong class="text-gray-700 dark:text-gray-200">{{
+                    field.name || "Unnamed Field"
+                  }}</strong>
                   <button
                     type="button"
                     class="px-3 py-1 bg-red-500 text-white rounded-lg hover:bg-red-600 transition"
@@ -146,9 +162,13 @@
                   </button>
                 </div>
                 <div class="text-sm text-gray-600 dark:text-gray-300 space-y-1">
-                  <p><strong>Type:</strong> {{ field.type || 'string' }}</p>
-                  <p v-if="field.required"><strong>Required:</strong> {{ field.required ? 'Yes' : 'No' }}</p>
-                  <p v-if="field.description"><strong>Description:</strong> {{ field.description }}</p>
+                  <p><strong>Type:</strong> {{ field.type || "string" }}</p>
+                  <p v-if="field.required">
+                    <strong>Required:</strong> {{ field.required ? "Yes" : "No" }}
+                  </p>
+                  <p v-if="field.description">
+                    <strong>Description:</strong> {{ field.description }}
+                  </p>
                 </div>
               </div>
             </div>
@@ -159,16 +179,18 @@
 
           <!-- Step Connections -->
           <div class="space-y-4 pt-4 border-t border-gray-300">
-            <h4 class="text-lg font-semibold text-gray-700 dark:text-gray-200">اتصالات مرحله ای</h4>
+            <h4 class="text-lg font-semibold text-gray-700 dark:text-gray-200">
+              اتصالات مرحله ای
+            </h4>
 
             <!-- Regular step (no condition) -->
             <div v-if="!stepData.condition">
-              <label class="block font-medium text-gray-500 mb-1 text-right px-1 py-1">مرحله بعدی</label>
+              <label class="block font-medium text-gray-500 mb-1 text-right px-1 py-1"
+                >مرحله بعدی</label
+              >
               <select
                 v-model="stepData.nextStepId"
-                class="w-full px-4 py-2 rounded-xl border border-gray-300
-                       focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
-                       bg-white shadow-sm transition text-right"
+                class="w-full px-4 py-2 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white shadow-sm transition text-right"
               >
                 <option :value="null">-- هیچکدام (مرحله پایانی) --</option>
                 <option
@@ -184,12 +206,12 @@
             <!-- Conditional step -->
             <template v-else>
               <div>
-                <label class="block font-medium text-gray-500 mb-1 text-right px-1 py-1">True Path</label>
+                <label class="block font-medium text-gray-500 mb-1 text-right px-1 py-1"
+                  >True Path</label
+                >
                 <select
                   v-model="stepData.trueStepId"
-                  class="w-full px-4 py-2 rounded-xl border border-gray-300
-                         focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
-                         bg-white shadow-sm transition text-right"
+                  class="w-full px-4 py-2 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white shadow-sm transition text-right"
                 >
                   <option :value="null">-- هیچ --</option>
                   <option
@@ -203,12 +225,12 @@
               </div>
 
               <div>
-                <label class="block font-medium text-gray-500 mb-1 text-right px-1 py-1">False Path</label>
+                <label class="block font-medium text-gray-500 mb-1 text-right px-1 py-1"
+                  >False Path</label
+                >
                 <select
                   v-model="stepData.falseStepId"
-                  class="w-full px-4 py-2 rounded-xl border border-gray-300
-                         focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
-                         bg-white shadow-sm transition text-right"
+                  class="w-full px-4 py-2 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white shadow-sm transition text-right"
                 >
                   <option :value="null">-- هیچ --</option>
                   <option
@@ -224,9 +246,15 @@
           </div>
 
           <!-- Mappings Section -->
-          <div v-if="mode === 'edit' && stepData.aggregateStepId" class="space-y-4 pt-4 border-t border-gray-300" dir="rtl">
+          <div
+            v-if="mode === 'edit' && stepData.aggregateStepId"
+            class="space-y-4 pt-4 border-t border-gray-300"
+            dir="rtl"
+          >
             <div class="flex items-center justify-between">
-              <h4 class="text-lg font-semibold text-gray-700 dark:text-gray-200">Mapping ها</h4>
+              <h4 class="text-lg font-semibold text-gray-700 dark:text-gray-200">
+                Mapping ها
+              </h4>
               <button
                 class="px-4 py-2 bg-gradient-to-r from-green-400 via-green-500 to-green-600 text-white font-semibold rounded-xl shadow-lg hover:from-green-500 hover:via-green-600 hover:to-green-700 transition duration-300 ease-in-out"
                 @click="openAddMappingModal"
@@ -236,7 +264,10 @@
               </button>
             </div>
 
-            <div v-if="stepData.mappings && stepData.mappings.length > 0" class="space-y-2">
+            <div
+              v-if="stepData.mappings && stepData.mappings.length > 0"
+              class="space-y-2"
+            >
               <div
                 v-for="(mapping, index) in stepData.mappings"
                 :key="mapping.id || index"
@@ -245,11 +276,16 @@
                 <div class="flex items-center justify-between mb-2">
                   <div class="flex items-center gap-2 flex-1">
                     <strong class="text-gray-700 dark:text-gray-200">
-                      {{ mapping.targetField || 'بدون فیلد هدف' }}
+                      {{ mapping.targetField || "بدون فیلد هدف" }}
                     </strong>
                     <span class="text-gray-500">←</span>
                     <span class="text-gray-600 dark:text-gray-300">
-                      {{ mapping.sourceField || mapping.value || mapping.source || 'بدون منبع' }}
+                      {{
+                        mapping.sourceField ||
+                        mapping.value ||
+                        mapping.source ||
+                        "بدون منبع"
+                      }}
                     </span>
                   </div>
                   <div class="flex gap-2">
@@ -270,10 +306,15 @@
                   </div>
                 </div>
                 <div class="flex gap-2 flex-wrap mt-2">
-                  <span class="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-lg text-xs">
-                    {{ mapping.source || 'response' }}
+                  <span
+                    class="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-lg text-xs"
+                  >
+                    {{ mapping.source || "response" }}
                   </span>
-                  <span v-if="mapping.valueType" class="px-2 py-1 bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 rounded-lg text-xs">
+                  <span
+                    v-if="mapping.valueType"
+                    class="px-2 py-1 bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 rounded-lg text-xs"
+                  >
                     {{ mapping.valueType }}
                   </span>
                   <span
@@ -299,7 +340,9 @@
       class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[60] animate-fadeIn"
     >
       <!-- @click.self="closeMappingModal" -->
-      <div class="bg-gradient-to-r from-blue-400 via-blue-500 to-blue-600 p-[2px] rounded-3xl">
+      <div
+        class="bg-gradient-to-r from-blue-400 via-blue-500 to-blue-600 p-[2px] rounded-3xl"
+      >
         <div
           class="bg-white dark:bg-gray-900 shadow-2xl rounded-3xl w-full max-w-md animate-scaleIn"
           style="width: 90vw; padding: 17px"
@@ -324,7 +367,7 @@
               </button>
             </div>
             <h4 class="text-xl font-bold text-gray-800 dark:text-gray-100 p-3">
-              {{ mappingModalMode === 'add' ? 'افزودن Mapping' : 'ویرایش Mapping' }}
+              {{ mappingModalMode === "add" ? "افزودن Mapping" : "ویرایش Mapping" }}
             </h4>
           </header>
 
@@ -332,12 +375,12 @@
           <section class="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
             <!-- Source Type Selection -->
             <div>
-              <label class="block font-medium text-gray-500 mb-1 text-right px-1 py-1">Source Type *</label>
+              <label class="block font-medium text-gray-500 mb-1 text-right px-1 py-1"
+                >Source Type *</label
+              >
               <select
                 v-model="currentMapping.source"
-                class="w-full px-4 py-2 rounded-xl border border-gray-300
-                       focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
-                       bg-white shadow-sm transition text-right"
+                class="w-full px-4 py-2 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white shadow-sm transition text-right"
                 required
                 @change="onSourceTypeChange"
               >
@@ -353,12 +396,12 @@
 
             <!-- Step Selection (shown when source is StepOutput) -->
             <div v-if="currentMapping.source === 'StepOutput'">
-              <label class="block font-medium text-gray-500 mb-1 text-right px-1 py-1">Select Step *</label>
+              <label class="block font-medium text-gray-500 mb-1 text-right px-1 py-1"
+                >Select Step *</label
+              >
               <select
                 v-model="currentMapping.inputStepId"
-                class="w-full px-4 py-2 rounded-xl border border-gray-300
-                       focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
-                       bg-white shadow-sm transition text-right"
+                class="w-full px-4 py-2 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white shadow-sm transition text-right"
                 required
               >
                 <option value="">-- Select Step --</option>
@@ -370,70 +413,88 @@
 
             <!-- Aggregate Field Selection (shown when source is AggregateInput)   && aggregateFields.length > 0-->
             <div v-if="currentMapping.source === 'AggregateInput'">
-               <label class="block font-medium text-gray-500 mb-1 text-right px-1 py-1">فیلد منبع (از Aggregate)</label>
-                <select
-                  v-model="currentMapping.sourceField"
-                  class="w-full px-4 py-2 rounded-xl border border-gray-300
-                       focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
-                       bg-white shadow-sm transition text-right"
-                  :disabled="isLoadingAggregate"
-                  required
+              <label class="block font-medium text-gray-500 mb-1 text-right px-1 py-1"
+                >فیلد منبع (از Aggregate)</label
+              >
+              <select
+                v-model="currentMapping.sourceField"
+                class="w-full px-4 py-2 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white shadow-sm transition text-right"
+                :disabled="isLoadingAggregate"
+                required
+              >
+                <option value="" disabled>لطفا یک فیلد انتخاب کنید</option>
+                <option
+                  v-for="field in aggregateFields"
+                  :key="field.id"
+                  :value="field.name"
                 >
-                  <option value="" disabled>لطفا یک فیلد انتخاب کنید</option>
-                  <option
-                    v-for="field in aggregateFields"
-                    :key="field.id"
-                    :value="field.name"
-                  >
-                    {{ field.name }} ({{ field.type }})
-                  </option>
-                  <option v-if="isLoadingAggregate" disabled>در حال بارگذاری فیلدها...</option>
-                  <option v-if="!isLoadingAggregate && aggregateFields.length === 0" disabled>هیچ فیلدی یافت نشد</option>
-                </select>
+                  {{ field.name }} ({{ field.type }})
+                </option>
+                <option v-if="isLoadingAggregate" disabled>
+                  در حال بارگذاری فیلدها...
+                </option>
+                <option
+                  v-if="!isLoadingAggregate && aggregateFields.length === 0"
+                  disabled
+                >
+                  هیچ فیلدی یافت نشد
+                </option>
+              </select>
             </div>
 
             <div>
-              <label class="block font-medium text-gray-500 mb-1 text-right px-1 py-1">Target Field *</label>
+              <label class="block font-medium text-gray-500 mb-1 text-right px-1 py-1"
+                >Target Field *</label
+              >
               <input
                 v-model="currentMapping.targetField"
                 type="text"
                 placeholder="نام فیلد هدف"
-                class="w-full px-4 py-2 rounded-xl border border-gray-300
-                       focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
-                       bg-white shadow-sm transition text-right"
+                class="w-full px-4 py-2 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white shadow-sm transition text-right"
                 required
               />
             </div>
 
             <!-- Source Field (shown when source is not AggregateInput) -->
-            <div v-if="currentMapping.source && currentMapping.source !== 'AggregateInput'">
+            <div
+              v-if="currentMapping.source && currentMapping.source !== 'AggregateInput'"
+            >
               <label class="block font-medium text-gray-500 mb-1 text-right px-1 py-1">
-                {{ currentMapping.source === 'StepOutput' ? 'Source Field *' : 'Source Field' }}
+                {{
+                  currentMapping.source === "StepOutput"
+                    ? "Source Field *"
+                    : "Source Field"
+                }}
               </label>
               <input
                 v-model="currentMapping.sourceField"
                 type="text"
-                :placeholder="currentMapping.source === 'StepOutput' ? 'نام فیلد منبع' : 'نام فیلد منبع (اختیاری)'"
-                class="w-full px-4 py-2 rounded-xl border border-gray-300
-                       focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
-                       bg-white shadow-sm transition text-right"
+                :placeholder="
+                  currentMapping.source === 'StepOutput'
+                    ? 'نام فیلد منبع'
+                    : 'نام فیلد منبع (اختیاری)'
+                "
+                class="w-full px-4 py-2 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white shadow-sm transition text-right"
                 :required="currentMapping.source === 'StepOutput'"
               />
-              <small v-if="currentMapping.source === 'StepOutput'" class="block mt-1 text-gray-600 text-right">
+              <small
+                v-if="currentMapping.source === 'StepOutput'"
+                class="block mt-1 text-gray-600 text-right"
+              >
                 نام فیلد در خروجی مرحله انتخاب شده
               </small>
             </div>
 
             <!-- Value (shown when source is Constant) -->
             <div v-if="currentMapping.source === 'Constant'">
-              <label class="block font-medium text-gray-500 mb-1 text-right px-1 py-1">Value *</label>
+              <label class="block font-medium text-gray-500 mb-1 text-right px-1 py-1"
+                >Value *</label
+              >
               <input
                 v-model="currentMapping.value"
                 type="text"
                 placeholder="مقدار ثابت"
-                class="w-full px-4 py-2 rounded-xl border border-gray-300
-                       focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
-                       bg-white shadow-sm transition text-right"
+                class="w-full px-4 py-2 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white shadow-sm transition text-right"
                 required
               />
               <small class="block mt-1 text-gray-600 text-right">
@@ -442,12 +503,12 @@
             </div>
 
             <div>
-              <label class="block font-medium text-gray-500 mb-1 text-right px-1 py-1">Value Type *</label>
+              <label class="block font-medium text-gray-500 mb-1 text-right px-1 py-1"
+                >Value Type *</label
+              >
               <select
                 v-model="currentMapping.valueType"
-                class="w-full px-4 py-2 rounded-xl border border-gray-300
-                       focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
-                       bg-white shadow-sm transition text-right"
+                class="w-full px-4 py-2 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white shadow-sm transition text-right"
                 required
               >
                 <option value="">-- Select Type --</option>
@@ -464,12 +525,12 @@
 
             <!-- Mapping Type -->
             <div>
-              <label class="block font-medium text-gray-500 mb-1 text-right px-1 py-1">Mapping Type *</label>
+              <label class="block font-medium text-gray-500 mb-1 text-right px-1 py-1"
+                >Mapping Type *</label
+              >
               <select
                 v-model="currentMapping.mappingType"
-                class="w-full px-4 py-2 rounded-xl border border-gray-300
-                       focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
-                       bg-white shadow-sm transition text-right"
+                class="w-full px-4 py-2 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white shadow-sm transition text-right"
                 required
               >
                 <option value="Body">Body</option>
@@ -479,7 +540,9 @@
 
             <div class="flex items-center justify-end">
               <label class="flex items-center cursor-pointer">
-                <span class="mr-2 font-medium text-gray-700 dark:text-gray-200">Status (فعال):</span>
+                <span class="mr-2 font-medium text-gray-700 dark:text-gray-200"
+                  >Status (فعال):</span
+                >
                 <div class="relative">
                   <input
                     type="checkbox"
@@ -505,215 +568,218 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue'
-import { useFlowStore } from '@/stores/flowStore'
-import serviceAggregatorClient from '@/utils/service-aggregator-client'
-import { notify } from '@kyvg/vue3-notification'
-import { faArrowUp, faSave } from '@fortawesome/free-solid-svg-icons'
+import { ref, computed, watch, onMounted } from "vue";
+import { useFlowStore } from "@/stores/flowStore";
+import serviceAggregatorClient from "@/utils/service-aggregator-client";
+import { notify } from "@kyvg/vue3-notification";
+import { faArrowUp, faSave } from "@fortawesome/free-solid-svg-icons";
 
 const props = defineProps({
   show: Boolean,
   stepId: String,
   mode: {
     type: String,
-    default: 'add',
-    validator: (value) => ['add', 'edit'].includes(value)
-  }
-})
+    default: "add",
+    validator: (value) => ["add", "edit"].includes(value),
+  },
+});
 
-const emit = defineEmits(['update:show', 'saved'])
-const aggregateFields = ref([])
-const store = useFlowStore()
-const availableServices = ref([])
-const isLoadingServices = ref(false)
+const emit = defineEmits(["update:show", "saved"]);
+const aggregateFields = ref([]);
+const store = useFlowStore();
+const availableServices = ref([]);
+const isLoadingServices = ref(false);
 
 const stepData = ref({
-  stepName: '',
+  stepName: "",
   aggregateId: null,
   aggregateStepId: null,
   serviceId: null,
   nextStepId: null,
   trueStepId: null,
   falseStepId: null,
-  condition: '',
-  conditionParameters: '',
+  condition: "",
+  conditionParameters: "",
   fields: [],
   mappings: [],
-})
-const isLoadingAggregate = ref(false)
-const showMappingModal = ref(false)
-const mappingModalMode = ref('add') // 'add' or 'edit'
+});
+const isLoadingAggregate = ref(false);
+const showMappingModal = ref(false);
+const mappingModalMode = ref("add"); // 'add' or 'edit'
 const currentMapping = ref({
   id: null,
-  source: '',
-  targetField: '',
-  sourceField: '',
+  source: "",
+  targetField: "",
+  sourceField: "",
   inputStepId: null,
-  value: '',
-  valueType: 'String',
-  mappingType: 'Body',
+  value: "",
+  valueType: "String",
+  mappingType: "Body",
   status: true,
-})
+});
 
 // Get selected service details
 const selectedService = computed(() => {
-  if (!stepData.value.serviceId) return null
-  return availableServices.value.find(s => s.id === stepData.value.serviceId) || null
-})
+  if (!stepData.value.serviceId) return null;
+  return availableServices.value.find((s) => s.id === stepData.value.serviceId) || null;
+});
 // Get available next steps (all except current step)
 const availableSteps = computed(() => {
   return store.nodes
-    .filter(node => {
+    .filter((node) => {
       // Exclude combined nodes and current step
-      if (node.type === 'combinedServiceNode') return false
-      if (props.mode === 'edit' && node.id === props.stepId) return false
-      return true
+      if (node.type === "combinedServiceNode") return false;
+      if (props.mode === "edit" && node.id === props.stepId) return false;
+      return true;
     })
-    .map(node => ({
+    .map((node) => ({
       id: node.data.aggregateStepId || node.id,
       stepName: node.data.stepName || node.data.label || `Step ${node.id.slice(0, 8)}`,
-    }))
-})
-console.log('availableSteps:', availableSteps.value)
-const availableNextSteps = computed(() => availableSteps.value)
-
+    }));
+});
+console.log("availableSteps:", availableSteps.value);
+const availableNextSteps = computed(() => availableSteps.value);
 
 // Add this function to fetch aggregate by ID
 const fetchAggregateById = async (aggregateId) => {
   try {
-    const response = await serviceAggregatorClient.getAggregate(aggregateId)
+    const response = await serviceAggregatorClient.getAggregate(aggregateId);
     if (response && response.mappings) {
-      return response.mappings
+      return response.mappings;
     }
-    return []
+    return [];
   } catch (error) {
-    console.error('Error fetching aggregate:', error)
-    return []
+    console.error("Error fetching aggregate:", error);
+    return [];
   }
-}
+};
 
 // Helper function to format mapping
 const formatMapping = (mapping) => ({
   id: mapping.id,
   name: mapping.name,
-  type: mapping.type || 'String',
-  description: mapping.description || ''
-})
-
+  type: mapping.type || "String",
+  description: mapping.description || "",
+});
 
 const loadAggregateFields = async () => {
-  debugger
+  debugger;
   store.loadAggregates();
   const aggregate = store.aggregates;
-  console.log('aggregate aggregate aggregate:', stepData.value.aggregateId)
+  console.log("aggregate aggregate aggregate:", stepData.value.aggregateId);
   if (!aggregate) {
-    aggregateFields.value = []
-    return
+    aggregateFields.value = [];
+    return;
   }
-  isLoadingAggregate.value = true
+  isLoadingAggregate.value = true;
   try {
     // Try to find in store first
     //const aggregate = store.aggregates?.find(a => a.id === aggregateId)
-    const aggregate = store.aggregates
+    const aggregate = store.aggregates;
     if (aggregate?.mappings) {
-      aggregateFields.value = aggregate.mappings.map(formatMapping)
-      return
+      aggregateFields.value = aggregate.mappings.map(formatMapping);
+      return;
     }
     // If not in store, fetch it
-    const response = await serviceAggregatorClient.getAggregateByid(stepData.value.aggregateId)
+    const response = await serviceAggregatorClient.getAggregateByid(
+      stepData.value.aggregateId
+    );
     if (response?.mappings) {
-      aggregateFields.value = response.mappings.map(formatMapping)
+      aggregateFields.value = response.mappings.map(formatMapping);
       // Optionally update the store here if needed
     } else {
-      aggregateFields.value = []
+      aggregateFields.value = [];
     }
   } catch (error) {
-    console.error('Error loading aggregate fields:', error)
-    aggregateFields.value = []
+    console.error("Error loading aggregate fields:", error);
+    aggregateFields.value = [];
   } finally {
-    isLoadingAggregate.value = false
+    isLoadingAggregate.value = false;
   }
-}
+};
 // Call this when the component is mounted or when stepData changes
-onMounted(loadAggregateFields)
-watch(() => stepData.value.aggregateId, (newVal) => {
-  if (showMappingModal.value && currentMapping.value.source === 'AggregateInput') {
-    loadAggregateFields()
-  }
-}, { immediate: true })
-
+onMounted(loadAggregateFields);
+watch(
+  () => stepData.value.aggregateId,
+  (newVal) => {
+    if (showMappingModal.value && currentMapping.value.source === "AggregateInput") {
+      loadAggregateFields();
+    }
+  },
+  { immediate: true }
+);
 
 // Load available services from backend
 const loadServices = async () => {
-  isLoadingServices.value = true
+  isLoadingServices.value = true;
   try {
-    const data = await serviceAggregatorClient.getServices()
-    availableServices.value = data.items ? data.items : []
+    const data = await serviceAggregatorClient.getServices();
+    availableServices.value = data.items ? data.items : [];
   } catch (error) {
-    console.error('Error loading services:', error)
+    console.error("Error loading services:", error);
     notify({
-      title: 'خطا',
-      text: 'خطا در بارگذاری سرویس‌ها',
-      type: 'error',
-    })
+      title: "خطا",
+      text: "خطا در بارگذاری سرویس‌ها",
+      type: "error",
+    });
   } finally {
-    isLoadingServices.value = false
+    isLoadingServices.value = false;
   }
-}
+};
 
 // Load current step data for edit mode
 const loadStepData = () => {
-  if (props.mode === 'edit' && props.stepId) {
-    const node = store.nodes.find(n => n.id === props.stepId)
+  if (props.mode === "edit" && props.stepId) {
+    const node = store.nodes.find((n) => n.id === props.stepId);
     if (node && node.data) {
       stepData.value = {
-        stepName: node.data.stepName || '',
+        stepName: node.data.stepName || "",
         aggregateId: node.data.aggregateId || store.currentAggregateId,
         aggregateStepId: node.data.aggregateStepId || null,
         serviceId: node.data.serviceId || null,
         nextStepId: node.data.nextStepId || null,
         trueStepId: node.data.trueStepId || null,
         falseStepId: node.data.falseStepId || null,
-        condition: node.data.condition || '',
-        conditionParameters: node.data.conditionParameters || '',
+        condition: node.data.condition || "",
+        conditionParameters: node.data.conditionParameters || "",
         fields: node.data.fields ? [...node.data.fields] : [],
         mappings: node.data.mappings ? [...node.data.mappings] : [],
-      }
+      };
     }
   } else {
-    resetForm()
+    resetForm();
   }
-}
+};
 
 const resetForm = () => {
   stepData.value = {
-    stepName: '',
+    stepName: "",
     aggregateId: store.currentAggregateId,
     aggregateStepId: null,
     serviceId: null,
     nextStepId: null,
     trueStepId: null,
     falseStepId: null,
-    condition: '',
-    conditionParameters: '',
+    condition: "",
+    conditionParameters: "",
     fields: [],
     mappings: [],
-  }
-}
+  };
+};
 
 const onClose = () => {
-  emit('update:show', false)
-  resetForm()
-}
+  emit("update:show", false);
+  resetForm();
+};
 
 const onSave = async () => {
   if (!stepData.value.stepName) {
     notify({
-      title: 'خطا',
-      text: 'نام Step الزامی است',
-      type: 'error',
-    })
-    return
+      title: "خطا",
+      text: "نام Step الزامی است",
+      type: "error",
+    });
+    return;
   }
 
   try {
@@ -724,251 +790,265 @@ const onSave = async () => {
       nextStepId: stepData.value.nextStepId || null,
       trueStepId: stepData.value.trueStepId || null,
       falseStepId: stepData.value.falseStepId || null,
-      condition: stepData.value.condition || '',
-      conditionParameters: stepData.value.conditionParameters || '',
-    }
+      condition: stepData.value.condition || "",
+      conditionParameters: stepData.value.conditionParameters || "",
+    };
 
-    if (props.mode === 'edit' && props.stepId) {
+    if (props.mode === "edit" && props.stepId) {
       // Update existing step
-      const node = store.nodes.find(n => n.id === props.stepId)
+      const node = store.nodes.find((n) => n.id === props.stepId);
       if (node && node.data.aggregateStepId) {
-        payload.id = node.data.aggregateStepId
-        payload.status = true
+        payload.id = node.data.aggregateStepId;
+        payload.status = true;
         // Include current node position when updating
-        payload.positionX = node.position?.x ?? 100
-        payload.positionY = node.position?.y ?? 100
-        await serviceAggregatorClient.updateAggregateStep(payload)
+        payload.positionX = node.position?.x ?? 100;
+        payload.positionY = node.position?.y ?? 100;
+        await serviceAggregatorClient.updateAggregateStep(payload);
 
         notify({
-          title: 'موفقیت',
-          text: 'Step بروزرسانی شد',
-          type: 'success',
-        })
+          title: "موفقیت",
+          text: "Step بروزرسانی شد",
+          type: "success",
+        });
       }
     } else {
       // Create new step (this should be handled by handleConnect)
-      await store.saveConnectionStep(payload)
+      await store.saveConnectionStep(payload);
       notify({
-        title: 'موفقیت',
-        text: 'Step ایجاد شد',
-        type: 'success',
-      })
+        title: "موفقیت",
+        text: "Step ایجاد شد",
+        type: "success",
+      });
     }
 
-    emit('update:show', false)
-    emit('saved')
-    resetForm()
+    emit("update:show", false);
+    emit("saved");
+    resetForm();
   } catch (error) {
-    console.error('Error saving step:', error)
+    console.error("Error saving step:", error);
     notify({
-      title: 'خطا',
-      text: props.mode === 'edit' ? 'خطا در بروزرسانی Step' : 'خطا در ایجاد Step',
-      type: 'error',
-    })
+      title: "خطا",
+      text: props.mode === "edit" ? "خطا در بروزرسانی Step" : "خطا در ایجاد Step",
+      type: "error",
+    });
   }
-}
+};
 
 // Watch for modal opening
 const removeField = (index) => {
   if (index >= 0 && index < stepData.value.fields.length) {
-    stepData.value.fields.splice(index, 1)
+    stepData.value.fields.splice(index, 1);
   }
-}
+};
 
 // Mapping management functions
 const openAddMappingModal = () => {
   currentMapping.value = {
     id: null,
-    source: '',
-    targetField: '',
-    sourceField: '',
-    value: '',
-    valueType: 'String',
-    mappingType: 'Body',
+    source: "",
+    targetField: "",
+    sourceField: "",
+    value: "",
+    valueType: "String",
+    mappingType: "Body",
     status: true,
-  }
-  mappingModalMode.value = 'add'
-  showMappingModal.value = true
-  loadAggregateFields()
-}
+  };
+  mappingModalMode.value = "add";
+  showMappingModal.value = true;
+  loadAggregateFields();
+};
 
 const openEditMappingModal = (mapping) => {
   currentMapping.value = {
     id: mapping.id,
-    source: mapping.source || '',
-    targetField: mapping.targetField || '',
-    sourceField: mapping.sourceField || '',
+    source: mapping.source || "",
+    targetField: mapping.targetField || "",
+    sourceField: mapping.sourceField || "",
     inputStepId: mapping.inputStepId || null,
-    value: mapping.value || '',
-    valueType: mapping.valueType || 'String',
-    mappingType: mapping.mappingType || 'Body',
+    value: mapping.value || "",
+    valueType: mapping.valueType || "String",
+    mappingType: mapping.mappingType || "Body",
     status: mapping.status !== undefined ? mapping.status : true,
-  }
-  mappingModalMode.value = 'edit'
-  showMappingModal.value = true
-  loadAggregateFields()
-}
+  };
+  mappingModalMode.value = "edit";
+  showMappingModal.value = true;
+  loadAggregateFields();
+};
 
 const onSourceTypeChange = () => {
   // Reset related fields when source type changes
-  currentMapping.value.sourceField = ''
-  currentMapping.value.inputStepId = null
-  currentMapping.value.value = ''
-}
+  currentMapping.value.sourceField = "";
+  currentMapping.value.inputStepId = null;
+  currentMapping.value.value = "";
+};
 
 const closeMappingModal = () => {
-  showMappingModal.value = false
+  showMappingModal.value = false;
   currentMapping.value = {
     id: null,
-    source: '',
-    targetField: '',
-    sourceField: '',
+    source: "",
+    targetField: "",
+    sourceField: "",
     inputStepId: null,
-    value: '',
-    valueType: 'String',
-    mappingType: 'Body',
+    value: "",
+    valueType: "String",
+    mappingType: "Body",
     status: true,
-  }
-}
+  };
+};
 
 const saveMapping = async () => {
   try {
     // Validate required fields based on source type
     if (!currentMapping.value.targetField?.trim()) {
       notify({
-        title: 'خطا',
-        text: 'فیلد هدف الزامی است',
-        type: 'error'
-      })
-      return
+        title: "خطا",
+        text: "فیلد هدف الزامی است",
+        type: "error",
+      });
+      return;
     }
-    if (currentMapping.value.source === 'StepOutput' && !currentMapping.value.sourceField?.trim()) {
+    if (
+      currentMapping.value.source === "StepOutput" &&
+      !currentMapping.value.sourceField?.trim()
+    ) {
       notify({
-        title: 'خطا',
-        text: 'فیلد منبع برای Step Output الزامی است',
-        type: 'error'
-      })
-      return
+        title: "خطا",
+        text: "فیلد منبع برای Step Output الزامی است",
+        type: "error",
+      });
+      return;
     }
     // Prepare mapping data based on source type
     const mappingData = {
       id: currentMapping.value.id,
       aggregateStepId: stepData.value.aggregateStepId,
-      mappingType: currentMapping.value.mappingType || 'Body',
+      mappingType: currentMapping.value.mappingType || "Body",
       source: currentMapping.value.source,
       targetField: currentMapping.value.targetField.trim(),
       sourceField: currentMapping.value.sourceField?.trim() || null,
-      value: null,  // Will be set based on source type
-      valueType: currentMapping.value.valueType || 'String',
+      value: null, // Will be set based on source type
+      valueType: currentMapping.value.valueType || "String",
       status: currentMapping.value.status,
-      inputStepId: null  // Will be set for StepOutput
-    }
+      inputStepId: null, // Will be set for StepOutput
+    };
     // Handle different source types
-    if (currentMapping.value.source === 'Constant') {
+    if (currentMapping.value.source === "Constant") {
       if (!currentMapping.value.value?.trim()) {
         notify({
-          title: 'خطا',
-          text: 'مقدار ثابت الزامی است',
-          type: 'error'
-        })
-        return
+          title: "خطا",
+          text: "مقدار ثابت الزامی است",
+          type: "error",
+        });
+        return;
       }
-      mappingData.value = currentMapping.value.value.trim()
+      mappingData.value = currentMapping.value.value.trim();
       // mappingData.sourceField = null
-      delete mappingData.sourceField
-    } else if (currentMapping.value.source === 'StepOutput') {
+      delete mappingData.sourceField;
+    } else if (currentMapping.value.source === "StepOutput") {
       if (!currentMapping.value.inputStepId) {
         notify({
-          title: 'خطا',
-          text: 'انتخاب مرحله مبدا الزامی است',
-          type: 'error'
-        })
-        return
+          title: "خطا",
+          text: "انتخاب مرحله مبدا الزامی است",
+          type: "error",
+        });
+        return;
       }
-      mappingData.inputStepId = currentMapping.value.inputStepId
+      mappingData.inputStepId = currentMapping.value.inputStepId;
       // Remove value for StepOutput
-      delete mappingData.value
-    } else if (currentMapping.value.source === 'AggregateInput') {
-        delete mappingData.value
+      delete mappingData.value;
+    } else if (currentMapping.value.source === "AggregateInput") {
+      delete mappingData.value;
       if (!currentMapping.value.sourceField?.trim()) {
         notify({
-          title: 'خطا',
-          text: 'انتخاب فیلد از Aggregate الزامی است',
-          type: 'error'
-        })
-        return
+          title: "خطا",
+          text: "انتخاب فیلد از Aggregate الزامی است",
+          type: "error",
+        });
+        return;
       }
     }
     // Make the API call
-    if (mappingModalMode.value === 'add') {
-      const newMapping = await serviceAggregatorClient.addAggregateStepMapping(mappingData)
+    if (mappingModalMode.value === "add") {
+      const newMapping = await serviceAggregatorClient.addAggregateStepMapping(
+        mappingData
+      );
       if (newMapping) {
-        stepData.value.mappings.push(newMapping)
+        stepData.value.mappings.push(newMapping);
         notify({
-          title: 'موفقیت',
-          text: 'Mapping با موفقیت اضافه شد',
-          type: 'success'
-        })
+          title: "موفقیت",
+          text: "Mapping با موفقیت اضافه شد",
+          type: "success",
+        });
       }
     } else {
       const updatedMapping = await serviceAggregatorClient.updateAggregateStepMapping(
         mappingData
-      )
+      );
       if (updatedMapping) {
-        const index = stepData.value.mappings.findIndex(m => m.id === currentMapping.value.id)
+        const index = stepData.value.mappings.findIndex(
+          (m) => m.id === currentMapping.value.id
+        );
         if (index !== -1) {
-          stepData.value.mappings[index] = updatedMapping
+          stepData.value.mappings[index] = updatedMapping;
         }
         notify({
-          title: 'موفقیت',
-          text: 'Mapping با موفقیت به‌روزرسانی شد',
-          type: 'success'
-        })
+          title: "موفقیت",
+          text: "Mapping با موفقیت به‌روزرسانی شد",
+          type: "success",
+        });
       }
     }
-    closeMappingModal()
+    closeMappingModal();
     await loadAggregateFields();
   } catch (error) {
-    console.error('خطا در ذخیره‌سازی Mapping:', error)
-    const errorMessage = error.response?.data?.title || 'خطا در ذخیره‌سازی Mapping'
+    console.error("خطا در ذخیره‌سازی Mapping:", error);
+    const errorMessage = error.response?.data?.title || "خطا در ذخیره‌سازی Mapping";
     notify({
-      title: 'خطا',
+      title: "خطا",
       text: errorMessage,
-      type: 'error'
-    })
+      type: "error",
+    });
   }
-}
+};
 
 const deleteMapping = async (mappingId) => {
-  if (!confirm('آیا از حذف این mapping مطمئن هستید؟')) {
-    return
+  if (!confirm("آیا از حذف این mapping مطمئن هستید؟")) {
+    return;
   }
 
   if (!stepData.value.aggregateStepId) {
     notify({
-      title: 'خطا',
-      text: 'aggregateStepId یافت نشد',
-      type: 'error',
-    })
-    return
+      title: "خطا",
+      text: "aggregateStepId یافت نشد",
+      type: "error",
+    });
+    return;
   }
 
   try {
-    const success = await store.deleteStepMapping(stepData.value.aggregateStepId, mappingId)
+    const success = await store.deleteStepMapping(
+      stepData.value.aggregateStepId,
+      mappingId
+    );
     if (success) {
-      stepData.value.mappings = stepData.value.mappings.filter(m => m.id !== mappingId)
+      stepData.value.mappings = stepData.value.mappings.filter((m) => m.id !== mappingId);
     }
   } catch (error) {
-    console.error('Error deleting mapping:', error)
+    console.error("Error deleting mapping:", error);
   }
-}
+};
 
-watch(() => props.show, (newVal) => {
-  if (newVal) {
-    loadServices()
-    loadStepData()
-  }
-}, { immediate: true })
+watch(
+  () => props.show,
+  (newVal) => {
+    if (newVal) {
+      loadServices();
+      loadStepData();
+    }
+  },
+  { immediate: true }
+);
 </script>
 
 <style scoped>

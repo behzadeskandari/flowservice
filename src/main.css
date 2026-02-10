@@ -185,9 +185,8 @@ input[type="password"],
 input[type="number"],
 textarea,
 select {
-  direction: rtl;
-  text-align: right;
-  /* unicode-bidi: bidi-override; */
+  direction: ltr;
+  text-align: left;
 }
 
 /* Ensure RTL placeholder text alignment */

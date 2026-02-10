@@ -12,11 +12,12 @@
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-2">داده‌های ورودی (JSON)</label>
           <textarea
+
             v-model="jsonInput"
             placeholder='{"nationalId": "0079714422", "mobileNumber": "09331007051"}'
             class="w-full h-64 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent font-mono text-sm"
             :class="{ 'border-red-500 focus:ring-red-500': jsonError }"
-            dir="ltr"
+            dir="rtl"
           />
           <small v-if="jsonError" class="text-red-600 mt-1 block">{{ jsonError }}</small>
           <small class="text-gray-600 mt-1 block">یک JSON معتبر وارد کنید یا خالی بگذارید برای بدون داده</small>
