@@ -11,13 +11,15 @@
       </div>
       <div class="header-actions">
         <router-link to="/aggregates"
-          class="px-3 py-2 bg-gradient-to-r from-blue-400 via-blue-500 to-blue-600 text-white font-semibold rounded-xl shadow-lg hover:from-blue-500 hover:via-blue-600 hover:to-blue-700 transition duration-300 ease-in-out">
+          class="px-3 py-2 bg-gradient-to-r from-orange-500 via-orange-600 to-black text-white font-semibold rounded-xl shadow-lg hover:from-orange-600 hover:via-orange-700 hover:to-gray-900 transition duration-300 ease-in-out">
           <font-awesome-icon :icon="faArrowRight" style="color: white" />
           <span class="toolbar-text"> جدول تجمیع سرویس ها</span>
         </router-link>
-        <button class="w-full h-12 mt-4 rounded-lg text-white text-sm  leading-7 font-bold text-lg shadow-lg hover:shadow-xl
-          bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600
-          hover:to-amber-700 active:scale-98 transition-all duration-200" @click="openAddModal">
+
+        <button class="w-full h-12 mt-4 rounded-lg text-white text-sm leading-7 font-bold text-lg shadow-lg hover:shadow-xl
+  bg-gradient-to-r from-black via-gray-900 to-orange-600
+  hover:from-gray-900 hover:via-black hover:to-orange-700
+  active:scale-98 transition-all duration-200" @click="openAddModal">
           <i class="fas fa-plus"></i> سرویس جدید
         </button>
       </div>
@@ -114,10 +116,10 @@
             </td>
             <td class="actions-cell">
               <button class="btn-icon btn-edit" @click="openEditModal(service)" title="ویرایش">
-                <font-awesome-icon :icon="['fas', 'pen-to-square']" style="color: orange;" class="pen" />
+                <font-awesome-icon :icon="['fas', 'pen-to-square']" style="color: #000000;" class="pen" />
               </button>
               <button class="btn-icon btn-delete" @click="changeStatus(service.id)" title="تغییر وضعیت">
-                <font-awesome-icon :icon="['fas', 'toggle-off']" style="color: grey;" />
+                <font-awesome-icon :icon="['fas', 'toggle-off']" style="color: #555555;" />
               </button>
               <button class="btn-icon btn-delete" @click="deleteModal(service.id)" title="حذف">
                 <font-awesome-icon :icon="['fas', 'trash']" style="color: red;" />
@@ -126,7 +128,7 @@
               <button class="btn-icon btn-delete" @click="AddStepMapping(service.id)"
                 title="اضافه کردن مپ سرویس به مرحله">
                 <!-- <font-awesome-icon :icon="['fas', 'faArrowLeft']" style="color: red;" /> -->
-                <font-awesome-icon :icon="faExpand" style="color: orange" />
+                <font-awesome-icon :icon="faPlus" style="color: green" />
               </button>
             </td>
           </tr>
@@ -145,7 +147,7 @@
           <font-awesome-icon :icon="faArrowRight" style="color: orange;" @click="fetchNextPage" />
         </span>
         <span class="btn-pagenumber" @click="fetchNextpage" v-if="services.hasNextPage">{{ services.pageNumber + 1
-        }}</span>
+          }}</span>
         <span class="btn-pagenumber-orange">{{ services.pageNumber }}</span>
         <!--  -->
         <!-- <span class="btn-totalpage">{{ aggregates.totalPages }}</span> -->
@@ -318,7 +320,9 @@
       <!-- @click.self="closeModalStepModal" -->
       <div
         class="bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 p-[2px] rounded-3xl w-full max-w-2xl my-auto">
-        <div class="bg-white dark:bg-gray-900 shadow-2xl rounded-3xl w-full animate-scaleIn overflow-y-auto max-h-[90vh]" style="padding:20px">
+        <div
+          class="bg-white dark:bg-gray-900 shadow-2xl rounded-3xl w-full animate-scaleIn overflow-y-auto max-h-[90vh]"
+          style="padding:20px">
           <!-- Header -->
           <header
             class="flex flex-col sm:flex-row items-center justify-between border-b border-gray-200 pb-4 mb-6 gap-4">
@@ -338,19 +342,15 @@
             <!-- Direction Selector -->
             <div class="flex gap-4 items-center justify-between bg-gray-50 dark:bg-gray-800 p-4 rounded-xl">
               <div class="flex gap-2">
-                <button
-                  @click="selectedDirection = 1"
-                  :class="selectedDirection === 1
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'"
+                <button @click="selectedDirection = 1" :class="selectedDirection === 1
+                  ? 'bg-blue-500 text-white'
+                  : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'"
                   class="px-4 py-2 rounded-lg font-semibold transition">
                   <i class="fas fa-arrow-down mr-2"></i> نگاشت ورودی (Input)
                 </button>
-                <button
-                  @click="selectedDirection = 2"
-                  :class="selectedDirection === 2
-                    ? 'bg-green-500 text-white'
-                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'"
+                <button @click="selectedDirection = 2" :class="selectedDirection === 2
+                  ? 'bg-green-500 text-white'
+                  : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'"
                   class="px-4 py-2 rounded-lg font-semibold transition">
                   <i class="fas fa-arrow-up mr-2"></i> نگاشت خروجی (Output)
                 </button>
@@ -402,22 +402,67 @@
                     </div>
 
                     <!-- Service + Type -->
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <!-- <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div class="space-y-1">
                         <label class="block font-semibold text-gray-700 dark:text-gray-200 text-right text-sm">
                           سرویس <span class="text-red-500">*</span>
                         </label>
-                        <select v-if="isEditMode" disabled v-model="mapping.serviceId"
+                        <select v-if="isEditMode"  v-model="mapping.serviceId"
                           class="w-full px-3 py-2 rounded-lg border-2 border-blue-200 dark:border-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-800 dark:text-white shadow-sm transition duration-200 text-right text-sm font-medium">
-                          <option value="">انتخاب کنید</option>
-                          <option v-for="service in services.items" :key="service.id" :value="service.id">
-                            {{ service.name }}
+                          <option :key="mapping.serviceId" :value="mapping.serviceId">
+                            {{ stepMappings.name }}
                           </option>
                         </select>
 
                         <select v-else-if="!isEditMode" v-model="mapping.serviceId"
                           class="w-full px-3 py-2 rounded-lg border-2 border-blue-200 dark:border-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-800 dark:text-white shadow-sm transition duration-200 text-right text-sm font-medium">
                           <option value="">انتخاب کنید</option>
+                          <option v-for="service in services.items" :key="service.id" :value="service.id">
+                            {{ stepMappings.name }}
+                          </option>
+                        </select>
+                      </div>
+
+                      <div class="space-y-1">
+                        <label class="block font-semibold text-gray-700 dark:text-gray-200 text-right text-sm">
+                          نوع <span class="text-red-500">*</span>
+                        </label>
+                        <select v-model="mapping.type"
+                          class="w-full px-3 py-2 rounded-lg border-2 border-blue-200 dark:border-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-800 dark:text-white shadow-sm transition duration-200 text-right text-sm font-medium">
+                          <option value="">انتخاب کنید</option>
+                          <option value="String">رشته (String)</option>
+                          <option value="Integer">عدد صحیح (Integer)</option>
+                          <option value="Double">عدد اعشاری (Double)</option>
+                          <option value="Boolean">بولی (Boolean)</option>
+                          <option value="JSON">JSON</option>
+                          <option value="Array">آرایه (Array)</option>
+                          <option value="Object">شی (Object)</option>
+                          <option value="Date">تاریخ (Date)</option>
+                          <option value="DateTime">تاریخ و زمان (DateTime)</option>
+                          <option value="File">فایل (File)</option>
+                        </select>
+                      </div>
+                    </div> -->
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div class="space-y-1">
+                        <label class="block font-semibold text-gray-700 dark:text-gray-200 text-right text-sm">
+                          سرویس <span class="text-red-500">*</span>
+                        </label>
+
+                        <!-- Edit mode -->
+                        <select v-if="isEditMode" v-model="mapping.serviceId"
+                          class="w-full px-3 py-2 rounded-lg border-2 border-blue-200 dark:border-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-800 dark:text-white shadow-sm transition duration-200 text-right text-sm font-medium">
+                          <option :value="mapping.serviceId">
+                            {{ mapping.serviceName || formData.name }}
+                          </option>
+                        </select>
+
+                        <!-- Add mode -->
+                        <select v-else v-model="mapping.serviceId"
+                          class="w-full px-3 py-2 rounded-lg border-2 border-blue-200 dark:border-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-800 dark:text-white shadow-sm transition duration-200 text-right text-sm font-medium">
+                          <option value="">انتخاب کنید</option>
+
                           <option v-for="service in services.items" :key="service.id" :value="service.id">
                             {{ service.name }}
                           </option>
@@ -428,6 +473,7 @@
                         <label class="block font-semibold text-gray-700 dark:text-gray-200 text-right text-sm">
                           نوع <span class="text-red-500">*</span>
                         </label>
+
                         <select v-model="mapping.type"
                           class="w-full px-3 py-2 rounded-lg border-2 border-blue-200 dark:border-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-800 dark:text-white shadow-sm transition duration-200 text-right text-sm font-medium">
                           <option value="">انتخاب کنید</option>
@@ -769,45 +815,93 @@ const deleteModal = async (id) => {
 
 }
 
+// const AddStepMapping = async (id) => {
+//   // Implement your logic to add step mapping here
+//   //isLoading.value = true;
+//   debugger
+//   var record = await serviceAggregatorClient.getServicesById(id);
+
+//   // Combine inputs and outputs
+//   const allMappings = [
+//     ...(record.inputs || []).map(m => ({ ...m, __key: m.id ?? new Date() + Math.random().toString() })),
+//     ...(record.outputs || []).map(m => ({ ...m, __key: m.id ?? new Date() + Math.random().toString() }))
+//   ]
+
+//   const mappedWithParent = allMappings.map(m => ({
+//     ...m,
+//     parentId: record.id   // ← this is the key change
+//   }));
+
+
+//   if (record.id && allMappings.length > 0) {
+//     isEditMode.value = true;
+//     // Populate stepMappings with both inputs and outputs
+//     stepMappings.value = mappedWithParent
+//     originalMappings.value = mappedWithParent.map(m => ({ ...m })) // track originals
+//   } else {
+//     isEditMode.value = false;
+//     stepMappings.value = [{ ...getEmptyMapping(), parentId: record.id }]
+//     originalMappings.value = [] // no originals in add mode
+//   }
+//   showModalStepMapping.value = true;
+//   formData.value.id = record.id;
+//   formData.value.name = record.name;
+//   formData.value.url = record.url;
+//   formData.value.method = record.method;
+//   formData.value.type = record.type;
+//   formData.value.status = record.status;
+//   formData.value.authenticationMode = record.authenticationMode || "";
+//   formData.value.authenticationFormat = record.authenticationFormat || "";
+// }
+
+
 const AddStepMapping = async (id) => {
-  // Implement your logic to add step mapping here
-  //isLoading.value = true;
-  debugger
-  var record = await serviceAggregatorClient.getServicesById(id);
+  const record = await serviceAggregatorClient.getServicesById(id);
 
-  // Combine inputs and outputs
   const allMappings = [
-    ...(record.inputs || []).map(m => ({ ...m, __key: m.id ?? new Date() + Math.random().toString() })),
-    ...(record.outputs || []).map(m => ({ ...m, __key: m.id ?? new Date() + Math.random().toString() }))
-  ]
-
-  const mappedWithParent = allMappings.map(m => ({
-    ...m,
-    parentId: record.id   // ← this is the key change
-  }));
-
+    ...(record.inputs || []).map(m => ({
+      ...m,
+      __key: m.id ?? crypto.randomUUID(),
+      serviceName: record.name,
+      parentId: record.id
+    })),
+    ...(record.outputs || []).map(m => ({
+      ...m,
+      __key: m.id ?? crypto.randomUUID(),
+      serviceName: record.name,
+      parentId: record.id
+    }))
+  ];
 
   if (record.id && allMappings.length > 0) {
     isEditMode.value = true;
-    // Populate stepMappings with both inputs and outputs
-    stepMappings.value = mappedWithParent
-    originalMappings.value = mappedWithParent.map(m => ({ ...m })) // track originals
+    stepMappings.value = allMappings;
+    originalMappings.value = allMappings.map(m => ({ ...m }));
   } else {
     isEditMode.value = false;
-    stepMappings.value = [{ ...getEmptyMapping(), parentId: record.id }]
-    originalMappings.value = [] // no originals in add mode
+    stepMappings.value = [{
+      ...getEmptyMapping(),
+      parentId: record.id,
+      serviceName: record.name
+    }];
+    originalMappings.value = [];
   }
+
   showModalStepMapping.value = true;
+
   formData.value.id = record.id;
   formData.value.name = record.name;
   formData.value.url = record.url;
   formData.value.method = record.method;
   formData.value.type = record.type;
   formData.value.status = record.status;
-  formData.value.authenticationMode = record.authenticationMode || "";
-  formData.value.authenticationFormat = record.authenticationFormat || "";
-}
-
+  formData.parentId = record.id;
+  formData.ServiceId = allMappings.serviceId;
+  formData.value.authenticationMode =
+    record.authenticationMode || "";
+  formData.value.authenticationFormat =
+    record.authenticationFormat || "";
+};
 
 // Instead of one object → array of mappings
 const stepMappings = ref([])           // all mappings user is creating/editing
@@ -834,19 +928,22 @@ const openEditModal = (existingMappings) => {
 }
 
 
-const getEmptyMapping = () => ({
+const getEmptyMapping = (parentId = "", serviceName = "") => ({
   __key: new Date() + Math.random().toString(),
   name: '',
   serviceId: null,
   type: '',
   direction: 1,
+  serviceName : serviceName,
   description: "",
-  parentId: null,   // 1 = input, 2 = output
+  parentId: parentId,   // 1 = input, 2 = output
   // ... add other fields if needed (id, status, etc.)
 })
 
 const addNewMapping = async () => {
-  stepMappings.value.push({ ...getEmptyMapping(), direction: selectedDirection.value })
+  const parentId = formData.value.id;
+  const serviceName = formData.value.name;
+  stepMappings.value.push({ ...getEmptyMapping(parentId, serviceName), direction: selectedDirection.value })
   mappingUpdateKey.value++
   await nextTick()
 }
@@ -933,6 +1030,14 @@ const isValidFn = () => {
   return !isUrlValid && formData.url?.trim()
 }
 const saveStepService = async () => {
+
+  const parentId = formData.value.id;
+
+  stepMappings.value.forEach(m => {
+    if (!m.serviceId) m.serviceId = parentId;
+    if (!m.parentId) m.parentId = parentId;
+  });
+  
   const invalid = stepMappings.value.some(m =>
     !m.name?.trim() || !m.serviceId || !m.type?.trim() || m.direction == null
   )
@@ -1120,27 +1225,31 @@ const saveService = async () => {
 }
 
 const changeStatus = async (serviceId) => {
-  if (!confirm('آیا مطمئن هستید که می‌خواهید این سرویس را تغییر وضعیت دهید ؟')) {
+  if (!confirm('آیا مطمئن هستید که می‌خواهید وضعیت این سرویس را تغییر دهید؟')) {
     return
   }
 
   try {
-    // Note: Backend might not have a delete endpoint, so we'll use status = false
-    const serviceToDelete = services.value.items.find(s => s.id === serviceId)
-    if (serviceToDelete) {
-      await serviceAggregatorClient.updateService({
-        ...serviceToDelete,
-        status: false,
-      })
-      notify({
-        title: 'موفقیت',
-        text: 'سرویس تغییر وضعیت داده شد',
-        type: 'success',
-      })
-      await loadServices()
-    }
+    const service = services.value.items.find(s => s.id === serviceId)
+    if (!service) return
+
+    // Toggle status
+    const newStatus = !service.status
+
+    await serviceAggregatorClient.updateService({
+      ...service,
+      status: newStatus,
+    })
+
+    notify({
+      title: 'موفقیت',
+      text: `سرویس با موفقیت ${newStatus ? 'فعال' : 'غیرفعال'} شد`,
+      type: 'success',
+    })
+
+    await loadServices()
   } catch (error) {
-    console.error('Error deleting service:', error)
+    console.error('Error changing service status:', error)
     notify({
       title: 'خطا',
       text: 'خطا در تغییر وضعیت سرویس',
@@ -1149,6 +1258,36 @@ const changeStatus = async (serviceId) => {
   }
 }
 
+// const changeStatus = async (serviceId) => {
+//   if (!confirm('آیا مطمئن هستید که می‌خواهید این سرویس را تغییر وضعیت دهید ؟')) {
+//     return
+//   }
+
+//   try {
+//     // Note: Backend might not have a delete endpoint, so we'll use status = false
+//     const serviceToDelete = services.value.items.find(s => s.id === serviceId)
+//     if (serviceToDelete) {
+//       await serviceAggregatorClient.updateService({
+//         ...serviceToDelete,
+//         status: false,
+//       })
+//       notify({
+//         title: 'موفقیت',
+//         text: 'سرویس تغییر وضعیت داده شد',
+//         type: 'success',
+//       })
+//       await loadServices()
+//     }
+//   } catch (error) {
+//     console.error('Error deleting service:', error)
+//     notify({
+//       title: 'خطا',
+//       text: 'خطا در تغییر وضعیت سرویس',
+//       type: 'error',
+//     })
+//   }
+// }
+
 onMounted(() => {
   loadServices()
 })
@@ -1156,15 +1295,45 @@ onMounted(() => {
 
 <style scoped lang="postcss">
 .SearchButton {
-  background-color: rgb(249, 120, 0);
+  background: linear-gradient(to right, rgb(249, 120, 0), rgb(220, 90, 0), black);
   width: 250px;
   height: 50px;
   line-height: 1;
   margin-top: 2.3em;
   border-radius: 50px;
   color: white;
-
+  font-weight: bold;
+  border: none;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+  transition: all 0.2s ease-in-out;
 }
+
+.SearchButton:hover {
+  background: linear-gradient(to right, rgb(255, 140, 20), rgb(230, 100, 0), rgb(30, 30, 30));
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.35);
+  transform: translateY(-1px);
+}
+
+.btn-del-SearchButton {
+  background: linear-gradient(to right, black, rgb(30, 30, 30), rgb(249, 120, 0));
+  width: 250px;
+  height: 50px;
+  line-height: 1;
+  margin-top: 2.3em;
+  border-radius: 50px;
+  color: white;
+  font-weight: bold;
+  border: none;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+  transition: all 0.2s ease-in-out;
+}
+
+.btn-del-SearchButton:hover {
+  background: linear-gradient(to right, rgb(20, 20, 20), black, rgb(255, 120, 0));
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.35);
+  transform: translateY(-1px);
+}
+
 
 .search_holder {
   display: flex;
@@ -1492,7 +1661,7 @@ onMounted(() => {
 
 .btn-edit {
   background: #e7f3ff;
-  color: #ffa600;
+  color: #000000;
 }
 
 .btn-edit:hover {

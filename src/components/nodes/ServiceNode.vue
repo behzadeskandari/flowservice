@@ -74,10 +74,11 @@
 
 <script setup>
 import { onBeforeUnmount, onMounted, toRefs, ref, computed, inject } from 'vue'
-import { Handle } from '@vue-flow/core'
+import { Handle, useVueFlow } from '@vue-flow/core'
 import { faEdit, faEye, faTrash, faSpinner } from '@fortawesome/free-solid-svg-icons'
 import ConfirmModal from '../modals/ConfirmModal.vue'
 import { useFlowStore } from '@/stores/flowStore'
+const { removeNodes, removeEdges, edges } = useVueFlow()
 import serviceAggregatorClient from '../../utils/service-aggregator-client'
 const showConfirm = ref(false)
 // import { useEventListener  } from '@vueuse/core'
@@ -92,6 +93,24 @@ const store = useFlowStore()
 // Inject execution status from parent
 const parentExecutionStatus = inject('executionStatus', ref({}))
 
+const executionStatus = computed(() => {
+  const status = parentExecutionStatus.value?.[id.value] || null
+
+  // تشخیص End Node
+  const isEndNode =
+    !data.value.serviceId ||
+    data.value.type === 'end' ||
+    data.value.nodeType === 'end' ||
+    (data.value.stepName && data.value.stepName.toLowerCase().includes('end')) ||
+    (data.value.label && data.value.label.toLowerCase().includes('end'))
+
+  if (isEndNode) {
+    return 'completed'   // همیشه موفق نشون بده
+  }
+
+  return status
+})
+
 const nodeRef = ref(null)
 const contextMenu = ref({
   visible: false,
@@ -102,10 +121,10 @@ const contextMenu = ref({
 const menuRef = ref(null)
 const openContextMenuId = ref(null)
 
-// Compute execution status based on injected executionStatus
-const executionStatus = computed(() => {
-  return parentExecutionStatus.value?.[id.value] || null
-})
+// // Compute execution status based on injected executionStatus
+// const executionStatus = computed(() => {
+//   return parentExecutionStatus.value?.[id.value] || null
+// })
 
 const previewFields = computed(() => {
   return data.value.fields ? data.value.fields.slice(0, 3) : []
@@ -203,20 +222,56 @@ async function onContextSelect(action) {
     store.setSelectedNode(id.value, 'edit')
   } else if (action === 'delete') {
     showConfirm.value = true
-    await serviceAggregatorClient.deleteAggregateStep(id.value);
-
   } else if (action === 'json') {
     store.setSelectedNode(id.value, 'view')
   }
 }
 
-
-
-
 async function onConfirmDelete() {
-   await serviceAggregatorClient.deleteAggregateStep(id.value);
-   showConfirm.value = false
+  try {
+    // ۱. فراخوانی API حذف
+    await serviceAggregatorClient.deleteAggregateStep(id.value)
+
+    // ۲. حذف یال‌های متصل به این گره از Vue Flow
+    const connectedEdges = edges.value.filter(
+      (edge) => edge.source === id.value || edge.target === id.value
+    )
+    if (connectedEdges.length > 0) {
+      removeEdges(connectedEdges.map((e) => e.id))
+    }
+
+    // ۳. حذف گره از Vue Flow
+    removeNodes([id.value])
+
+    // ۴. آپدیت استور (در صورت وجود متد removeNode)
+    if (typeof store.removeNode === 'function') {
+      store.removeNode(id.value)
+    }
+
+    showConfirm.value = false
+  } catch (error) {
+    console.error('خطا در حذف گام:', error)
+  }
 }
+
+// async function onContextSelect(action) {
+//   openContextMenuId.value = null
+//   contextMenu.value.visible = false
+//   if (action === 'edit') {
+//     store.setSelectedNode(id.value, 'edit')
+//   } else if (action === 'delete') {
+//     showConfirm.value = true
+//     await serviceAggregatorClient.deleteAggregateStep(id.value);
+
+//   } else if (action === 'json') {
+//     store.setSelectedNode(id.value, 'view')
+//   }
+// }
+
+// async function onConfirmDelete() {
+//    await serviceAggregatorClient.deleteAggregateStep(id.value);
+//    showConfirm.value = false
+// }
 
 function onCancelDelete() {
   showConfirm.value = false

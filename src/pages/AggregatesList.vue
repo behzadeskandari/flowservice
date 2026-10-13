@@ -11,9 +11,26 @@
         <p> تجمیع ها</p>
       </div>
       <div class="header-actions">
+        <router-link to="/services" class="px-3 py-2
+         bg-gradient-to-r from-orange-500 via-orange-600 to-black
+         text-white font-semibold rounded-xl shadow-lg
+         hover:from-orange-600 hover:via-orange-700 hover:to-gray-900
+         transition duration-300 ease-in-out">
+          <font-awesome-icon :icon="faArrowLeft" style="color: white" />
+          <span class="toolbar-text"> جدول سرویس ها</span>
+        </router-link>
 
-        <router-link to="/services"
-          class="px-3 py-2 bg-gradient-to-r from-blue-400 via-blue-500 to-blue-600 text-white font-semibold rounded-xl shadow-lg hover:from-blue-500 hover:via-blue-600 hover:to-blue-700 transition duration-300 ease-in-out">
+        <button class="w-full h-12 mt-4 rounded-lg text-white text-sm leading-7 font-bold text-lg
+         shadow-lg hover:shadow-xl
+         bg-gradient-to-r from-black via-gray-900 to-orange-600
+         hover:from-gray-900 hover:via-black hover:to-orange-700
+         active:scale-98 transition-all duration-200" @click="openAddModal">
+          <span class="l-hight" style="margin-inline: 20px;">
+            تجمیع سرویس جدید
+          </span>
+        </button>
+        <!-- <router-link to="/services"
+        class="px-3 py-2 bg-gradient-to-r from-black via-gray-900 to-orange-600 text-white font-semibold rounded-xl shadow-lg hover:from-gray-900 hover:via-black-600 hover:to-b-700 transition duration-300 ease-in-out">
           <font-awesome-icon :icon="faArrowLeft" style="color: white" />
           <span class="toolbar-text"> جدول سرویس ها</span>
         </router-link>
@@ -23,7 +40,7 @@
           <span class="l-hight" style="margin-inline : 20px;">
             تجمیع سرویس جدید
           </span>
-        </button>
+        </button> -->
       </div>
     </div>
     <div class="search_holder">
@@ -75,8 +92,8 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="(aggregate, index) in aggregates.items" :key="aggregate.id" @click="navigateToEditor(aggregate.id)"
-              class="clickable-row">
+            <tr v-for="(aggregate, index) in aggregates.items" :key="aggregate.id"
+              @click="navigateToEditor(aggregate.id)" class="clickable-row">
               <td class="name-cell">{{ index + 1 }}</td>
               <td class="name-cell">{{ aggregate.name || 'بدون نام' }}</td>
               <td class="description-cell">{{ truncateDescription(aggregate.description) }}</td>
@@ -100,17 +117,17 @@
               <td class="actions-cell" @click.stop>
                 <button class="btn-icon btn-view" @click.stop="navigateToEditor(aggregate.id)" title="مشاهده Flow">
                   <FontAwesomeIcon :icon="['fa', 'play']" />
-                  <font-awesome-icon :icon="['fas', 'eye']" style="color: red;" />
+                  <font-awesome-icon :icon="['fas', 'eye']" style="color: black;" />
                 </button>
                 <button class="btn-icon btn-edit" @click.stop="openEditModal(aggregate)" title="ویرایش">
                   <font-awesome-icon :icon="['fas', 'pen-to-square']" style="color: orange;" class="pen" />
                 </button>
                 <button class="btn-icon btn-delete" @click.stop="deleteModal(aggregate.id)" title="پاک کردن">
-                  <font-awesome-icon :icon="faDeleteLeft" style="color: red;" />
+                  <font-awesome-icon :icon="faRemove" style="color: red;" />
                 </button>
                 <!-- 🔥 NEW: Add Mapping -->
                 <button class="btn-icon btn-add" title="Add Mapping" @click.stop="openAddMappingModal(aggregate.id)">
-                  <font-awesome-icon :icon="faPlus" style="color : orange" />
+                  <font-awesome-icon :icon="faPlus" style="color : green" />
                 </button>
               </td>
             </tr>
@@ -128,7 +145,7 @@
         </span>
         <span class="btn-pagenumber-orange">{{ aggregates.pageNumber }}</span>
         <span class="btn-pagenumber" @click="fetchNextpage" v-if="aggregates.hasNextPage">{{ aggregates.pageNumber + 1
-        }}</span>
+          }}</span>
         <!-- <span class="btn-totalpage">{{ aggregates.totalPages }}</span> -->
         <!-- <span class="btn-pagenumber-grey">{{ aggregates.totalCount }} تعداد کل رکورد </span> -->
         <span class="btn-pagenumber" v-if="aggregates.hasNextPage" @click="fetchNextPage">
@@ -155,7 +172,7 @@ import serviceAggregatorClient from '@/utils/service-aggregator-client'
 import LogoutButton from '@/components/LogoutButton.vue'
 import AggregateModal from '@/components/modals/AggregateModal.vue'
 import { useFlowStore } from '@/stores/flowStore'
-import { faCamera, faSun, faMoon, faPlus, faBars, faArrowLeft, faArrowRight, faExpand, faDeleteLeft, faArrowsLeftRight } from '@fortawesome/free-solid-svg-icons'
+import { faCamera, faSun, faMoon, faPlus, faBars, faArrowLeft, faRemove, faArrowRight, faExpand, faDeleteLeft, faArrowsLeftRight } from '@fortawesome/free-solid-svg-icons'
 import ConfirmModal from '@/components/modals/ConfirmModal.vue'
 import AggregateMappingModal from '@/components/modals/AggregateMappingModal.vue'
 
@@ -352,24 +369,43 @@ const confirmDeleteMapping = async (mappingId: string) => {
 
 <style scoped lang="postcss">
 .SearchButton {
-  background-color: rgb(249, 120, 0);
+  background: linear-gradient(to right, rgb(249, 120, 0), rgb(220, 90, 0), black);
   width: 250px;
   height: 50px;
   line-height: 1;
   margin-top: 2.3em;
   border-radius: 50px;
   color: white;
+  font-weight: bold;
+  border: none;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+  transition: all 0.2s ease-in-out;
+}
 
+.SearchButton:hover {
+  background: linear-gradient(to right, rgb(255, 140, 20), rgb(230, 100, 0), rgb(30, 30, 30));
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.35);
+  transform: translateY(-1px);
 }
 
 .btn-del-SearchButton {
-  background-color: rgb(10, 184, 1);
+  background: linear-gradient(to right, black, rgb(30, 30, 30), rgb(249, 120, 0));
   width: 250px;
   height: 50px;
   line-height: 1;
   margin-top: 2.3em;
   border-radius: 50px;
   color: white;
+  font-weight: bold;
+  border: none;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+  transition: all 0.2s ease-in-out;
+}
+
+.btn-del-SearchButton:hover {
+  background: linear-gradient(to right, rgb(20, 20, 20), black, rgb(255, 120, 0));
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.35);
+  transform: translateY(-1px);
 }
 
 .search_holder {
@@ -648,10 +684,12 @@ const confirmDeleteMapping = async (mappingId: string) => {
   background: #e7f3ff;
   color: red;
 }
-.btn-add{
+
+.btn-add {
   background: #E7F3FF;
   color: e7f3ff;
 }
+
 .btn-edit:hover {
   background: #ffa600;
   color: white;

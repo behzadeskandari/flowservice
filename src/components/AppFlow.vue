@@ -3,58 +3,77 @@
     <!-- Header Toolbar -->
     <div class="toolbar">
       <LogoutButton />
-      <router-link to="/aggregates"
-        class="px-3 py-2 bg-gradient-to-r from-blue-400 via-blue-500 to-blue-600 text-white font-semibold rounded-xl shadow-lg hover:from-blue-500 hover:via-blue-600 hover:to-blue-700 transition duration-300 ease-in-out">
+      <router-link
+        to="/aggregates"
+        class="px-3 py-2 bg-gradient-to-r from-blue-400 via-blue-500 to-blue-600 text-white font-semibold rounded-xl shadow-lg hover:from-blue-500 hover:via-blue-600 hover:to-blue-700 transition duration-300 ease-in-out"
+      >
         <font-awesome-icon :icon="faArrowLeft" style="color: white" />
 
         <span class="toolbar-text"> جدول تجمیع سرویس</span>
       </router-link>
-      <router-link to="/services" class="px-3 py-2 bg-gradient-to-r from-blue-400 via-blue-500
-        to-blue-600 text-white font-semibold rounded-xl shadow-lg
-        hover:from-blue-500 hover:via-blue-600 hover:to-blue-700
-        transition duration-300 ease-in-out">
+      <router-link
+        to="/services"
+        class="px-3 py-2 bg-gradient-to-r from-blue-400 via-blue-500 to-blue-600 text-white font-semibold rounded-xl shadow-lg hover:from-blue-500 hover:via-blue-600 hover:to-blue-700 transition duration-300 ease-in-out"
+      >
         <font-awesome-icon :icon="faArrowRight" style="color: white" />
         <span class="toolbar-text"> جدول سرویس </span>
       </router-link>
-      <button class="px-3 py-2 bg-gradient-to-r from-green-400 via-green-500
-        to-green-600 text-white font-semibold rounded-xl shadow-lg
-        hover:from-green-500 hover:via-green-600 hover:to-green-700
-        transition duration-300 ease-in-out" @click="onAddStep">
+      <button
+        class="px-3 py-2 bg-gradient-to-r from-green-400 via-green-500 to-green-600 text-white font-semibold rounded-xl shadow-lg hover:from-green-500 hover:via-green-600 hover:to-green-700 transition duration-300 ease-in-out"
+        @click="onAddStep"
+      >
         <font-awesome-icon :icon="faPlus" style="color: white" />
         <span class="toolbar-text">قدم ایجاد</span>
       </button>
 
-      <button class="px-3 py-2 bg-gradient-to-r from-orange-400 via-orange-500
-        to-orange-600 text-white font-semibold rounded-xl shadow-lg
-        hover:from-orange-500 hover:via-orange-600 hover:to-orange-700
-        transition duration-300 ease-in-out" @click="fitView">
+      <button
+        class="px-3 py-2 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 text-white font-semibold rounded-xl shadow-lg hover:from-orange-500 hover:via-orange-600 hover:to-orange-700 transition duration-300 ease-in-out"
+        @click="fitView"
+      >
         <font-awesome-icon :icon="faExpand" style="color: white" />
         <span class="toolbar-text"> تنظیم اندازه</span>
       </button>
-      <button :disabled="isExecuting" class="px-3 py-2 bg-gradient-to-r from-purple-400 via-purple-500
-        to-purple-600 text-white font-semibold rounded-xl shadow-lg
-        hover:from-purple-500 hover:via-purple-600 hover:to-purple-700
-        transition duration-300 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed" @click="executeAggregate">
-        <font-awesome-icon :icon="isExecuting ? faSpinner : faPlay" style="color: white;"
-          :class="{ 'animate-spin': isExecuting }" />
-        <span class="toolbar-text">{{ isExecuting ? 'درحال اجرا...' : 'اجرا' }}</span>
+      <button
+        :disabled="isExecuting"
+        class="px-3 py-2 bg-gradient-to-r from-purple-400 via-purple-500 to-purple-600 text-white font-semibold rounded-xl shadow-lg hover:from-purple-500 hover:via-purple-600 hover:to-purple-700 transition duration-300 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed"
+        @click="executeAggregate"
+      >
+        <font-awesome-icon
+          :icon="isExecuting ? faSpinner : faPlay"
+          style="color: white"
+          :class="{ 'animate-spin': isExecuting }"
+        />
+        <span class="toolbar-text">{{ isExecuting ? "درحال اجرا..." : "اجرا" }}</span>
       </button>
     </div>
 
     <!-- Main Content Area -->
     <div class="editor-container">
       <!-- Mobile Sidebar Toggle Button -->
-      <button v-if="showMobileSidebarToggle" class="sidebar-toggle-btn" @click="isSidebarOpen = !isSidebarOpen"
-        :aria-label="isSidebarOpen ? 'بستن منو' : 'باز کردن منو'">
+      <button
+        v-if="showMobileSidebarToggle"
+        class="sidebar-toggle-btn"
+        @click="isSidebarOpen = !isSidebarOpen"
+        :aria-label="isSidebarOpen ? 'بستن منو' : 'باز کردن منو'"
+      >
         <font-awesome-icon :icon="faBars" />
       </button>
 
       <!-- Sidebar Overlay (Mobile only) -->
-      <div v-if="isSidebarOpen && showMobileSidebarToggle" class="sidebar-overlay" @click="isSidebarOpen = false"></div>
+      <div
+        v-if="isSidebarOpen && showMobileSidebarToggle"
+        class="sidebar-overlay"
+        @click="isSidebarOpen = false"
+      ></div>
 
       <!-- Left Sidebar: Available Services -->
-      <div class="sidebar"
-        :class="{ 'sidebar-open': isSidebarOpen, 'sidebar-hidden': !isSidebarOpen && showMobileSidebarToggle }">
+      <div
+        class="sidebar"
+        :class="{
+          'sidebar-open': isSidebarOpen,
+          'sidebar-hidden': !isSidebarOpen && showMobileSidebarToggle,
+        }"
+      >
         <div class="sidebar-header">
           <h3>سرویس‌های موجود</h3>
           <p class="sidebar-subtitle">
@@ -70,32 +89,65 @@
           <p>هیچ سرویسی موجود نیست</p>
         </div>
         <div v-else class="services-list">
-          <div class="service-card" style="color:green" draggable="true"
-            @dragstart="onDragStartStatic($event, { id: null, name: 'Start Node', type: 'startNode' })"
-            @dragend="onDragEnd">
+          <div
+            class="service-card"
+            style="color: green"
+            draggable="true"
+            @dragstart="
+              onDragStartStatic($event, {
+                id: null,
+                name: 'Start Node',
+                type: 'startNode',
+              })
+            "
+            @dragend="onDragEnd"
+          >
             Start Node
           </div>
-          <div class="service-card" style="color:green" draggable="true"
-            @dragstart="onDragStartStatic($event, { id: null, name: 'If Node', type: 'decisionNode' })"
-            @dragend="onDragEnd">
+          <div
+            class="service-card"
+            style="color: green"
+            draggable="true"
+            @dragstart="
+              onDragStartStatic($event, {
+                id: null,
+                name: 'If Node',
+                type: 'decisionNode',
+              })
+            "
+            @dragend="onDragEnd"
+          >
             If Node
           </div>
-          <div class="service-card" style="color:green" draggable="true"
-            @dragstart="onDragStartStatic($event, { id: null, name: 'End Node', type: 'endNode' })"
-            @dragend="onDragEnd">
+          <div
+            class="service-card"
+            style="color: green"
+            draggable="true"
+            @dragstart="
+              onDragStartStatic($event, { id: null, name: 'End Node', type: 'endNode' })
+            "
+            @dragend="onDragEnd"
+          >
             End Node
           </div>
-          <div v-for="service in services.items" :key="service.id" class="service-card" :draggable="true"
-            @dragstart="onDragStart($event, service)" @dragend="onDragEnd" @dblclick="onServiceDoubleClick(service)">
+          <div
+            v-for="service in services.items"
+            :key="service.id"
+            class="service-card"
+            :draggable="true"
+            @dragstart="onDragStart($event, service)"
+            @dragend="onDragEnd"
+            @dblclick="onServiceDoubleClick(service)"
+          >
             <div class="service-card-header">
               <strong>{{ service.name }}</strong>
             </div>
             <div class="service-card-body">
               <div class="service-meta">
                 <span class="method-badge" :class="(service.method || '').toLowerCase()">
-                  {{ service.method || 'GET' }}
+                  {{ service.method || "GET" }}
                 </span>
-                <span class="type-badge">{{ service.type || 'REST' }}</span>
+                <span class="type-badge">{{ service.type || "REST" }}</span>
               </div>
               <div class="service-url" :title="service.url">
                 {{ truncateUrl(service.url) }}
@@ -108,12 +160,29 @@
       <!-- Main Canvas: Vue Flow -->
       <!-- @edge-double-click="onEdgeDoubleClick" -->
       <div class="canvas-container">
-        <VueFlow ref="vueFlowRef" :default-viewport="{ x: 0, y: 0, zoom: 0.8 }" :max-zoom="2" :min-zoom="0.1"
-          :nodes="store.nodes" :edges="store.edges" :zoom-on-scroll="true" :fit-view-on-init="true" :pan-on-drag="true"
-          :pan-on-scroll="true" :pan-on-scroll-speed="0.8" :selection-on-click="false"
-          :class="{ 'dark': themeStore.isDark }" @nodes-change="onNodesChange" @edges-change="onEdgesChange"
-          @connect="onConnect" @node-dblclick="onNodeDblClick" @drop="onDrop" @dragover="onDragOver"
-          :node-types="nodeTypes" :edges-updatable="true">
+        <VueFlow
+          ref="vueFlowRef"
+          :default-viewport="{ x: 0, y: 0, zoom: 0.8 }"
+          :max-zoom="2"
+          :min-zoom="0.1"
+          :nodes="store.nodes"
+          :edges="store.edges"
+          :zoom-on-scroll="true"
+          :fit-view-on-init="true"
+          :pan-on-drag="true"
+          :pan-on-scroll="true"
+          :pan-on-scroll-speed="0.8"
+          :selection-on-click="false"
+          :class="{ dark: themeStore.isDark }"
+          @nodes-change="onNodesChange"
+          @edges-change="onEdgesChange"
+          @connect="onConnect"
+          @node-dblclick="onNodeDblClick"
+          @drop="onDrop"
+          @dragover="onDragOver"
+          :node-types="nodeTypes"
+          :edges-updatable="true"
+        >
           <Background variant="dots" :gap="25" :size="3" />
           <Panel position="top-center"></Panel>
           <Controls>
@@ -137,67 +206,102 @@
 
     <!-- Modals -->
     <StepModal ref="stepModalRef" />
-    <StepEditModal :show="store.showModal && store.modalMode === 'edit'" :step-id="store.selectedNode" mode="edit"
-      @update:show="(val) => { if (!val) store.clearSelected() }" @saved="handleStepSaved" />
-    <ExecuteAggregateModal ref="executeModalRef" :aggregate-id="route.params.id" @execute="onAggregateExecuted" />
+    <StepEditModal
+      :show="store.showModal && store.modalMode === 'edit'"
+      :step-id="store.selectedNode"
+      mode="edit"
+      @update:show="
+        (val) => {
+          if (!val) store.clearSelected();
+        }
+      "
+      @saved="handleStepSaved"
+    />
+    <ExecuteAggregateModal
+      ref="executeModalRef"
+      :aggregate-id="route.params.id"
+      @execute="onAggregateExecuted"
+    />
     <ExecutionResultModal ref="executionResultModalRef" />
     <notifications />
-    <MappingEditorModal :edge="selectedEdgeForEditor"
-      @close="() => { selectedEdgeForEditor = null; showEditorModal = false }" />
+    <MappingEditorModal
+      :edge="selectedEdgeForEditor"
+      @close="
+        () => {
+          selectedEdgeForEditor = null;
+          showEditorModal = false;
+        }
+      "
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, watch, markRaw, nextTick, provide } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { VueFlow, useVueFlow, Panel } from '@vue-flow/core'
-import { Background } from '@vue-flow/background'
-import { Controls, ControlButton } from '@vue-flow/controls'
-import { MiniMap } from '@vue-flow/minimap'
-import { notify } from '@kyvg/vue3-notification'
-import { useFlowStore } from '@/stores/flowStore'
-import serviceAggregatorClient from '@/utils/service-aggregator-client'
-import LogoutButton from '@/components/LogoutButton.vue'
-import StepModal from '@/components/modals/StepModal.vue'
-import StepEditModal from '@/components/modals/StepEditModal.vue'
-import ExecuteAggregateModal from '@/components/modals/ExecuteAggregateModal.vue'
-import ExecutionResultModal from '@/components/modals/ExecutionResultModal.vue'
-import ServiceNode from '@/components/nodes/ServiceNode.vue'
-import DecisionNode from '@/components/nodes/DecisionNode.vue'
-import EndNode from '@/components/nodes/EndNode.vue'
-import StartNode from '@/components/nodes/StartNode.vue'
-import { faCamera, faSun, faMoon, faPlus, faBars, faArrowLeft, faArrowRight, faExpand, faPlay, faSpinner } from '@fortawesome/free-solid-svg-icons'
-import { useScreenshot } from '@/hooks/useScreenshot'
-import { useThemeStore } from '@/stores/useThemeStore' // Assuming you have a theme store
-import MappingEditorNode from './nodes/MappingEditorNode.vue'
-import MappingEditorModal from './modals/MappingEditorModal.vue'
+import { ref, onMounted, onBeforeUnmount, watch, markRaw, nextTick, provide } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import { VueFlow, useVueFlow, Panel } from "@vue-flow/core";
+import { Background } from "@vue-flow/background";
+import { Controls, ControlButton } from "@vue-flow/controls";
+import { MiniMap } from "@vue-flow/minimap";
+import { notify } from "@kyvg/vue3-notification";
+import { useFlowStore } from "@/stores/flowStore";
+import serviceAggregatorClient from "@/utils/service-aggregator-client";
+import LogoutButton from "@/components/LogoutButton.vue";
+import StepModal from "@/components/modals/StepModal.vue";
+import StepEditModal from "@/components/modals/StepEditModal.vue";
+import ExecuteAggregateModal from "@/components/modals/ExecuteAggregateModal.vue";
+import ExecutionResultModal from "@/components/modals/ExecutionResultModal.vue";
+import ServiceNode from "@/components/nodes/ServiceNode.vue";
+import DecisionNode from "@/components/nodes/DecisionNode.vue";
+import EndNode from "@/components/nodes/EndNode.vue";
+import StartNode from "@/components/nodes/StartNode.vue";
+import {
+  faCamera,
+  faSun,
+  faMoon,
+  faPlus,
+  faBars,
+  faArrowLeft,
+  faArrowRight,
+  faExpand,
+  faPlay,
+  faSpinner,
+} from "@fortawesome/free-solid-svg-icons";
+import { useScreenshot } from "@/hooks/useScreenshot";
+import { useThemeStore } from "@/stores/useThemeStore"; // Assuming you have a theme store
+import MappingEditorNode from "./nodes/MappingEditorNode.vue";
+import MappingEditorModal from "./modals/MappingEditorModal.vue";
 
-const themeStore = useThemeStore()
-const vueFlowInstance = useVueFlow()
-const { fitView: fitViewFlow, onNodeDragStop } = vueFlowInstance
-const screenToFlowCoordinate = (vueFlowInstance as any).screenToFlowCoordinate
-const { capture } = useScreenshot()
-const route = useRoute()
-const router = useRouter()
-const store = useFlowStore()
-const vueFlowRef = ref<any>(null)
-const stepModalRef = ref<InstanceType<typeof StepModal> | null>(null)
-const executeModalRef = ref<InstanceType<typeof ExecuteAggregateModal> | null>(null)
-const executionResultModalRef = ref<InstanceType<typeof ExecutionResultModal> | null>(null)
+const themeStore = useThemeStore();
+const vueFlowInstance = useVueFlow();
+const { fitView: fitViewFlow, onNodeDragStop } = vueFlowInstance;
+const screenToFlowCoordinate = (vueFlowInstance as any).screenToFlowCoordinate;
+const { capture } = useScreenshot();
+const route = useRoute();
+const router = useRouter();
+const store = useFlowStore();
+const vueFlowRef = ref<any>(null);
+const stepModalRef = ref<InstanceType<typeof StepModal> | null>(null);
+const executeModalRef = ref<InstanceType<typeof ExecuteAggregateModal> | null>(null);
+const executionResultModalRef = ref<InstanceType<typeof ExecutionResultModal> | null>(
+  null
+);
 const isDark = ref(false);
-const services = ref<any[]>([])
-const isLoadingServices = ref(false)
-const draggedService = ref<any>(null)
-const isSidebarOpen = ref(true) // Default to open
-const showMobileSidebarToggle = ref(false)
-const isExecuting = ref(false)
-const executionStatus = ref<{ [key: string]: 'pending' | 'executing' | 'completed' | 'error' }>({})
-const executingStepId = ref<string | null>(null)
-const executedSteps = ref<Set<string>>(new Set())
-const activeEdgeIds = ref<Set<string>>(new Set())
-const conditionResultMap = ref<Record<string, boolean>>({})
+const services = ref<any[]>([]);
+const isLoadingServices = ref(false);
+const draggedService = ref<any>(null);
+const isSidebarOpen = ref(true); // Default to open
+const showMobileSidebarToggle = ref(false);
+const isExecuting = ref(false);
+const executionStatus = ref<{
+  [key: string]: "pending" | "executing" | "completed" | "error";
+}>({});
+const executingStepId = ref<string | null>(null);
+const executedSteps = ref<Set<string>>(new Set());
+const activeEdgeIds = ref<Set<string>>(new Set());
+const conditionResultMap = ref<Record<string, boolean>>({});
 // Provide execution status to all child nodes
-provide('executionStatus', executionStatus)
+provide("executionStatus", executionStatus);
 
 // Register node types
 const nodeTypes = {
@@ -205,76 +309,73 @@ const nodeTypes = {
   decisionNode: markRaw(DecisionNode),
   startNode: markRaw(StartNode),
   endNode: markRaw(EndNode),
-}
+};
 function sortByConnectionOrder() {
   // Use the same layout function from the store
-  store.applyConnectionOrderLayout()
+  store.applyConnectionOrderLayout();
 }
 
-const showEditorModal = ref(false)
-const selectedEdgeForEditor = ref(null)
+const showEditorModal = ref(false);
+const selectedEdgeForEditor = ref(null);
 
 const onEdgeDoubleClick = ({ edge }) => {
-  console.log('Edge double-clicked:', edge)
-  selectedEdgeForEditor.value = edge
-  showEditorModal.value = true
-}
-
+  console.log("Edge double-clicked:", edge);
+  selectedEdgeForEditor.value = edge;
+  showEditorModal.value = true;
+};
 
 // Check screen size on mount and resize
 const checkScreenSize = () => {
-  const isMobile = window.innerWidth < 1024
-  showMobileSidebarToggle.value = isMobile
+  const isMobile = window.innerWidth < 1024;
+  showMobileSidebarToggle.value = isMobile;
   // On mobile, start with sidebar closed; on desktop, always open
   if (!isMobile) {
-    isSidebarOpen.value = true // Always show on desktop
+    isSidebarOpen.value = true; // Always show on desktop
   }
-}
+};
 
 function doScreenshot() {
   if (!vueFlowRef.value) {
-    console.warn('VueFlow element not found')
-    return
+    console.warn("VueFlow element not found");
+    return;
   }
 
   // Get the actual DOM element from the VueFlow component ref
-  const element = vueFlowRef.value.$el || vueFlowRef.value
+  const element = vueFlowRef.value.$el || vueFlowRef.value;
 
   if (!element) {
-    console.warn('Cannot access VueFlow DOM element')
-    return
+    console.warn("Cannot access VueFlow DOM element");
+    return;
   }
 
-  capture(element, { shouldDownload: true, type: 'png' })
+  capture(element, { shouldDownload: true, type: "png" });
 }
 
 const executeAggregate = async () => {
-  const aggregateId = route.params.id as string
+  const aggregateId = route.params.id as string;
   if (!aggregateId) {
     notify({
-      title: 'خطا',
-      text: 'Aggregate ID یافت نشد',
-      type: 'error',
-    })
-    return
+      title: "خطا",
+      text: "Aggregate ID یافت نشد",
+      type: "error",
+    });
+    return;
   }
 
   if (store.nodes.length === 0) {
     notify({
-      title: 'خطا',
-      text: 'هیچ گام برای اجرا وجود ندارد',
-      type: 'error',
-    })
-    return
+      title: "خطا",
+      text: "هیچ گام برای اجرا وجود ندارد",
+      type: "error",
+    });
+    return;
   }
 
   // Open the execute modal instead of executing directly
   if (executeModalRef.value) {
-    executeModalRef.value.openModal()
+    executeModalRef.value.openModal();
   }
-
-
-}
+};
 
 // const animateExecutionFlow = async (executionSteps, initialResponse) => {
 //   // Reset previous execution state
@@ -368,121 +469,122 @@ const executeAggregate = async () => {
 
 // Small helper
 
-
 const animateExecutionFlow = async (executionSteps, initialResponse) => {
   // executionSteps is now array of log entries like:
   // [{ stepId: "...", duration: 144, responseStatusCode: 200, ... }, ...]
-  store.resetExecution()
-  console.log("Statuses after reset:", { ...store.executionStatus })
+  store.resetExecution();
+  console.log("Statuses after reset:", { ...store.executionStatus });
 
-
-  const startNode = store.nodes.find(n =>
-    n.type === 'startNode' ||
-    n.data?.type === 'startNode' ||
-    n.type?.toLowerCase().includes('start') ||
-    n.data?.label?.toLowerCase().includes('شروع') ||
-    n.data?.stepName?.toLowerCase().includes('شروع') ||
-    n.id.toLowerCase().includes('start')
+  const startNode = store.nodes.find(
+    (n) =>
+      n.type === "startNode" ||
+      n.data?.type === "startNode" ||
+      n.type?.toLowerCase().includes("start") ||
+      n.data?.label?.toLowerCase().includes("شروع") ||
+      n.data?.stepName?.toLowerCase().includes("شروع") ||
+      n.id.toLowerCase().includes("start")
   );
 
   if (startNode) {
-     store.setNodeStatus(startNode.id, 'success')
+    store.setNodeStatus(startNode.id, "success");
     //     await nextTick()
     //     await new Promise(r => setTimeout(r, 400))
     //executionStatus.value[startNode.id] = 'completed';
     startNode.data = {
       ...startNode.data,
       isExecuting: false,
-      executionStatus: 'success',   // or 'completed'
+      executionStatus: "success", // or 'completed'
       // Optional: add a fake duration for animation feel
-      duration: 300
+      duration: 300,
     };
 
     // Force small delay so user sees it
     await nextTick();
-    await new Promise(r => setTimeout(r, 400));
+    await new Promise((r) => setTimeout(r, 400));
   }
   // Before the loop
-  console.log("Start node:", startNode?.id, startNode?.data)
+  console.log("Start node:", startNode?.id, startNode?.data);
 
   for (const logEntry of executionSteps) {
-    const stepId = logEntry.stepId
+    const stepId = logEntry.stepId;
 
-    console.log("Nodes in store:", store.nodes.map(n => ({
-      id: n.id,
-      aggregateStepId: n.data?.aggregateStepId,
-      label: n.data?.label || n.data?.stepName
-    })))
+    console.log(
+      "Nodes in store:",
+      store.nodes.map((n) => ({
+        id: n.id,
+        aggregateStepId: n.data?.aggregateStepId,
+        label: n.data?.label || n.data?.stepName,
+      }))
+    );
     // Find node by aggregateStepId or id
-    const node = store.nodes.find(n =>
-      n.data?.aggregateStepId === stepId ||
-      n.id === stepId ||
-      n.data?.id === stepId
-    )
-    console.log("Animating step:", stepId, "→ node:", node?.id, node?.data?.stepName)
+    const node = store.nodes.find(
+      (n) =>
+        n.data?.aggregateStepId === stepId || n.id === stepId || n.data?.id === stepId
+    );
+    console.log("Animating step:", stepId, "→ node:", node?.id, node?.data?.stepName);
     if (!node) {
-      console.warn(`Node not found for stepId: ${stepId}`)
-      continue
+      console.warn(`Node not found for stepId: ${stepId}`);
+      continue;
     }
 
     // ─── Visual feedback: executing ───────────────────────
-    executionStatus.value[node.id] = 'executing'
+    executionStatus.value[node.id] = "executing";
     node.data = {
       ...node.data,
       isExecuting: true,
-      executionStatus: 'running'
-    }
+      executionStatus: "running",
+    };
 
-    await nextTick()
-
+    await nextTick();
 
     // Simulate real timing (or use a fixed minimum delay)
-    const delay = logEntry.duration || 600
-    await new Promise(r => setTimeout(r, Math.max(delay, 400)))
+    const delay = logEntry.duration || 600;
+    await new Promise((r) => setTimeout(r, Math.max(delay, 400)));
 
     // ─── Determine final status ────────────────────────────
-    const isSuccess = logEntry.responseStatusCode >= 200 && logEntry.responseStatusCode < 300
+    const isSuccess =
+      logEntry.responseStatusCode >= 200 && logEntry.responseStatusCode < 300;
 
     if (isSuccess) {
-      executionStatus.value[node.id] = 'completed'
+      executionStatus.value[node.id] = "completed";
       node.data = {
         ...node.data,
         isExecuting: false,
-        executionStatus: 'success',
+        executionStatus: "success",
         executionResult: logEntry.responseJson ? JSON.parse(logEntry.responseJson) : null,
-        duration: logEntry.duration
-      }
+        duration: logEntry.duration,
+      };
     } else {
-      executionStatus.value[node.id] = 'error'
+      executionStatus.value[node.id] = "error";
       node.data = {
         ...node.data,
         isExecuting: false,
-        executionStatus: 'error',
+        executionStatus: "error",
         executionError: logEntry.responseJson || "خطا در اجرا",
-        duration: logEntry.duration
-      }
+        duration: logEntry.duration,
+      };
     }
 
-    await nextTick()
+    await nextTick();
 
     // Animate outgoing edges (only if success – or always?)
     if (isSuccess) {
-      const outgoing = store.edges.filter(e => e.source === node.id)
+      const outgoing = store.edges.filter((e) => e.source === node.id);
       for (const edge of outgoing) {
-        edge.animated = true
-        edge.style = { stroke: '#10b981', strokeWidth: 3 }
-        await new Promise(r => setTimeout(r, 280))
-        edge.animated = false
-        edge.style = {}
+        edge.animated = true;
+        edge.style = { stroke: "#10b981", strokeWidth: 3 };
+        await new Promise((r) => setTimeout(r, 280));
+        edge.animated = false;
+        edge.style = {};
       }
     }
   }
 
   // ─── After all steps ────────────────────────────────────
   if (executionResultModalRef.value) {
-    executionResultModalRef.value.openModal(initialResponse)
+    executionResultModalRef.value.openModal(initialResponse);
   }
-}
+};
 
 // const animateExecutionFlow = async (executionSteps, initialResponse) => {
 //   for (const logEntry of executionSteps) {
@@ -557,249 +659,262 @@ const animateExecutionFlow = async (executionSteps, initialResponse) => {
 //   }
 // }
 function toggleTheme() {
-  isDark.value = !isDark.value
-  console.log(isDark.value, 'isDark')
-  localStorage.setItem('theme', isDark.value ? 'dark' : 'light')
-  updateBodyClass()
+  isDark.value = !isDark.value;
+  console.log(isDark.value, "isDark");
+  localStorage.setItem("theme", isDark.value ? "dark" : "light");
+  updateBodyClass();
 }
 
-
 function updateBodyClass() {
-  const container = document.querySelector('.vue-flow__container')
-  if (!container) return
+  const container = document.querySelector(".vue-flow__container");
+  if (!container) return;
   if (isDark.value) {
-    container.classList.add('dark-mode')
-    container.classList.remove('light-mode')
+    container.classList.add("dark-mode");
+    container.classList.remove("light-mode");
   } else {
-    container.classList.add('light-mode')
-    container.classList.remove('dark-mode')
+    container.classList.add("light-mode");
+    container.classList.remove("dark-mode");
   }
 }
 const truncateUrl = (url: string | null | undefined): string => {
-  if (!url) return 'بدون URL'
-  return url.length > 40 ? url.slice(0, 37) + '...' : url
-}
+  if (!url) return "بدون URL";
+  return url.length > 40 ? url.slice(0, 37) + "..." : url;
+};
 
 const loadServices = async () => {
-  isLoadingServices.value = true
+  isLoadingServices.value = true;
   try {
-    const data = await serviceAggregatorClient.getServices()
-    services.value = data ? data : []
+    const data = await serviceAggregatorClient.getServices();
+    services.value = data ? data : [];
   } catch (error) {
-    console.error('Error loading services:', error)
+    console.error("Error loading services:", error);
     notify({
-      title: 'خطا',
-      text: 'خطا در بارگذاری سرویس‌ها',
-      type: 'error',
-    })
+      title: "خطا",
+      text: "خطا در بارگذاری سرویس‌ها",
+      type: "error",
+    });
   } finally {
-    isLoadingServices.value = false
+    isLoadingServices.value = false;
   }
-}
+};
 
 const loadAggregateFlow = async (aggregateId: string) => {
-  debugger
-  console.log("loading loadAggregateFlow aggregates")
+  debugger;
+  console.log("loading loadAggregateFlow aggregates");
   try {
-    store.currentAggregateId = aggregateId
+    store.currentAggregateId = aggregateId;
 
     // Load the aggregate flow (positions come from backend)
-    await store.loadSingleAggregateFlow(aggregateId)
+    await store.loadSingleAggregateFlow(aggregateId);
 
     // Rebuild edges from persistent storage to restore connections that may have been lost
     // This ensures edges survive backend resets and page reloads
     //store.rebuildEdgesFromPersistent()
 
     // Fit view after loading
-    await nextTick()
+    await nextTick();
     setTimeout(() => {
-      fitView()
-    }, 300)
+      fitView();
+    }, 300);
   } catch (error) {
-    console.error('Error loading aggregate flow:', error)
+    console.error("Error loading aggregate flow:", error);
     notify({
-      title: 'خطا',
-      text: 'خطا در بارگذاری Aggregate',
-      type: 'error',
-    })
+      title: "خطا",
+      text: "خطا در بارگذاری Aggregate",
+      type: "error",
+    });
   }
-}
+};
 
 const onDragStart = (event: DragEvent, service: any) => {
-  console.log(service, 'service onDragStart')
-  console.log(event.dataTransfer, 'event.dataTransfer onDragStart')
-  console.log(draggedService.value, 'event onDragStart')
-  draggedService.value = service
+  console.log(service, "service onDragStart");
+  console.log(event.dataTransfer, "event.dataTransfer onDragStart");
+  console.log(draggedService.value, "event onDragStart");
+  draggedService.value = service;
   if (event.dataTransfer) {
-    event.dataTransfer.effectAllowed = 'copy'
-    event.dataTransfer.setData('application/json', JSON.stringify(service))
+    event.dataTransfer.effectAllowed = "copy";
+    event.dataTransfer.setData("application/json", JSON.stringify(service));
   }
-}
+};
 const canAddNode = (nodeType: string): { allowed: boolean; message?: string } => {
-  debugger
-  const nodeCount = store.nodes.length
+  debugger;
+  const nodeCount = store.nodes.length;
 
-  if (nodeType === 'decisionNode') {
+  if (nodeType === "decisionNode") {
     // IF node: can be first, but condition required (enforce condition in StepModal form validation)
     // So here allow always to add IF node. Condition validation should be separate.
 
-    return { allowed: true }
+    return { allowed: true };
   }
 
-  if (nodeType === 'startNode') {
+  if (nodeType === "startNode") {
     // Start node can be first as is
-    return { allowed: true }
+    return { allowed: true };
   }
 
-  if (nodeType === 'endNode') {
+  if (nodeType === "endNode") {
     // End node only allowed if 2 or more nodes exist already
     if (nodeCount >= 2) {
-      return { allowed: true }
+      return { allowed: true };
     } else {
-      return { allowed: false, message: 'برای اضافه کردن End Node ابتدا باید حداقل ۲ گام اضافه شود.' }
+      return {
+        allowed: false,
+        message: "برای اضافه کردن End Node ابتدا باید حداقل ۲ گام اضافه شود.",
+      };
     }
   }
 
   // Default allow for other nodes
-  return { allowed: true }
-}
+  return { allowed: true };
+};
 const onDragEnd = () => {
-  draggedService.value = null
-}
-
+  draggedService.value = null;
+};
 
 const onDragStartStatic = (event: DragEvent, service: any) => {
-  draggedService.value = service
+  draggedService.value = service;
   if (event.dataTransfer) {
-    event.dataTransfer.effectAllowed = 'copy'
-    event.dataTransfer.setData('application/json', JSON.stringify(service))
+    event.dataTransfer.effectAllowed = "copy";
+    event.dataTransfer.setData("application/json", JSON.stringify(service));
   }
-}
-
+};
 
 const onDragOver = (event: DragEvent) => {
-  event.preventDefault()
+  event.preventDefault();
   if (event.dataTransfer) {
-
-    console.log(event.dataTransfer, 'draggedService onDrop')
-    event.dataTransfer.dropEffect = 'copy'
+    console.log(event.dataTransfer, "draggedService onDrop");
+    event.dataTransfer.dropEffect = "copy";
   }
-}
+};
 
 const onDrop = async (event: DragEvent) => {
-  console.log(draggedService.value, 'draggedService')
-  event.preventDefault()
+  console.log(draggedService.value, "draggedService");
+  event.preventDefault();
 
   if (!draggedService.value) {
     // Try to get from dataTransfer
     try {
-      const data = event.dataTransfer?.getData('application/json')
+      const data = event.dataTransfer?.getData("application/json");
       if (data) {
-        draggedService.value = JSON.parse(data)
-        console.log(draggedService.value, 'draggedService onDrop')
+        draggedService.value = JSON.parse(data);
+        console.log(draggedService.value, "draggedService onDrop");
       }
     } catch (e) {
-      console.error('Failed to parse dropped data:', e)
-      return
+      console.error("Failed to parse dropped data:", e);
+      return;
     }
   }
 
-  if (!draggedService.value) return
+  if (!draggedService.value) return;
 
-
-  const { allowed, message } = canAddNode(draggedService.value.type)
+  const { allowed, message } = canAddNode(draggedService.value.type);
   if (!allowed) {
-    notify({ title: 'خطا', text: message || 'امکان اضافه کردن این گام وجود ندارد', type: 'error' })
-    draggedService.value = null
-    return
+    notify({
+      title: "خطا",
+      text: message || "امکان اضافه کردن این گام وجود ندارد",
+      type: "error",
+    });
+    draggedService.value = null;
+    return;
   }
 
-
   // Get drop position in flow coordinates
-  let dropPosition = { x: 100, y: 100 } // Default position
+  let dropPosition = { x: 100, y: 100 }; // Default position
   if (event && screenToFlowCoordinate) {
     try {
       const flowPosition = screenToFlowCoordinate({
         x: event.clientX,
         y: event.clientY,
-      })
-      dropPosition = { x: flowPosition.x, y: flowPosition.y }
+      });
+      dropPosition = { x: flowPosition.x, y: flowPosition.y };
     } catch (e) {
-      console.warn('Failed to convert drop position to flow coordinates, using default:', e)
+      console.warn(
+        "Failed to convert drop position to flow coordinates, using default:",
+        e
+      );
     }
   }
 
   // Open StepModal with pre-filled service and drop position
-  const aggregateId = route.params.id as string
+  const aggregateId = route.params.id as string;
   if (stepModalRef.value) {
-    stepModalRef.value.openModal('add', {
+    stepModalRef.value.openModal("add", {
       aggregateId: aggregateId,
       serviceId: draggedService.value.id,
-      stepName: draggedService.value.name || 'New Step',
+      stepName: draggedService.value.name || "New Step",
       positionX: dropPosition.x,
       positionY: dropPosition.y,
-
-    })
+      nodeType: draggedService.value.type,
+      isDecisionNode: draggedService.value.type === "decisionNode",
+    });
   }
 
-  draggedService.value = null
-}
+  draggedService.value = null;
+};
 
 const onServiceDoubleClick = (service: any) => {
-  const { allowed, message } = canAddNode(service.type)
+  const { allowed, message } = canAddNode(service.type);
   if (!allowed) {
-    notify({ title: 'خطا', text: message || 'امکان اضافه کردن این گام وجود ندارد', type: 'error' })
-    return
+    notify({
+      title: "خطا",
+      text: message || "امکان اضافه کردن این گام وجود ندارد",
+      type: "error",
+    });
+    return;
   }
   // Open StepModal with pre-filled service (useful for mobile where drag-drop is difficult)
   // Use default position since no drop occurred
-  const aggregateId = route.params.id as string
+  const aggregateId = route.params.id as string;
   if (stepModalRef.value) {
-    stepModalRef.value.openModal('add', {
+    stepModalRef.value.openModal("add", {
       aggregateId: aggregateId,
       serviceId: service.id,
-      stepName: service.name || 'New Step',
+      stepName: service.name || "New Step",
       positionX: 100,
       positionY: 100,
-    })
+      nodeType: service.type,
+      isDecisionNode: service.type === "decisionNode",
+    });
   }
-}
+};
 
 const onAddStep = () => {
-  const aggregateId = route.params.id as string
+  const aggregateId = route.params.id as string;
   // Use default position (100, 100) when adding step via button click
   if (stepModalRef.value) {
-    stepModalRef.value.openModal('add', {
+    stepModalRef.value.openModal("add", {
       aggregateId: aggregateId,
       positionX: 100,
       positionY: 100,
-    })
+    });
   }
-}
+};
 
 // Listen to node drag stop event to save positions to backend
 onNodeDragStop((event) => {
-  const aggregateId = route.params.id as string
-  if (!aggregateId) return
+  const aggregateId = route.params.id as string;
+  if (!aggregateId) return;
 
-  const node = event.node
+  const node = event.node;
   if (!node || !node.data?.aggregateStepId) {
     // No step ID, skip backend save (might be a placeholder node)
-    return
+    return;
   }
 
   // Get existing connection data to preserve connections during position update
   // Use node's current data if available, otherwise get from persistent edges
-  let nextStepId = node.data.nextStepId || null
-  let trueStepId = node.data.trueStepId || null
-  let falseStepId = node.data.falseStepId || null
+  let nextStepId = node.data.nextStepId || null;
+  let trueStepId = node.data.trueStepId || null;
+  let falseStepId = node.data.falseStepId || null;
 
   // If not in node data, try to get from persistent edges
   if (!nextStepId) {
-    const existingOutgoingEdge = store.persistentEdges.find(edge => edge.source === node.id)
+    const existingOutgoingEdge = store.persistentEdges.find(
+      (edge) => edge.source === node.id
+    );
     if (existingOutgoingEdge) {
-      const targetNode = store.nodes.find(n => n.id === existingOutgoingEdge.target)
-      nextStepId = targetNode?.data?.aggregateStepId || null
+      const targetNode = store.nodes.find((n) => n.id === existingOutgoingEdge.target);
+      nextStepId = targetNode?.data?.aggregateStepId || null;
     }
   }
 
@@ -808,157 +923,151 @@ onNodeDragStop((event) => {
     try {
       const payload = {
         id: node.data.aggregateStepId,
-        stepName: node.data.stepName || '',
+        stepName: node.data.stepName || "",
         aggregateId: aggregateId,
         serviceId: node.data.serviceId || null,
         nextStepId: nextStepId,
         trueStepId: trueStepId,
         falseStepId: falseStepId,
-        condition: node.data.condition || '',
-        conditionParameters: node.data.conditionParameters || '',
+        condition: node.data.condition || "",
+        conditionParameters: node.data.conditionParameters || "",
         status: node.data.status !== undefined ? node.data.status : true,
         positionX: Math.round(node.position.x),
         positionY: Math.round(node.position.y),
-      }
+      };
 
-      await serviceAggregatorClient.updateAggregateStep(payload)
+      await serviceAggregatorClient.updateAggregateStep(payload);
     } catch (error) {
-      console.error('Failed to save node position to backend:', error)
+      console.error("Failed to save node position to backend:", error);
       notify({
-        title: 'خطا',
-        text: 'خطا در ذخیره موقعیت Node',
-        type: 'error',
-      })
+        title: "خطا",
+        text: "خطا در ذخیره موقعیت Node",
+        type: "error",
+      });
     }
-  }
+  };
 
-  updatePosition()
-})
+  updatePosition();
+});
 
 const onNodesChange = (changes: any[]) => {
   // Handle node changes if needed (for other operations)
-}
+};
 
 const onEdgesChange = (changes: any[]) => {
   // Handle edge changes if needed
-}
+};
 
 const onConnect = (params: any) => {
-  store.handleConnect(params)
-}
+  store.handleConnect(params);
+};
 
 const onNodeDblClick = (event: any) => {
-  const nodeId = event.node?.id
+  const nodeId = event.node?.id;
   if (nodeId) {
-    store.setSelectedNode(nodeId, 'edit')
+    store.setSelectedNode(nodeId, "edit");
   }
-}
+};
 
 const fitView = () => {
   if (fitViewFlow) {
-    fitViewFlow()
+    fitViewFlow();
   }
-}
+};
 
 const applyLayout = () => {
-  store.applyConnectionOrderLayout()
+  store.applyConnectionOrderLayout();
   setTimeout(() => {
-    fitView()
-  }, 300)
-}
-
+    fitView();
+  }, 300);
+};
 
 const buildExecutionPathFromLogs = (logs: any[]) => {
   return logs
     .slice()
     .sort(
-      (a, b) =>
-        new Date(a.executionDate).getTime() -
-        new Date(b.executionDate).getTime()
+      (a, b) => new Date(a.executionDate).getTime() - new Date(b.executionDate).getTime()
     )
     .map((log, index) => ({
       index,
       stepId: log.stepId,
       serviceId: log.serviceId,
       duration: log.duration ?? 500,
-      status: log.responseStatusCode === 200 ? 'success' : 'error',
+      status: log.responseStatusCode === 200 ? "success" : "error",
       request: safeJson(log.requestJson),
       response: safeJson(log.responseJson),
-    }))
-}
+    }));
+};
 
 const safeJson = (value?: string) => {
   try {
-    return value ? JSON.parse(value) : {}
+    return value ? JSON.parse(value) : {};
   } catch {
-    return {}
+    return {};
   }
-}
-
-
+};
 
 // Generate execution path from flow structure when backend doesn't provide it
 const generateExecutionPath = () => {
-  const executionPath: any[] = []
-  const visitedNodes = new Set()
+  const executionPath: any[] = [];
+  const visitedNodes = new Set();
 
   // Find the start node
-  const startNode = store.nodes.find(n => n.type === 'startNode')
+  const startNode = store.nodes.find((n) => n.type === "startNode");
   if (!startNode) {
-    console.warn('No start node found in flow')
-    return executionPath
+    console.warn("No start node found in flow");
+    return executionPath;
   }
 
   // Traverse through the flow starting from the start node
-  let currentNodeId = startNode.id
+  let currentNodeId = startNode.id;
 
   while (currentNodeId) {
     if (visitedNodes.has(currentNodeId)) {
-      console.warn('Circular reference detected, stopping traversal')
-      break
+      console.warn("Circular reference detected, stopping traversal");
+      break;
     }
 
-    visitedNodes.add(currentNodeId)
-    const currentNode = store.nodes.find(n => n.id === currentNodeId)
+    visitedNodes.add(currentNodeId);
+    const currentNode = store.nodes.find((n) => n.id === currentNodeId);
 
-    if (!currentNode) break
+    if (!currentNode) break;
 
     // Skip start and end nodes in execution path
-    if (currentNode.type !== 'startNode' && currentNode.type !== 'endNode') {
+    if (currentNode.type !== "startNode" && currentNode.type !== "endNode") {
       executionPath.push({
         stepId: currentNode.data?.aggregateStepId || currentNode.id,
-        status: 'success',
+        status: "success",
         duration: 800,
-        result: `Executed: ${currentNode.data?.stepName || 'Unknown'}`,
-        error: null
-      })
+        result: `Executed: ${currentNode.data?.stepName || "Unknown"}`,
+        error: null,
+      });
     }
 
     // Find the next node by following edges
-    const outgoingEdge = store.edges.find(e => e.source === currentNodeId)
+    const outgoingEdge = store.edges.find((e) => e.source === currentNodeId);
     if (outgoingEdge) {
-      currentNodeId = outgoingEdge.target
+      currentNodeId = outgoingEdge.target;
     } else {
-      currentNodeId = null
+      currentNodeId = null;
     }
   }
 
-  console.log('Generated execution path:', executionPath)
-  return executionPath
-}
+  console.log("Generated execution path:", executionPath);
+  return executionPath;
+};
 
 const handleStepSaved = async () => {
-  const aggregateId = route.params.id as string
+  const aggregateId = route.params.id as string;
   // Reload the flow to show the new step
-  await loadAggregateFlow(aggregateId)
-}
+  await loadAggregateFlow(aggregateId);
+};
 
 const onAggregateExecuted = async (initialResponse: any) => {
-
-  const trackerId = initialResponse?.trackerId
+  const trackerId = initialResponse?.trackerId;
   if (!trackerId) {
-    console.warn("No trackerId received")
-    return
+    console.warn("No trackerId received");
+    return;
   }
 
   // ────────────────────────────────────────────────
@@ -967,27 +1076,32 @@ const onAggregateExecuted = async (initialResponse: any) => {
 
   try {
     // Adjust endpoint name according to your API
-    const executionLogs = await serviceAggregatorClient.getExecutionDetails(trackerId)
+    const executionLogs = await serviceAggregatorClient.getExecutionDetails(trackerId);
     // or: .getAggregateExecutionSteps(aggregateId, trackerId)
-    console.log("Execution log stepIds:", executionLogs.map(l => l.stepId))
+    console.log(
+      "Execution log stepIds:",
+      executionLogs.map((l) => l.stepId)
+    );
 
     if (!Array.isArray(executionLogs) || executionLogs.length === 0) {
-      console.warn("No execution logs returned")
+      console.warn("No execution logs returned");
       // fallback
-      return
+      return;
     }
 
     // Sort just in case backend didn't sort
-    executionLogs.sort((a, b) => new Date(a.executionDate) - new Date(b.executionDate))
+    executionLogs.sort((a, b) => new Date(a.executionDate) - new Date(b.executionDate));
 
-    console.log("Real execution order:", executionLogs.map(log => log.stepId))
+    console.log(
+      "Real execution order:",
+      executionLogs.map((log) => log.stepId)
+    );
 
     // Now animate using REAL order
-    await animateExecutionFlow(executionLogs, initialResponse)
-
+    await animateExecutionFlow(executionLogs, initialResponse);
   } catch (err) {
-    console.error("Failed to load execution logs", err)
-    notify({ type: 'warning', text: 'نمی‌توان مسیر واقعی اجرا را بارگذاری کرد' })
+    console.error("Failed to load execution logs", err);
+    notify({ type: "warning", text: "نمی‌توان مسیر واقعی اجرا را بارگذاری کرد" });
   }
 
   // Handle execution response and show result modal
@@ -1057,46 +1171,46 @@ const onAggregateExecuted = async (initialResponse: any) => {
   //     executionStatus.value = {}
   //   }, 2000)
   // }
-}
+};
 
 // Watch for step modal open signal from store
-watch(() => store.stepModalOpen, (newVal) => {
-  if (newVal && stepModalRef.value) {
-    // Clone initial data - use JSON method because structuredClone fails with some objects
-    // eslint-disable-next-line prefer-structured-clone
-    const initialData = store.stepModalInitialData
-      ? JSON.parse(JSON.stringify(store.stepModalInitialData))
-      : {}
-    store.stepModalOpen = false
-    stepModalRef.value.openModal('add', initialData)
+watch(
+  () => store.stepModalOpen,
+  (newVal) => {
+    if (newVal && stepModalRef.value) {
+      // Clone initial data - use JSON method because structuredClone fails with some objects
+      // eslint-disable-next-line prefer-structured-clone
+      const initialData = store.stepModalInitialData
+        ? JSON.parse(JSON.stringify(store.stepModalInitialData))
+        : {};
+      store.stepModalOpen = false;
+      stepModalRef.value.openModal("add", initialData);
+    }
   }
-})
+);
 
 onMounted(async () => {
-  checkScreenSize()
-  window.addEventListener('resize', checkScreenSize)
+  checkScreenSize();
+  window.addEventListener("resize", checkScreenSize);
 
-  const aggregateId = route.params.id as string
+  const aggregateId = route.params.id as string;
   if (!aggregateId) {
     notify({
-      title: 'خطا',
-      text: 'Aggregate ID یافت نشد',
-      type: 'error',
-    })
-    router.push('/aggregates')
-    return
+      title: "خطا",
+      text: "Aggregate ID یافت نشد",
+      type: "error",
+    });
+    router.push("/aggregates");
+    return;
   }
 
-  await Promise.all([
-    loadServices(),
-    loadAggregateFlow(aggregateId),
-  ])
-})
+  await Promise.all([loadServices(), loadAggregateFlow(aggregateId)]);
+});
 
 // Cleanup resize listener
 onBeforeUnmount(() => {
-  window.removeEventListener('resize', checkScreenSize)
-})
+  window.removeEventListener("resize", checkScreenSize);
+});
 </script>
 
 <style scoped>
@@ -1389,7 +1503,6 @@ onBeforeUnmount(() => {
 
 /* Execution Animation Styles */
 @keyframes pulse-execute {
-
   0%,
   100% {
     box-shadow: 0 0 0 0 rgba(168, 85, 247, 0.7);
@@ -1401,7 +1514,6 @@ onBeforeUnmount(() => {
 }
 
 @keyframes executing-glow {
-
   0%,
   100% {
     filter: drop-shadow(0 0 0px rgba(16, 185, 129, 0));
@@ -1423,7 +1535,6 @@ onBeforeUnmount(() => {
 }
 
 @keyframes error-shake {
-
   0%,
   100% {
     transform: translateX(0);

@@ -101,7 +101,8 @@ class ServiceAggregatorClient {
   }
 
   async deleteAggregateStep(id) {
-    const response = await httpClient.post(`/step/delete`, { id: id })
+    const cleanId = id.startsWith('node-') ? id.replace('node-', '') : id
+    const response = await httpClient.post(`/step/delete`, { id: cleanId })
     return response.data
   }
   //#endregion Aggregate-step
@@ -134,8 +135,8 @@ class ServiceAggregatorClient {
     return response.data
   }
 
-  async deleteAggregateMapping(id) {
-    const response = await httpClient.post(`/aggregate-mapping/delete`, {id: id})
+  async deleteAggregateMapping(data) {
+    const response = await httpClient.post(`/aggregate-mapping/delete`, {id: data.id})
     return response.data
   }
 

@@ -160,20 +160,22 @@ const router = createRouter({
 
 // Navigation guard
 router.beforeEach((to, from, next) => {
-  const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true'
+  const authStore = useAuthStore()
+  // This will automatically logout if token is missing / expired / no role
+  const isValid = authStore.checkSession()
+
+  // const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true'
   const isPublicRoute = to.matched.some(record => record.meta.public)
   const requiresAuth = to.matched.some(record => record.meta.requiresAuth)
 
   // Redirect to home if user is authenticated and tries to access public route (like login)
-  if (isAuthenticated && isPublicRoute) {
+ if (isValid && isPublicRoute) {
     return next('/aggregates')
   }
-
-  // Redirect to login if route requires authentication and user is not authenticated
-  if (requiresAuth && !isAuthenticated) {
+  console.log('Navigation Guard: requiresAuth:', requiresAuth, 'isValid:', isValid, 'to.path:', to.path)
+  if (requiresAuth && !isValid) {
     return next('/Login')
   }
-
   // If none of the above, proceed to the route
   next()
 })

@@ -58,7 +58,11 @@
 
             <!-- Condition Field -->
             <div>
-              <label class="block font-medium text-gray-500 mb-1 text-right px-1 py-1">شرط (اختیاری)</label>
+              <label class="block font-medium text-gray-500 mb-1 text-right px-1 py-1">
+                شرط
+                <span v-if="isDecisionNode" class="text-red-600 font-bold">*</span>
+                <span v-else class="text-gray-400">(اختیاری)</span>
+              </label>
               <input v-model="stepData.condition" type="text" placeholder="مثال: user.role === 'admin'" class="w-full px-4 py-2 rounded-xl border border-gray-300
                focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
                bg-white shadow-sm transition text-right" />
@@ -69,7 +73,11 @@
 
             <!-- Condition Parameters (visible only if condition exists) -->
             <div v-if="stepData.condition">
-              <label class="block font-medium text-gray-500 mb-1 text-right px-1 py-1">پارامترهای شرط (اختیاری)</label>
+              <label class="block font-medium text-gray-500 mb-1 text-right px-1 py-1">
+                پارامترهای شرط
+                <span v-if="isDecisionNode" class="text-red-600 font-bold">*</span>
+                <span v-else class="text-gray-400">(اختیاری)</span>
+              </label>
               <input v-model="stepData.conditionParameters" type="text" placeholder="مثال: role,status" class="w-full px-4 py-2 rounded-xl border border-gray-300
                focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
                bg-white shadow-sm transition text-right" />
@@ -143,6 +151,7 @@ import { faArrowUp, faSave } from '@fortawesome/free-solid-svg-icons'
 const store = useFlowStore()
 const availableServices = ref([])
 const isOpen = ref(false)
+const isDecisionNode = ref(false)
 
 const stepData = ref({
   stepName: '',
@@ -223,6 +232,7 @@ const openModal = (mode = 'add', initialData = null) => {
   // isOpen.value = true
   resetForm()
   loadServices()
+  isDecisionNode.value = initialData?.isDecisionNode || initialData?.nodeType === 'decisionNode' || false
 
   if (initialData) {
     stepData.value = {
@@ -259,8 +269,20 @@ const onSave = async () => {
   try {
     // Validate required fields
     if (!stepData.value.stepName || !stepData.value.stepName.trim()) {
-      notify({ title: 'خطا', text: 'نام مرحله مورد نیاز است', type: 'error' });
-      return;
+      notify({ title: 'خطا', text: 'نام مرحله مورد نیاز است', type: 'error' })
+      return
+    }
+
+    // Validate decision node requirements
+    if (isDecisionNode.value) {
+      if (!stepData.value.condition || !stepData.value.condition.trim()) {
+        notify({ title: 'خطا', text: 'برای If Node شرط مورد نیاز است', type: 'error' })
+        return
+      }
+      if (!stepData.value.conditionParameters || !stepData.value.conditionParameters.trim()) {
+        notify({ title: 'خطا', text: 'برای If Node پارامترهای شرط مورد نیاز است', type: 'error' })
+        return
+      }
     }
 
     // Prepare payload with aggregateId fallback

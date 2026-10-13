@@ -12,6 +12,8 @@
         </div>
       </div>
       <Handle type="target" position="top" id="in" />
+      <Handle type="source" position="bottom" id="out" />
+
     </div>
     <div v-if="isContextMenuOpen" ref="menuRef" class="context-menu" :style="contextMenuStyles">
       <ul>

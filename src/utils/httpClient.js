@@ -3,16 +3,15 @@ import StatusCode from '@/constant/StatusCode'
 import { notify } from '@kyvg/vue3-notification'
 
 export function createHttpClient(options = {}) {
+  console.log( import.meta.env.VITE_API_URL,' import.meta.env.VITE_API_URL')
   const {
-    baseURL = "http://192.168.140.172:8099/api", /// || '/',"http://192.168.13.117:5294/api", //
-    timeout = 1000,
+    baseURL = import.meta.env.VITE_API_URL,//"http://localhost:5294/api", // "http://192.168.140.172:8099/api", /// || '/',"http://192.168.13.117:5294/api", //
     headers = {},
     getToken = () => localStorage.getItem('token'),
   } = options
 
   const instance = axios.create({
     baseURL,
-    timeout,
     headers: {
       'Content-Type': 'application/json',
       ...headers,
