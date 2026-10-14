@@ -42,6 +42,41 @@
       <Handle type="target" position="top" id="in" class="vue-flow__handle-target" />
       <Handle type="source" position="bottom" id="out" class="vue-flow__handle-source" />
 
+      <!-- Service field ports: inputs on the left, outputs on the right.
+           Each port is its own row: Handle on the correct side + label next to it. -->
+      <div v-if="nodeInputs.length || nodeOutputs.length" class="node-ports">
+        <div v-if="nodeInputs.length" class="node-ports__column">
+          <div
+            v-for="f in nodeInputs"
+            :key="'in-' + f.handleId"
+            class="port-row"
+          >
+            <Handle
+              :id="f.handleId"
+              type="target"
+              position="left"
+              class="port-handle"
+            />
+            <span class="port-label">{{ f.name }}</span>
+          </div>
+        </div>
+        <div v-if="nodeOutputs.length" class="node-ports__column node-ports__column--outputs">
+          <div
+            v-for="f in nodeOutputs"
+            :key="'out-' + f.handleId"
+            class="port-row"
+          >
+            <span class="port-label">{{ f.name }}</span>
+            <Handle
+              :id="f.handleId"
+              type="source"
+              position="right"
+              class="port-handle"
+            />
+          </div>
+        </div>
+      </div>
+
 
       <!-- Context Menu -->
       <div v-if="isContextMenuOpen" ref="menuRef" class="context-menu" :style="contextMenuStyles">
@@ -129,6 +164,8 @@ const openContextMenuId = ref(null)
 const previewFields = computed(() => {
   return data.value.fields ? data.value.fields.slice(0, 3) : []
 })
+const nodeInputs = computed(() => (store.getNodeAvailableInputs ? store.getNodeAvailableInputs(id.value) : []))
+const nodeOutputs = computed(() => (store.getNodeAvailableOutputs ? store.getNodeAvailableOutputs(id.value) : []))
 const isContextMenuOpen = computed(() => openContextMenuId.value === id.value)
 const contextMenuStyles = computed(() => {
   if (!nodeRef.value) return {}
@@ -505,4 +542,55 @@ function onCancelDelete() {
     transform: rotate(360deg);
   }
 }
+
+/* ---- Field port handles (additive; does not alter existing node styles) ---- */
+.node-ports {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 6px;
+}
+.node-ports__column {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.node-ports__column--outputs {
+  align-items: flex-end;
+}
+.port-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.port-label {
+  font-size: 9px;
+  color: #475569;
+  white-space: nowrap;
+}
+.port-handle {
+  width: 10px;
+  height: 10px;
+  min-width: 10px;
+  padding: 0;
+  border: 1px solid #94a3b8;
+  border-radius: 50%;
+  background: #ffffff;
+  pointer-events: auto;
+  z-index: 1;
+}
+/* Vue Flow pins same-side handles to the node center via the global
+   .vue-flow__handle-left/.vue-flow__handle-right rules, which made every
+   input/output port overlap. Release that pinning so each handle flows inside
+   its own row. The `position` prop is retained for connection-direction metadata. */
+.port-handle.vue-flow__handle-left,
+.port-handle.vue-flow__handle-right {
+  position: relative;
+  top: auto;
+  left: auto;
+  right: auto;
+  transform: none;
+}
+
 </style>

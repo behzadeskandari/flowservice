@@ -31,6 +31,8 @@ export const useFlowStore = defineStore('flow', () => {
   const stepModalInitialData = ref(null)
   const isProcessingConnection = ref(false)
   const executionStatus = reactive({}) // Track execution status for each node
+  // Cache of service mappings keyed by aggregateStepId -> { inputs, outputs }
+  const serviceMappingsCache = reactive({})
 
   function setNodeStatus(nodeId, status) {
     executionStatus[nodeId] = status
@@ -501,6 +503,8 @@ export const useFlowStore = defineStore('flow', () => {
       }
       // در حالت تک aggregate، موقعیت‌ها از backend آمده و نیازی به layout مجدد نیست
 
+      // Load service mappings so input/output ports can render on service nodes
+      await loadServiceMappingsForNodes(aggregateIdOrIds)
     } catch (error) {
       console.error('Failed to load aggregate flow:', error)
       notify({
@@ -894,6 +898,9 @@ export const useFlowStore = defineStore('flow', () => {
 
       // Rebuild edges from persistentEdges to restore user connections
       mergePersistedEdges()
+
+      // Load service mappings so input/output ports can render on service nodes
+      await loadServiceMappingsForNodes(aggregateId)
 
       console.log('Store updated - nodes:', nodes.value.length, 'edges:', edges.value.length)
       isSyncing.value = false
@@ -1744,6 +1751,10 @@ export const useFlowStore = defineStore('flow', () => {
   }
 
   async function handleConnect(params) {
+    // Field-port connection (input-/output-* handles): create edge + mapping, no modal
+    if (isPortHandle(params.sourceHandle) || isPortHandle(params.targetHandle)) {
+      return connectFieldPorts(params)
+    }
     // 1. Validation: Ensure connections only happen between valid handles
     if (params.sourceHandle !== 'out' || params.targetHandle !== 'in') {
       console.warn('Invalid connection: Must connect from "out" to "in"');
@@ -2537,6 +2548,232 @@ export const useFlowStore = defineStore('flow', () => {
     }
   }
 
+  // ---------- Input/Output Field Port support ----------
+  function isPortHandle(handleId) {
+    if (!handleId) return false
+    const id = String(handleId)
+    return id.startsWith('input-') || id.startsWith('output-')
+  }
+
+  function parseServiceMappings(raw) {
+    const list = Array.isArray(raw) ? raw : (raw && (raw.data || raw.mappings || raw.items)) || []
+    const inputs = []
+    const outputs = []
+    list.forEach((m) => {
+      const direction = m.direction
+      const name = m.name || m.targetField || m.sourceField
+      if (!name) return
+      const key = m.id ? String(m.id) : name
+      const field = { id: key, name, type: m.type || '', handleId: '', original: m }
+      if (direction === 1 || direction === 'input' || direction === 'request') {
+        field.handleId = 'input-' + key
+        inputs.push(field)
+      } else if (direction === 2 || direction === 'output' || direction === 'response') {
+        field.handleId = 'output-' + key
+        outputs.push(field)
+      }
+    })
+    return { inputs: inputs, outputs: outputs }
+  }
+
+  async function loadServiceMappings(stepId, serviceId) {
+    if (!stepId || !serviceId) return { inputs: [], outputs: [] }
+    if (serviceMappingsCache[stepId]) return serviceMappingsCache[stepId]
+    try {
+      const raw = await serviceAggregatorClient.getServiceMappingsByServiceId(serviceId)
+      const parsed = parseServiceMappings(raw)
+      serviceMappingsCache[stepId] = parsed
+      return parsed
+    } catch (e) {
+      console.error('Failed to load service mappings for step', stepId, e)
+      const empty = { inputs: [], outputs: [] }
+      serviceMappingsCache[stepId] = empty
+      return empty
+    }
+  }
+
+  async function loadServiceMappingsForNodes() {
+    // Loads & caches input/output fields for every service node currently on the canvas.
+    for (const node of nodes.value) {
+      const stepId = node.data && node.data.aggregateStepId
+      const serviceId = node.data && node.data.serviceId
+      if (stepId && serviceId) {
+        await loadServiceMappings(stepId, serviceId)
+      }
+    }
+  }
+
+  function getNodeAvailableInputs(nodeId) {
+    const node = nodes.value.find((n) => n.id === nodeId)
+    if (!node) return []
+    const cached = serviceMappingsCache[node.data && node.data.aggregateStepId]
+    return cached ? cached.inputs : []
+  }
+
+  function getNodeAvailableOutputs(nodeId) {
+    const node = nodes.value.find((n) => n.id === nodeId)
+    if (!node) return []
+    const cached = serviceMappingsCache[node.data && node.data.aggregateStepId]
+    return cached ? cached.outputs : []
+  }
+
+  // Create a Vue Flow edge + persist an AggregateStepMapping between two field ports.
+  // No modal is opened (used for direct input-/output- handle connections).
+  async function connectFieldPorts(params) {
+    const { source, target, sourceHandle, targetHandle } = params || {}
+    if (!source || !target) return false
+
+    const sourceNode = nodes.value.find((n) => n.id === source)
+    const targetNode = nodes.value.find((n) => n.id === target)
+    const sourceStepId = sourceNode && sourceNode.data ? sourceNode.data.aggregateStepId : null
+    const targetStepId = targetNode && targetNode.data ? targetNode.data.aggregateStepId : null
+
+    // Resolve field names from the cache; fall back to the handle-id suffix.
+    let sourceField = ''
+    let targetField = ''
+    if (sourceHandle && sourceNode) {
+      const cached = serviceMappingsCache[sourceNode.data.aggregateStepId]
+      const f = cached && cached.outputs ? cached.outputs.find((o) => o.handleId === sourceHandle) : null
+      sourceField = f ? f.name : (sourceHandle.startsWith('output-') ? sourceHandle.slice(7) : '')
+    }
+    if (targetHandle && targetNode) {
+      const cached = serviceMappingsCache[targetNode.data.aggregateStepId]
+      const f = cached && cached.inputs ? cached.inputs.find((i) => i.handleId === targetHandle) : null
+      targetField = f ? f.name : (targetHandle.startsWith('input-') ? targetHandle.slice(6) : '')
+    }
+
+    const edgeId = 'e-field-' + source + '-' + sourceHandle + '-' + target + '-' + targetHandle
+    const edgeData = {
+      aggregateStepId: targetStepId,
+      inputStepId: sourceStepId,
+      source: 'StepOutput',
+      sourceField,
+      targetField,
+      fieldMapping: true,
+      mappings: [],
+    }
+
+    const edge = {
+      id: edgeId,
+      source,
+      target,
+      sourceHandle,
+      targetHandle,
+      type: 'default',
+      animated: false,
+      markerEnd: { type: MarkerType.ArrowClosed, width: 16, height: 16 },
+      data: edgeData,
+    }
+
+    // Controlled mode: store.edges is the source of truth -> create or update the edge.
+    const existing = edges.value.find((e) => e.id === edgeId)
+    if (existing) {
+      existing.data = edgeData
+      edges.value = [...edges.value]
+    } else {
+      edges.value.push(edge)
+      edges.value = [...edges.value]
+    }
+    if (!persistentEdges.value.find((e) => e.id === edgeId)) {
+      persistentEdges.value.push(structuredClone(edge))
+    }
+
+    // Persist the AggregateStepMapping on the backend.
+    try {
+      await serviceAggregatorClient.addAggregateStepMapping({
+        aggregateStepId: targetStepId,
+        inputStepId: sourceStepId,
+        source: 'StepOutput',
+        sourceField,
+        targetField,
+        value: "",
+        valueType: 'string',
+        status: true,
+      })
+      if (currentAggregateId.value) {
+        await loadSingleAggregateFlow(currentAggregateId.value)
+      }
+    } catch (error) {
+      console.error('Failed to save field mapping:', error)
+    }
+
+    return true
+  }
+
+
+  /**
+ * Rebuild field-port edges from AggregateStepMappings saved on each step.
+ * Call this AFTER nodes are loaded and serviceMappingsCache is filled.
+ */
+  function rebuildFieldMappingEdges() {
+    const fieldEdges = []
+
+    for (const node of nodes.value) {
+      const mappings = node.data?.mappings || []
+      const targetStepId = node.data?.aggregateStepId
+      if (!targetStepId || !mappings.length) continue
+
+      for (const m of mappings) {
+        // فقط مپینگ‌هایی که از StepOutput می‌آیند و فیلد دارند
+        if (!m.sourceField || !m.targetField) continue
+        if (
+          m.source !== 'StepOutput' &&
+          m.source !== 'response' &&
+          m.source !== 'Step Output'
+        ) continue
+
+        // پیدا کردن نود مبدا از InputStepId
+        const sourceNode = nodes.value.find(
+          n => n.data?.aggregateStepId === m.inputStepId
+        )
+        if (!sourceNode) continue
+
+        const sourceHandle = 'output-' + (
+          // سعی کن id واقعی از cache را پیدا کنی
+          (serviceMappingsCache[sourceNode.data.aggregateStepId]?.outputs || [])
+            .find(o => o.name === m.sourceField)?.id || m.sourceField
+        )
+        const targetHandle = 'input-' + (
+          (serviceMappingsCache[targetStepId]?.inputs || [])
+            .find(i => i.name === m.targetField)?.id || m.targetField
+        )
+
+        const edgeId = `e-field-${sourceNode.id}-${sourceHandle}-${node.id}-${targetHandle}`
+
+        fieldEdges.push({
+          id: edgeId,
+          source: sourceNode.id,
+          target: node.id,
+          sourceHandle,
+          targetHandle,
+          type: 'default',
+          animated: false,
+          markerEnd: { type: MarkerType.ArrowClosed, width: 16, height: 16 },
+          data: {
+            aggregateStepId: targetStepId,
+            inputStepId: m.inputStepId,
+            source: m.source,
+            sourceField: m.sourceField,
+            targetField: m.targetField,
+            fieldMapping: true,
+            mappingId: m.id,
+          },
+        })
+      }
+    }
+
+    // اضافه کردن به edges و persistentEdges (بدون تکراری)
+    for (const fe of fieldEdges) {
+      if (!edges.value.find(e => e.id === fe.id)) {
+        edges.value.push(fe)
+      }
+      if (!persistentEdges.value.find(e => e.id === fe.id)) {
+        persistentEdges.value.push(structuredClone(fe))
+      }
+    }
+    edges.value = [...edges.value]
+  }
+
   return {
     enableAutoSave,
     disableAutoSave,
@@ -2578,6 +2815,14 @@ export const useFlowStore = defineStore('flow', () => {
     deleteStepMapping,
     getNodes,
     handleConnect,
+    rebuildFieldMappingEdges,
+    isPortHandle,
+    connectFieldPorts,
+    loadServiceMappings,
+    loadServiceMappingsForNodes,
+    getNodeAvailableInputs,
+    getNodeAvailableOutputs,
+    serviceMappingsCache,
     saveConnectionStep,
     closeConnectionModal,
     openStepModal,

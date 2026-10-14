@@ -10,7 +10,7 @@ class ServiceAggregatorClient {
     return response.data
   }
 
-   async getServicesWithPagination() {
+  async getServicesWithPagination() {
     const response = await httpClient.get('/service/get')
     return response.data
   }
@@ -24,11 +24,11 @@ class ServiceAggregatorClient {
     return record.data;
   }
   async getServicesWithParamsWithSearch(data) {
-     let record = '';
-    if(data.Status == null){
+    let record = '';
+    if (data.Status == null) {
       record = await httpClient.get(`/service/get?PageIndex=${data.PageIndex}&PageSize=${data.PageSize}&Name=${data.Name}&URL=${data.URL}`)
     }
-    else{
+    else {
       record = await httpClient.get(`/service/get?PageIndex=${data.PageIndex}&PageSize=${data.PageSize}&Status=${data.Status}&Name=${data.Name}&URL=${data.URL}`)
     }
     return record.data;
@@ -75,9 +75,9 @@ class ServiceAggregatorClient {
 
   async getAggregatesWithParamsWithSearch(data) {//?Name=refe12&Status=true&PageIndex=1&PageSize=10
     let response = '';
-    if(data.Status == null){
+    if (data.Status == null) {
       response = await httpClient.get(`/aggregate/get?PageIndex=${data.PageIndex}&PageSize=${data.PageSize}&Name=${data.Name}`)
-    }else{
+    } else {
       response = await httpClient.get(`/aggregate/get?PageIndex=${data.PageIndex}&PageSize=${data.PageSize}&Name=${data.Name}&Status=${data.Status}`)
     }
     return response.data
@@ -136,7 +136,7 @@ class ServiceAggregatorClient {
   }
 
   async deleteAggregateMapping(data) {
-    const response = await httpClient.post(`/aggregate-mapping/delete`, {id: data.id})
+    const response = await httpClient.post(`/aggregate-mapping/delete`, { id: data.id })
     return response.data
   }
 
@@ -145,7 +145,13 @@ class ServiceAggregatorClient {
 
   //#region serviceMapping
 
-async addServiceMapping(data) {
+  async getServiceMappingsByServiceId(serviceId) {
+    const response = await httpClient.get(`/service-mapping/get/${serviceId}`)
+    return response.data
+  }
+
+
+  async addServiceMapping(data) {
     // Convert to plain object to avoid circular references with Vue reactivity
     const plainData = typeof data === 'object' && data !== null ? JSON.parse(JSON.stringify(data)) : data
     const response = await httpClient.post('/service-mapping/add', plainData[0])
@@ -184,8 +190,22 @@ async addServiceMapping(data) {
   }
   //#endregion Execute Aggregate
 
-  async getCaptcha(){
+  async getCaptcha() {
     const response = await httpClient.get('/auth/captcha')
+    return response.data
+  }
+
+  async getStepMappingsByStepId(aggregateStepId) {
+    const response = await httpClient.get(
+      `/aggregate-step-mapping/get-by-step/${aggregateStepId}`
+    )
+    return response.data
+  }
+
+  async getStepMappingsByAggregateId(aggregateId) {
+    const response = await httpClient.get(
+      `/aggregate-step-mapping/get-by-aggregate/${aggregateId}`
+    )
     return response.data
   }
 }
