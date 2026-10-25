@@ -34,6 +34,13 @@
         <span class="toolbar-text"> تنظیم اندازه</span>
       </button>
       <button
+        class="px-3 py-2 bg-gradient-to-r from-indigo-400 via-indigo-500 to-indigo-600 text-white font-semibold rounded-xl shadow-lg hover:from-indigo-500 hover:via-indigo-600 hover:to-indigo-700 transition duration-300 ease-in-out"
+        @click="openInputModal"
+      >
+        <font-awesome-icon :icon="faDatabase" style="color: white" />
+        <span class="toolbar-text">تعریف ورودی(JSON)</span>
+      </button>
+      <button
         :disabled="isExecuting"
         class="px-3 py-2 bg-gradient-to-r from-purple-400 via-purple-500 to-purple-600 text-white font-semibold rounded-xl shadow-lg hover:from-purple-500 hover:via-purple-600 hover:to-purple-700 transition duration-300 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed"
         @click="executeAggregate"
@@ -233,6 +240,23 @@
         }
       "
     />
+    <AggregateInputJsonModal
+      ref="inputJsonModalRef"
+      :is-open="showInputModal"
+      :aggregate-id="route.params.id"
+      :aggregate-name="currentAggregateName"
+      :model-value="store.aggregateInputJson"
+      @update:model-value="
+        (val) => {
+          store.setAggregateInput(val);
+        }
+      "
+      @close="
+        () => {
+          showInputModal = false;
+        }
+      "
+    />
   </div>
 </template>
 
@@ -266,11 +290,13 @@ import {
   faExpand,
   faPlay,
   faSpinner,
+  faDatabase,
 } from "@fortawesome/free-solid-svg-icons";
 import { useScreenshot } from "@/hooks/useScreenshot";
 import { useThemeStore } from "@/stores/useThemeStore"; // Assuming you have a theme store
 import MappingEditorNode from "./nodes/MappingEditorNode.vue";
 import MappingEditorModal from "./modals/MappingEditorModal.vue";
+import AggregateInputJsonModal from "./modals/AggregateInputJsonModal.vue";
 
 const themeStore = useThemeStore();
 const vueFlowInstance = useVueFlow();
@@ -286,6 +312,9 @@ const executeModalRef = ref<InstanceType<typeof ExecuteAggregateModal> | null>(n
 const executionResultModalRef = ref<InstanceType<typeof ExecutionResultModal> | null>(
   null
 );
+const showInputModal = ref(false);
+const inputJsonModalRef = ref<InstanceType<typeof AggregateInputJsonModal> | null>(null);
+const currentAggregateName = ref("");
 const isDark = ref(false);
 const services = ref<any[]>([]);
 const isLoadingServices = ref(false);
@@ -375,6 +404,52 @@ const executeAggregate = async () => {
   if (executeModalRef.value) {
     executeModalRef.value.openModal();
   }
+};
+
+const openInputModal = async () => {
+  const aggregateId = route.params.id as string;
+  if (!aggregateId) {
+    notify({
+      title: "خطا",
+      text: "شناسه تجمع یافت نشد",
+      type: "error",
+    });
+    return;
+  }
+
+  showInputModal.value = true;
+  try {
+    await store.loadAggregateInput(aggregateId);
+    const aggregate = await serviceAggregatorClient.getAggregateByid(
+      aggregateId
+    );
+    currentAggregateName.value = aggregate?.name || "";
+  } catch (error) {
+    console.error("Failed to load aggregate input:", error);
+    notify({
+      title: "خطا",
+      text: "بارگذاری تعریف ورودی با خطا مواجه شد",
+      type: "error",
+    });
+  }
+};
+
+// ─────────────────────────────────────────────────────────
+// Unsaved-changes guard (JSON editor / navigating away)
+// ─────────────────────────────────────────────────────────
+const beforeUnloadHandler = (event: Event) => {
+  if (store.aggregateInputDirty) {
+    event.preventDefault();
+    // Modern browsers show their own dialog; returnValue is needed for some
+    (event as any).returnValue = "";
+  }
+};
+
+const confirmDiscardInputChanges = (): boolean => {
+  if (!store.aggregateInputDirty) return true;
+  return window.confirm(
+    "تعریف ورودی(JSON) تغییرات ذخیره نشده دارد. آیا مطمئنید می‌خواهید بدون ذخیره شدن خارج شوید؟"
+  );
 };
 
 // const animateExecutionFlow = async (executionSteps, initialResponse) => {
@@ -706,6 +781,9 @@ const loadAggregateFlow = async (aggregateId: string) => {
 
     // Load the aggregate flow (positions come from backend)
     await store.loadSingleAggregateFlow(aggregateId);
+
+    // Load the saved Aggregate Input JSON definition for this aggregate
+    await store.loadAggregateInput(aggregateId);
 
     // Rebuild edges from persistent storage to restore connections that may have been lost
     // This ensures edges survive backend resets and page reloads
@@ -1264,6 +1342,8 @@ watch(
 onMounted(async () => {
   checkScreenSize();
   window.addEventListener("resize", checkScreenSize);
+  // Warn about unsaved Aggregate Input JSON changes before closing/navigating
+  window.addEventListener("beforeunload", beforeUnloadHandler);
 
   const aggregateId = route.params.id as string;
   if (!aggregateId) {
@@ -1279,9 +1359,10 @@ onMounted(async () => {
   await Promise.all([loadServices(), loadAggregateFlow(aggregateId)]);
 });
 
-// Cleanup resize listener
+// Cleanup resize listener and beforeunload guard
 onBeforeUnmount(() => {
   window.removeEventListener("resize", checkScreenSize);
+  window.removeEventListener("beforeunload", beforeUnloadHandler);
 });
 </script>
 

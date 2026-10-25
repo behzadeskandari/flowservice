@@ -24,6 +24,13 @@ export const useFlowStore = defineStore('flow', () => {
   const aggregates = ref([])
   const currentAggregateId = ref(null)
   const isLoading = ref(false)
+  // Persistent Aggregate Input JSON for the currently selected aggregate.
+  // This is the saved input *definition* (schema/sample), distinct from the
+  // actual runtime input payload sent at execution time.
+  const aggregateInputJson = ref(null)
+  const aggregateInputDirty = ref(false)
+  const aggregateInputLoading = ref(false)
+  const aggregateInputError = ref(null)
   const showConnectionModal = ref(false)
   const pendingConnection = ref(null)
   const connectionStepData = ref(null)
@@ -3444,6 +3451,94 @@ async function addNode(options = {}) {
     edges.value = [...edges.value]
   }
 
+// ------------------------------------------------------------------
+// Persistent Aggregate Input JSON (saved input definition)
+// ------------------------------------------------------------------
+async function loadAggregateInput(aggregateId) {
+  if (!aggregateId) {
+    aggregateInputJson.value = null
+    aggregateInputDirty.value = false
+    aggregateInputError.value = null
+    return
+  }
+  aggregateInputLoading.value = true
+  aggregateInputError.value = null
+  try {
+    const response = await serviceAggregatorClient.getAggregateInput(aggregateId)
+    const data = response && response.data !== undefined ? response.data : response
+    aggregateInputJson.value = data && data.inputJson !== undefined ? data.inputJson : null
+    aggregateInputDirty.value = false
+  } catch (error) {
+    console.error('Failed to load aggregate input JSON:', error)
+    aggregateInputError.value = error?.message || 'خطا در بارگذاری تعریف ورودی'
+    aggregateInputJson.value = null
+  } finally {
+    aggregateInputLoading.value = false
+  }
+}
+
+function setAggregateInput(json) {
+  aggregateInputJson.value = json
+  aggregateInputDirty.value = true
+  aggregateInputError.value = null
+}
+
+async function saveAggregateInput() {
+  const aggregateId = currentAggregateId.value
+  if (!aggregateId) {
+    notify({ title: 'خطا', text: 'شناسه تجمع مشخص نشده است', type: 'error' })
+    return false
+  }
+  if (aggregateInputJson.value === null) {
+    notify({ title: 'هشدار', text: 'هیچ تعریف ورودی برای ذخیره موجود نیست', type: 'warning' })
+    return false
+  }
+
+  // Validate JSON before persisting
+  if (aggregateInputJson.value !== null && aggregateInputJson.value.trim() !== '') {
+    try {
+      JSON.parse(aggregateInputJson.value)
+    } catch (error) {
+      notify({
+        title: 'خطا',
+        text: 'متن JSON معتبر نمی‌باشد: ' + error.message,
+        type: 'error',
+      })
+      return false
+    }
+  }
+
+  aggregateInputLoading.value = true
+  try {
+    await serviceAggregatorClient.updateAggregateInput(aggregateId, aggregateInputJson.value)
+    aggregateInputDirty.value = false
+    notify({
+      title: 'موفقیت',
+      text: 'تعریف ورودی تجمیع ذخیره شد',
+      type: 'success',
+    })
+    return true
+  } catch (error) {
+    console.error('Failed to save aggregate input JSON:', error)
+    notify({
+      title: 'خطا',
+      text: 'خطا در ذخیره تعریف ورودی: ' + (error?.message || ''),
+      type: 'error',
+    })
+    return false
+  } finally {
+    aggregateInputLoading.value = false
+  }
+}
+
+function resetAggregateInput() {
+  aggregateInputJson.value = null
+  aggregateInputDirty.value = false
+  aggregateInputError.value = null
+  aggregateInputLoading.value = false
+}
+
+
 
 
 
@@ -3509,7 +3604,15 @@ async function addNode(options = {}) {
     executionStatus,
     setNodeStatus,
     resetExecution,
-    loadSingleAggregateFlow2
+    loadSingleAggregateFlow2,
+    aggregateInputJson,
+    aggregateInputDirty,
+    aggregateInputLoading,
+    aggregateInputError,
+    loadAggregateInput,
+    setAggregateInput,
+    saveAggregateInput,
+    resetAggregateInput
   }
 
 })

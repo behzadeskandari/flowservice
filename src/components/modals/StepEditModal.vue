@@ -307,13 +307,30 @@
                 فیلد منبع (از Aggregate) *
               </label>
 
-              <input v-model="currentMapping.sourceField" type="text" class="w-full px-4 py-2 rounded-xl border border-gray-300
+              <input
+                v-model="currentMapping.sourceField"
+                type="text"
+                list="aggregate-input-fields"
+                class="w-full px-4 py-2 rounded-xl border border-gray-300
            focus:outline-none focus:ring-2 focus:ring-blue-500
            focus:border-transparent bg-white shadow-sm
-           transition text-right" placeholder="مثلاً cif یا cardNumber" required />
+           transition text-right"
+                placeholder="مثلاً nationalId یا mobileNumber"
+                required
+              />
+              <datalist id="aggregate-input-fields">
+                <option
+                  v-for="field in aggregateFields"
+                  :key="field.name"
+                  :value="field.name"
+                >
+                  {{ field.name }}
+                </option>
+              </datalist>
 
               <small class="block mt-1 text-gray-600 text-right">
                 نام فیلدی که هنگام اجرای Aggregate در ورودی ارسال می‌شود.
+                لیست از تعریف ورودی(JSON) ذخیره‌شده و مپینگ‌های مرحله است.
               </small>
             </div>
 
@@ -497,6 +514,17 @@ const formatMapping = (mapping) => ({
   description: mapping.description || "",
 });
 
+// Infer a ValueType-friendly label from a JSON value
+const inferJsonType = (value) => {
+  if (value === null) return "String"
+  if (Array.isArray(value)) return "Array"
+  if (typeof value === "string") return "String"
+  if (typeof value === "number") return "Number"
+  if (typeof value === "boolean") return "Boolean"
+  if (typeof value === "object") return "Object"
+  return "String"
+}
+
 // const loadAggregateFields = async () => {
 //   debugger;
 //   store.loadAggregates();
@@ -625,7 +653,29 @@ const loadAggregateFields = async () => {
     }
 
     // ---------------------------------------------------------
-    // 3. Remove duplicates
+    // 3. Aggregate Input JSON (persisted input definition on the aggregate)
+    // ---------------------------------------------------------
+    try {
+      const inputJson = aggregate?.inputJson
+      if (inputJson) {
+        const parsed = JSON.parse(inputJson)
+        if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+          for (const [name, value] of Object.entries(parsed)) {
+            fields.push({
+              id: `inputjson-${name}`,
+              name,
+              type: inferJsonType(value),
+              description: "فیلد از تعریف ورودی(JSON) تجمیع",
+            })
+          }
+        }
+      }
+    } catch (error) {
+      console.warn("Failed to parse aggregate inputJson:", error)
+    }
+
+    // ---------------------------------------------------------
+    // 4. Remove duplicates
     // ---------------------------------------------------------
     const uniqueFields = Array.from(
       new Map(

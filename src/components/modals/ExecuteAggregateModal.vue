@@ -87,10 +87,29 @@ const parsedJson = computed(() => {
   }
 })
 
-const openModal = () => {
+const openModal = async () => {
   isOpen.value = true
   jsonInput.value = ''
   jsonError.value = ''
+
+  // Prefill the *runtime* input payload from the saved Aggregate Input JSON
+  // definition. The saved definition and the runtime payload remain distinct:
+  // the user can execute with the stored definition or adjust it per-run.
+  try {
+    if (props.aggregateId) {
+      const data = await serviceAggregatorClient.getAggregateInput(
+        props.aggregateId
+      )
+      const dto = data && data.data !== undefined ? data.data : data
+      const inputJson = dto?.inputJson ?? null
+      if (inputJson) {
+        jsonInput.value = inputJson
+      }
+    }
+  } catch (error) {
+    // Non-fatal: execution still works with an empty runtime payload
+    console.warn('Could not load saved aggregate input JSON:', error)
+  }
 }
 
 const closeModal = () => {

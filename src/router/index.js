@@ -76,6 +76,7 @@ import ServicesPage from '@/pages/ServicesPage.vue'
 import AggregatesList from '@/pages/AggregatesList.vue'
 import AppFlow from '@/components/AppFlow.vue'
 import { useAuthStore } from '@/stores/authStore'
+import { useFlowStore } from '@/stores/flowStore'
 
 const routes = [
   {
@@ -176,6 +177,21 @@ router.beforeEach((to, from, next) => {
   if (requiresAuth && !isValid) {
     return next('/Login')
   }
+  // Warn before leaving the aggregate editor with unsaved Aggregate Input JSON
+  const flowStore = useFlowStore()
+  const isLeavingAggregateEditor =
+    from.path.startsWith('/aggregates/') &&
+    !to.path.startsWith('/aggregates/')
+  if (isLeavingAggregateEditor && flowStore.aggregateInputDirty) {
+    if (
+      !window.confirm(
+        'تعریف ورودی(JSON) تغییرات ذخیره نشده دارد. آیا مطمئنید می‌خواهید بدون ذخیره شدن خارج شوید؟'
+      )
+    ) {
+      return next(false)
+    }
+  }
+
   // If none of the above, proceed to the route
   next()
 })

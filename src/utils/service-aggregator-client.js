@@ -91,6 +91,19 @@ class ServiceAggregatorClient {
     const response = await httpClient.get(`/aggregate/get/${id}`)
     return response.data
   }
+
+  async getAggregateInput(id) {
+    const response = await httpClient.get(`/aggregate/get-input/${id}`)
+    return response.data
+  }
+
+  async updateAggregateInput(id, inputJson) {
+    const response = await httpClient.post(`/aggregate/update-input`, {
+      id,
+      inputJson,
+    })
+    return response.data
+  }
   //#endregion Aggregate
 
   //#region Aggregate-step
