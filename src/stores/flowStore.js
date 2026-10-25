@@ -1,6 +1,6 @@
 // src/store/flowStore.js
 import { defineStore } from 'pinia'
-import { reactive, ref, watch } from 'vue'
+import { reactive, ref, watch, nextTick } from 'vue'
 import { mergeNFields } from '../utils/schemaUtils'
 import { uniqueId } from '@/utils/modalUtils'
 import { MarkerType } from '@vue-flow/core'
@@ -314,7 +314,7 @@ export const useFlowStore = defineStore('flow', () => {
           let nodeType = '';//hasCondition ? 'decisionNode' : 'serviceNode'
           if (hasCondition) {
             nodeType = 'decisionNode';
-          } else if (firstStep == step.id) {
+          } else if (firstStep == step.id ) {
             nodeType = 'startNode';
           } else {
             nodeType = "serviceNode";
@@ -502,9 +502,17 @@ export const useFlowStore = defineStore('flow', () => {
         applyConnectionOrderLayout()
       }
       // در حالت تک aggregate، موقعیت‌ها از backend آمده و نیازی به layout مجدد نیست
+      Object.keys(serviceMappingsCache).forEach(k => delete serviceMappingsCache[k])  // ✅ تست
 
       // Load service mappings so input/output ports can render on service nodes
       await loadServiceMappingsForNodes(aggregateIdOrIds)
+
+      // Restore grey property-to-property (field-mapping) connections persisted on
+      // each step (step.mappings). Must run AFTER the service-mapping cache is
+      // populated so each input/output handle resolves to a valid handle id that
+      // matches the rendered ServiceNode handles.
+      await nextTick()
+      rebuildFieldMappingEdges()
     } catch (error) {
       console.error('Failed to load aggregate flow:', error)
       notify({
@@ -902,6 +910,13 @@ export const useFlowStore = defineStore('flow', () => {
       // Load service mappings so input/output ports can render on service nodes
       await loadServiceMappingsForNodes(aggregateId)
 
+      // Restore grey property-to-property (field-mapping) connections persisted on
+      // each step (step.mappings). Runs AFTER the service-mapping cache is filled so
+      // every input/output handle resolves to a valid handle id that matches the
+      // rendered ServiceNode handles.
+      await nextTick()
+      rebuildFieldMappingEdges()
+
       console.log('Store updated - nodes:', nodes.value.length, 'edges:', edges.value.length)
       isSyncing.value = false
       // Skip layout for single aggregate flow - nodes are already positioned
@@ -916,6 +931,378 @@ export const useFlowStore = defineStore('flow', () => {
     }
   }
 
+
+  async function loadSingleAggregateFlow2(aggregateId,type) {
+    isSyncing.value = true
+    debugger
+    try {
+      console.log('loading single aggregates');
+      // Fetch single aggregate with full details
+      const aggregate = await serviceAggregatorClient.getAggregateByid(aggregateId)
+
+      if (!aggregate) {
+        console.warn(`Aggregate ${aggregateId} not found`)
+        notify({
+          title: 'خطا',
+          text: `Aggregate با ID ${aggregateId} یافت نشد`,
+          type: 'error',
+        })
+        return
+      }
+
+      currentAggregateId.value = aggregateId
+      const flowNodes = []
+      const flowEdges = []
+      const stepIdToNodeIdMap = new Map()
+      const steps = aggregate.steps || []
+      const firstStep = aggregate.firstStepId;
+
+      // Create a map of step IDs to step objects for quick lookup
+      const stepMap = new Map()
+      steps.forEach(step => {
+        stepMap.set(step.id, step)
+      })
+
+      // Build nodes by traversing from firstStepId
+      const visitedSteps = new Set()
+      let xPos = 100
+      let yPos = 100
+      const nodePositions = new Map()
+
+      // Helper function to get position for a node (simple horizontal layout)
+      function getPositionForStep(stepId) {
+        if (nodePositions.has(stepId)) {
+          return nodePositions.get(stepId)
+        }
+        const pos = { x: xPos, y: yPos }
+        nodePositions.set(stepId, pos)
+        xPos += 300
+        if (xPos > 1500) {
+          xPos = 100
+          yPos += 220
+        }
+        return pos
+      }
+
+      // Traverse from firstStepId
+      function traverseStep(stepId, depth = 0) {
+        if (!stepId || visitedSteps.has(stepId)) {
+          return
+        }
+
+        const step = stepMap.get(stepId)
+        if (!step) {
+          return
+        }
+
+        visitedSteps.add(stepId)
+        const nodeId = `node-${step.id}`
+        stepIdToNodeIdMap.set(step.id, nodeId)
+
+        // Determine node type: diamond for conditional, rectangular for normal
+        const hasCondition = step.condition !== null && step.condition !== undefined && `${step.condition}`.trim() !== ''
+        let nodeType = ''; //hasCondition ? 'decisionNode' : 'serviceNode'
+        if (hasCondition) {
+          nodeType = 'decisionNode';
+        } else if (firstStep == step.id && type == 'startNode') {
+          nodeType = 'startNode';
+        } else if  (type == 'serviceNode') {
+          nodeType = "serviceNode";
+        }
+        // Get service info if available
+        const service = step.service || {}
+        // Use step.serviceId if available, otherwise fall back to service.id
+        const serviceId = step.serviceId || service.id
+
+        // Build node label: stepName + service.name + (method)
+        let nodeLabel = step.stepName || 'Step'
+        if (service.name) {
+          nodeLabel += ` - ${service.name}`
+          if (service.method) {
+            nodeLabel += ` (${service.method})`
+          }
+        }
+
+        // Use position from backend (step.positionX, step.positionY), otherwise use default position
+        const position = step.positionX !== null && step.positionX !== undefined && step.positionY !== null && step.positionY !== undefined
+          ? { x: step.positionX, y: step.positionY }
+          : getPositionForStep(stepId)
+
+        // Create node
+        const node = {
+          id: nodeId,
+          type: nodeType,
+          position: position,
+          data: {
+            id: nodeId,
+            aggregateStepId: step.id,
+            aggregateId: aggregateId,
+            label: nodeLabel,
+            stepName: step.stepName || '',
+            condition: step.condition || '',
+            conditionParameters: step.conditionParameters || '',
+            serviceId: serviceId,
+            serviceName: service.name || '',
+            url: service.url || '',
+            method: service.method || 'GET',
+            type: service.type || 'REST',
+            status: service.status !== undefined ? service.status : step.status !== undefined ? step.status : true,
+            mappings: step.mappings || [],
+            fields: service.fields ? [...service.fields] : [],
+            nextStepId: step.nextStepId || null,
+            trueStepId: step.trueStepId || null,
+            falseStepId: step.falseStepId || null,
+          },
+        }
+
+        flowNodes.push(node)
+
+        // Traverse connections: nextStepId, trueStepId, falseStepId
+        if (step.nextStepId) {
+          traverseStep(step.nextStepId, depth + 1)
+        }
+        if (step.trueStepId) {
+          traverseStep(step.trueStepId, depth + 1)
+        }
+        if (step.falseStepId) {
+          traverseStep(step.falseStepId, depth + 1)
+        }
+      }
+
+      // Start traversal from firstStepId if available, otherwise from all entry steps
+      if (aggregate.firstStepId) {
+        console.log('Starting traversal from firstStepId:', aggregate.firstStepId)
+        traverseStep(aggregate.firstStepId)
+      } else {
+        console.log('No firstStepId, finding entry steps')
+        // Fallback: find entry steps (steps that are not targets of any other step)
+        const allTargets = new Set()
+        steps.forEach(step => {
+          if (step.nextStepId) allTargets.add(step.nextStepId)
+          if (step.trueStepId) allTargets.add(step.trueStepId)
+          if (step.falseStepId) allTargets.add(step.falseStepId)
+        })
+
+        const entrySteps = steps.filter(s => !allTargets.has(s.id))
+        console.log('Entry steps found:', entrySteps.length)
+        entrySteps.forEach(entryStep => {
+          if (!visitedSteps.has(entryStep.id)) {
+            traverseStep(entryStep.id)
+          }
+        })
+      }
+
+      // Create nodes for any steps that weren't visited during traversal
+      // This ensures all steps are shown, even if they're not connected to the main flow
+      steps.forEach(step => {
+        if (!visitedSteps.has(step.id)) {
+          console.log('Adding orphaned step:', step.id, step.stepName)
+          visitedSteps.add(step.id)
+          const orphanNodeId = `node-${step.id}`
+          stepIdToNodeIdMap.set(step.id, orphanNodeId)
+
+          // Determine node type: diamond for conditional, rectangular for normal
+          const hasCondition = step.condition !== null && step.condition !== undefined && `${step.condition}`.trim() !== ''
+          let nodeType = ""; //hasCondition ? 'decisionNode' : 'serviceNode'
+          if (hasCondition) {
+            nodeType = 'decisionNode';
+          } else if (firstStep == step.id && type == 'startNode') {
+            nodeType = 'startNode';
+          } else if  (type == 'serviceNode') {
+            nodeType = "serviceNode";
+          }
+
+          // Get service info if available
+          const service = step.service || {}
+          // Use step.serviceId if available, otherwise fall back to service.id
+          const serviceId = step.serviceId || service.id || null
+
+          // Build node label: stepName + service.name + (method)
+          let nodeLabel = step.stepName || 'Step'
+          if (service.name) {
+            nodeLabel += ` - ${service.name}`
+            if (service.method) {
+              nodeLabel += ` (${service.method})`
+            }
+          }
+
+          // Use position from backend (step.positionX, step.positionY), otherwise use default position
+          const position = step.positionX !== null && step.positionX !== undefined && step.positionY !== null && step.positionY !== undefined
+            ? { x: step.positionX, y: step.positionY }
+            : getPositionForStep(step.id)
+          // Create node
+          const node = {
+            id: orphanNodeId,
+            type: nodeType,
+            position: position,
+            data: {
+              id: orphanNodeId,
+              aggregateStepId: step.id,
+              aggregateId: aggregateId,
+              label: nodeLabel,
+              stepName: step.stepName || '',
+              condition: step.condition || '',
+              conditionParameters: step.conditionParameters || '',
+              serviceId: serviceId,
+              serviceName: service.name || '',
+              url: service.url || '',
+              method: service.method || 'GET',
+              type: service.type || 'REST',
+              status: service.status !== undefined ? service.status : step.status !== undefined ? step.status : true,
+              mappings: step.mappings || [],
+              fields: service.fields ? [...service.fields] : [],
+              nextStepId: step.nextStepId || null,
+              trueStepId: step.trueStepId || null,
+              falseStepId: step.falseStepId || null,
+            },
+          }
+
+          flowNodes.push(node)
+        }
+      })
+
+      console.log('Nodes created:', flowNodes.length, 'Total steps:', steps.length)
+      console.log('Visited steps:', Array.from(visitedSteps))
+      console.log('Aggregate data:', { id: aggregate.id, name: aggregate.name, firstStepId: aggregate.firstStepId, stepsCount: steps.length })
+
+      // Create edges only for steps that were visited (have nodes)
+      steps.forEach(step => {
+        debugger
+        const sourceNodeId = stepIdToNodeIdMap.get(step.id)
+        if (!sourceNodeId) return // Skip if this step wasn't traversed
+
+        const stepMappings = step.mappings || []
+
+        // Next edge (default flow)
+        if (step.nextStepId) {
+          const targetNodeId = stepIdToNodeIdMap.get(step.nextStepId)
+          if (targetNodeId) {
+            flowEdges.push({
+              id: `edge-${step.id}-next-${step.nextStepId}`,
+              source: sourceNodeId,
+              target: targetNodeId,
+              animated: true,
+              type: 'default',
+              markerEnd: {
+                type: MarkerType.ArrowClosed,
+                width: 20,
+                height: 20,
+                color: '#FF0072',
+              },
+              label: 'Next',
+              style: {},
+              data: {
+                aggregateStepId: step.id,
+                aggregateId: aggregateId,
+                condition: step.condition || '',
+                conditionParameters: step.conditionParameters || '',
+                mappings: stepMappings,
+              },
+            })
+          }
+        }
+
+        // True edge (green)
+        if (step.trueStepId) {
+          const targetNodeId = stepIdToNodeIdMap.get(step.trueStepId)
+          if (targetNodeId) {
+            flowEdges.push({
+              id: `edge-${step.id}-true-${step.trueStepId}`,
+              source: sourceNodeId,
+              target: targetNodeId,
+              animated: true,
+              type: 'default',
+              markerEnd: {
+                type: MarkerType.ArrowClosed,
+                width: 20,
+                height: 20,
+                color: '#10B981',
+              },
+              label: 'True',
+              style: { stroke: '#10B981' },
+              data: {
+                aggregateStepId: step.id,
+                aggregateId: aggregateId,
+                condition: step.condition || '',
+                conditionParameters: step.conditionParameters || '',
+                mappings: [],
+              },
+            })
+          }
+        }
+
+        // False edge (red)
+        if (step.falseStepId) {
+          const targetNodeId = stepIdToNodeIdMap.get(step.falseStepId)
+          if (targetNodeId) {
+            flowEdges.push({
+              id: `edge-${step.id}-false-${step.falseStepId}`,
+              source: sourceNodeId,
+              target: targetNodeId,
+              animated: true,
+              type: 'default',
+              style: { stroke: '#EF4444', strokeDasharray: '6 4' },
+              markerEnd: {
+                type: MarkerType.ArrowClosed,
+                width: 20,
+                height: 20,
+                color: '#EF4444',
+              },
+              label: 'False',
+              data: {
+                aggregateStepId: step.id,
+                aggregateId: aggregateId,
+                condition: step.condition || '',
+                conditionParameters: step.conditionParameters || '',
+                mappings: [],
+              },
+            })
+          }
+        }
+      })
+
+      console.log('Edges created:', flowEdges.length)
+      console.log('Final nodes:', flowNodes.length, 'Final edges:', flowEdges.length)
+
+      // Update store with nodes and edges
+      nodes.value = flowNodes
+      edges.value = flowEdges
+      // Merge backend edges into persistentEdges (don't replace)
+      // This ensures user-created edges survive the reload
+      flowEdges.forEach(backendEdge => {
+        if (!persistentEdges.value.find(e => e.id === backendEdge.id)) {
+          persistentEdges.value.push(structuredClone(backendEdge))
+        }
+      })
+      nodes.value = [...nodes.value]
+      edges.value = [...edges.value]
+
+      // Rebuild edges from persistentEdges to restore user connections
+      mergePersistedEdges()
+
+      // Load service mappings so input/output ports can render on service nodes
+      await loadServiceMappingsForNodes(aggregateId)
+
+      // Restore grey property-to-property (field-mapping) connections persisted on
+      // each step (step.mappings). Runs AFTER the service-mapping cache is filled so
+      // every input/output handle resolves to a valid handle id that matches the
+      // rendered ServiceNode handles.
+      await nextTick()
+      rebuildFieldMappingEdges()
+
+      console.log('Store updated - nodes:', nodes.value.length, 'edges:', edges.value.length)
+      isSyncing.value = false
+      // Skip layout for single aggregate flow - nodes are already positioned
+      // applyConnectionOrderLayout() expects aggregate nodes which we don't create here
+    } catch (error) {
+      console.error('Failed to load single aggregate flow:', error)
+      notify({
+        title: 'خطا',
+        text: 'خطا در بارگذاری flow',
+        type: 'error',
+      })
+    }
+  }
   /**
    * Apply hierarchical level-based layout: position nodes by depth in the graph
    * Nodes flow from top to bottom, with nodes at the same level arranged horizontally
@@ -1440,119 +1827,263 @@ export const useFlowStore = defineStore('flow', () => {
   //   }
   // }
 
-  async function addNode(options = {}) {
-    debugger
-    // 1. EXTRACT isDecision HERE
-    const {
-      position = {},
-      label = 'New Service',
-      serviceName = '',
-      fields = [],
-      url = '',
-      method = 'GET',
-      type = 'REST',
-      isDecision = false // <--- Added this line
-    } = options
 
-    const x = typeof position.x === 'number' ? position.x : 100
-    const y = typeof position.y === 'number' ? position.y : 100
-    // Note: We don't need 'id' here yet, we generate it later for the node
 
-    await ensureAggregate()
+async function addNode(options = {}) {
+  debugger
 
-    try {
-      const serviceData = {
-        name: serviceName || label,
-        url: url || '',
-        method: method,
-        type: type,
-      }
+  const {
+    position = {},
+    label = 'New Service',
+    serviceName = '',
+    fields = [],
+    url = '',
+    method = 'GET',
+    type = 'REST',
+    isDecision = false,
+    nodeType: requestedNodeType = '',
+    isStartNode: requestedStartNode = false,
+  } = options
 
-      // 2. Call Server
-      const createdService = await serviceAggregatorClient.createService(serviceData)
+  const x = typeof position.x === 'number' ? position.x : 100
+  const y = typeof position.y === 'number' ? position.y : 100
 
-      const isFirstNode = nodes.value.length === 0
+  await ensureAggregate()
 
-      // Default Style (White/Gray)
-      let nodeStyle = {
-        backgroundColor: '#ffffff',
-        border: '1px solid #e2e8f0',
-        color: '#1f2937',
-        borderRadius: '8px'
-      }
-      let nodeType = ''
-      // Start Node Style (Green) - First node added
-      if (isFirstNode) {
-        nodeType = 'startNode'
-        nodeStyle = {
-          backgroundColor: '#10b981', // Emerald 500
-          border: '1px solid #059669',
-          color: '#ffffff',
-          borderRadius: '8px',
-          boxShadow: '0 4px 6px -1px rgba(16, 185, 129, 0.3)'
-        }
-      } else {
-        nodeType = 'serviceNode'
-      }
-
-      // Decision Node Style (Diamond/Yellow)
-
-      // 3. Now this check works because variable is defined
-      if (isDecision) {
-        nodeType = 'decisionNode'
-        nodeStyle = {
-          ...nodeStyle,
-          backgroundColor: '#fffbeb', // Amber 50
-          borderColor: '#f59e0b',    // Amber 500
-        }
-      }
-
-      // 4. Create the Node Object
-      const id = uniqueId('svc')
-      const newNode = {
-        id: id,
-        type: nodeType,
-        position: { x, y }, // Use the extracted x, y
-        style: nodeStyle,
-        data: {
-          id,
-          serviceId: createdService.id,
-          aggregateId: currentAggregateId.value,
-          label: label,
-          serviceName: serviceName || label,
-          isStartNode: isFirstNode,
-          url: url,
-          method: method,
-          type: type,
-          status: true,
-          fields: structuredClone(fields),
-        },
-      }
-
-      // 5. Force Re-render
-      nodes.value = [...nodes.value, newNode]
-      // nodes.value.push(node)
-      // nodes.value = [...nodes.value]
-      notify({
-        title: 'موفق',
-        text: 'سرویس در سرور ایجاد شد',
-        type: 'success',
-      })
-
-      return newNode
-
-    } catch (error) {
-      console.error('Failed to create service:', error)
-      notify({
-        title: 'خطا',
-        text: 'خطا در ایجاد سرویس',
-        type: 'error',
-      })
-      // nodes.value.push(node)
-      // nodes.value = [...nodes.value]
-      // return node
+  try {
+    const serviceData = {
+      name: serviceName || label,
+      url: url || '',
+      method: method,
+      type: type,
     }
+
+    // Preserve the existing server-side service creation logic.
+    const createdService = await serviceAggregatorClient.createService(serviceData)
+
+    const isFirstNode = nodes.value.length === 0
+
+    // Keep the existing default service-node styling.
+    let nodeStyle = {
+      backgroundColor: '#ffffff',
+      border: '1px solid #e2e8f0',
+      color: '#1f2937',
+      borderRadius: '8px',
+    }
+
+    // Use the explicitly requested node type instead of inferring it
+    // from whether another node already exists on the canvas.
+    let nodeType = 'serviceNode'
+
+    const supportedNodeTypes = new Set([
+      'startNode',
+      'decisionNode',
+      'endNode',
+      'serviceNode',
+    ])
+
+    if (requestedNodeType && supportedNodeTypes.has(requestedNodeType)) {
+      nodeType = requestedNodeType
+    } else if (isDecision) {
+      nodeType = 'decisionNode'
+    } else if (requestedStartNode) {
+      nodeType = 'startNode'
+    } else if (isFirstNode) {
+      // Preserve the existing behavior for callers that don't specify
+      // a node type: the first ordinary node is a start node.
+      nodeType = 'startNode'
+    }
+
+    // Start Node Style
+    if (nodeType === 'startNode') {
+      nodeStyle = {
+        backgroundColor: '#10b981',
+        border: '1px solid #059669',
+        color: '#ffffff',
+        borderRadius: '8px',
+        boxShadow: '0 4px 6px -1px rgba(16, 185, 129, 0.3)',
+      }
+    }
+
+    // Decision Node Style
+    if (nodeType === 'decisionNode') {
+      nodeStyle = {
+        ...nodeStyle,
+        backgroundColor: '#fffbeb',
+        border: '1px solid #f59e0b',
+        color: '#1f2937',
+        borderRadius: '8px',
+      }
+    }
+
+    // End Node Style
+    if (nodeType === 'endNode') {
+      nodeStyle = {
+        ...nodeStyle,
+        backgroundColor: '#fee2e2',
+        border: '1px solid #ef4444',
+        color: '#991b1b',
+        borderRadius: '8px',
+      }
+    }
+
+    // Create the Vue Flow node.
+    const id = uniqueId('svc')
+
+    const newNode = {
+      id,
+      type: nodeType,
+      position: { x, y },
+      style: nodeStyle,
+      data: {
+        id,
+        serviceId: createdService.id,
+        aggregateId: currentAggregateId.value,
+        label,
+        serviceName: serviceName || label,
+        isStartNode: nodeType === 'startNode',
+        url,
+        method,
+        type,
+        status: true,
+        fields: structuredClone(fields),
+      },
+    }
+
+    // Preserve the existing reactive update behavior.
+    nodes.value = [...nodes.value, newNode]
+
+    notify({
+      title: 'موفق',
+      text: 'سرویس در سرور ایجاد شد',
+      type: 'success',
+    })
+
+    return newNode
+  } catch (error) {
+    console.error('Failed to create service:', error)
+
+    notify({
+      title: 'خطا',
+      text: 'خطا در ایجاد سرویس',
+      type: 'error',
+    })
   }
+}
+
+  // async function addNode(options = {}) {
+  //   debugger
+  //   // 1. EXTRACT isDecision HERE
+  //   const {
+  //     position = {},
+  //     label = 'New Service',
+  //     serviceName = '',
+  //     fields = [],
+  //     url = '',
+  //     method = 'GET',
+  //     type = 'REST',
+  //     isDecision = false // <--- Added this line
+  //   } = options
+
+  //   const x = typeof position.x === 'number' ? position.x : 100
+  //   const y = typeof position.y === 'number' ? position.y : 100
+  //   // Note: We don't need 'id' here yet, we generate it later for the node
+
+  //   await ensureAggregate()
+
+  //   try {
+  //     const serviceData = {
+  //       name: serviceName || label,
+  //       url: url || '',
+  //       method: method,
+  //       type: type,
+  //     }
+
+  //     // 2. Call Server
+  //     const createdService = await serviceAggregatorClient.createService(serviceData)
+
+  //     const isFirstNode = nodes.value.length === 0
+
+  //     // Default Style (White/Gray)
+  //     let nodeStyle = {
+  //       backgroundColor: '#ffffff',
+  //       border: '1px solid #e2e8f0',
+  //       color: '#1f2937',
+  //       borderRadius: '8px'
+  //     }
+  //     let nodeType = ''
+  //     // Start Node Style (Green) - First node added
+  //     if (isFirstNode) {
+  //       nodeType = 'startNode'
+  //       nodeStyle = {
+  //         backgroundColor: '#10b981', // Emerald 500
+  //         border: '1px solid #059669',
+  //         color: '#ffffff',
+  //         borderRadius: '8px',
+  //         boxShadow: '0 4px 6px -1px rgba(16, 185, 129, 0.3)'
+  //       }
+  //     } else {
+  //       nodeType = 'serviceNode'
+  //     }
+
+  //     // Decision Node Style (Diamond/Yellow)
+
+  //     // 3. Now this check works because variable is defined
+  //     if (isDecision) {
+  //       nodeType = 'decisionNode'
+  //       nodeStyle = {
+  //         ...nodeStyle,
+  //         backgroundColor: '#fffbeb', // Amber 50
+  //         borderColor: '#f59e0b',    // Amber 500
+  //       }
+  //     }
+
+  //     // 4. Create the Node Object
+  //     const id = uniqueId('svc')
+  //     const newNode = {
+  //       id: id,
+  //       type: nodeType,
+  //       position: { x, y }, // Use the extracted x, y
+  //       style: nodeStyle,
+  //       data: {
+  //         id,
+  //         serviceId: createdService.id,
+  //         aggregateId: currentAggregateId.value,
+  //         label: label,
+  //         serviceName: serviceName || label,
+  //         isStartNode: isFirstNode,
+  //         url: url,
+  //         method: method,
+  //         type: type,
+  //         status: true,
+  //         fields: structuredClone(fields),
+  //       },
+  //     }
+
+  //     // 5. Force Re-render
+  //     nodes.value = [...nodes.value, newNode]
+  //     // nodes.value.push(node)
+  //     // nodes.value = [...nodes.value]
+  //     notify({
+  //       title: 'موفق',
+  //       text: 'سرویس در سرور ایجاد شد',
+  //       type: 'success',
+  //     })
+
+  //     return newNode
+
+  //   } catch (error) {
+  //     console.error('Failed to create service:', error)
+  //     notify({
+  //       title: 'خطا',
+  //       text: 'خطا در ایجاد سرویس',
+  //       type: 'error',
+  //     })
+  //     // nodes.value.push(node)
+  //     // nodes.value = [...nodes.value]
+  //     // return node
+  //   }
+  // }
   /**
    * Ensure service exists in backend (create if it doesn't)
    * Called when user adds first field to a new service
@@ -1654,6 +2185,38 @@ export const useFlowStore = defineStore('flow', () => {
     if (node && node.data.serviceId) {
       try {
         await serviceAggregatorClient.deleteService(node.data.serviceId)
+        notify({
+          title: 'موفق',
+          text: 'سرویس با موفقیت حذف شد',
+          type: 'success',
+        })
+      } catch (error) {
+        console.error('Failed to delete service:', error)
+        notify({
+          title: 'خطا',
+          text: 'خطا در حذف سرویس',
+          type: 'error',
+        })
+      }
+    }
+
+    nodes.value = nodes.value.filter((n) => n.id !== nodeId)
+    edges.value = edges.value.filter((e) => e.source !== nodeId && e.target !== nodeId)
+    persistentEdges.value = persistentEdges.value.filter((e) => e.source !== nodeId && e.target !== nodeId)
+    nodes.value = [...nodes.value]
+    edges.value = [...edges.value]
+
+    if (selectedNode.value === nodeId) {
+      selectedNode.value = null
+      showModal.value = false
+    }
+  }
+
+    async function deleteNode2(nodeId) {
+    const node = nodes.value.find((n) => n.id === nodeId)
+
+    if (node && node.data.serviceId) {
+      try {
         notify({
           title: 'موفق',
           text: 'سرویس با موفقیت حذف شد',
@@ -2555,25 +3118,113 @@ export const useFlowStore = defineStore('flow', () => {
     return id.startsWith('input-') || id.startsWith('output-')
   }
 
+  // function parseServiceMappings(raw) {
+  //   const list = Array.isArray(raw) ? raw : (raw?.data || raw?.mappings || raw?.items) || []
+
+  //   // همه فیلدها را ایندکس کن
+  //   const byId = new Map()
+  //   list.forEach((m) => {
+  //     const name = m.name || m.targetField || m.sourceField
+  //     if (!name) return
+  //     const key = m.id ? String(m.id) : name
+  //     byId.set(key, {
+  //       id: key,
+  //       name,
+  //       type: m.type || '',
+  //       direction: m.direction,
+  //       parentId: m.parentId ? String(m.parentId) : null,
+  //       handleId: '',
+  //       children: [],
+  //       original: m,
+  //     })
+  //   })
+
+  //   // اتصال فرزند به والد
+  //   const roots = []
+  //   byId.forEach((field) => {
+  //     // parentId اگر برابر serviceId باشد، سطح اول است
+  //     const parent = field.parentId && byId.get(field.parentId)
+  //     if (parent) {
+  //       parent.children.push(field)
+  //     } else {
+  //       roots.push(field)
+  //     }
+  //   })
+
+  //   const inputs = []
+  //   const outputs = []
+
+  //   function assignHandles(field, isInput) {
+  //     field.handleId = (isInput ? 'input-' : 'output-') + field.id
+  //     if (isInput) inputs.push(field)
+  //     else outputs.push(field)
+  //     // فرزندان را هم به لیست اصلی اضافه نکن — فقط زیر parent می‌مانند
+  //     // ولی اگر خواستی leafها هم handle داشته باشند:
+  //     field.children.forEach((c) => assignHandles(c, isInput))
+  //   }
+
+  //   roots.forEach((f) => {
+  //     if (f.direction === 1 || f.direction === 'input' || f.direction === 'request') {
+  //       assignHandles(f, true)
+  //     } else if (f.direction === 2 || f.direction === 'output' || f.direction === 'response') {
+  //       assignHandles(f, false)
+  //     }
+  //   })
+
+  //   return { inputs, outputs }
+  // }
   function parseServiceMappings(raw) {
-    const list = Array.isArray(raw) ? raw : (raw && (raw.data || raw.mappings || raw.items)) || []
-    const inputs = []
-    const outputs = []
+    const list = Array.isArray(raw) ? raw : (raw?.data || raw?.mappings || raw?.items) || []
+
+    const byId = new Map()
     list.forEach((m) => {
-      const direction = m.direction
       const name = m.name || m.targetField || m.sourceField
       if (!name) return
       const key = m.id ? String(m.id) : name
-      const field = { id: key, name, type: m.type || '', handleId: '', original: m }
-      if (direction === 1 || direction === 'input' || direction === 'request') {
-        field.handleId = 'input-' + key
-        inputs.push(field)
-      } else if (direction === 2 || direction === 'output' || direction === 'response') {
-        field.handleId = 'output-' + key
-        outputs.push(field)
+      byId.set(key, {
+        id: key,
+        name,
+        type: m.type || '',
+        direction: m.direction,
+        parentId: m.parentId ? String(m.parentId) : null,
+        handleId: '',
+        children: [],
+        original: m,
+      })
+    })
+
+    // اتصال فرزند به والد (فقط اگر parentId واقعاً یک mapping باشد)
+    const roots = []
+    byId.forEach((field) => {
+      const parent = field.parentId && byId.get(field.parentId)
+      if (parent) {
+        parent.children.push(field)
+      } else {
+        // parentId = serviceId یا null → سطح اول
+        roots.push(field)
       }
     })
-    return { inputs: inputs, outputs: outputs }
+
+    const inputs = []
+    const outputs = []
+
+    // فقط handleId بده؛ فرزندان را داخل inputs/outputs هل نده
+    function assignHandles(field, isInput) {
+      field.handleId = (isInput ? 'input-' : 'output-') + field.id
+        ; (field.children || []).forEach((c) => assignHandles(c, isInput))
+    }
+
+    roots.forEach((f) => {
+      if (f.direction === 1 || f.direction === 'input' || f.direction === 'request') {
+        assignHandles(f, true)
+        inputs.push(f)          // فقط root
+      } else if (f.direction === 2 || f.direction === 'output' || f.direction === 'response') {
+        assignHandles(f, false)
+        outputs.push(f)         // فقط root
+      }
+    })
+
+    return { inputs, outputs }
   }
 
   async function loadServiceMappings(stepId, serviceId) {
@@ -2695,6 +3346,15 @@ export const useFlowStore = defineStore('flow', () => {
       }
     } catch (error) {
       console.error('Failed to save field mapping:', error)
+      // Rollback the optimistic edge so a failed persistence is not surfaced as success.
+      edges.value = edges.value.filter((e) => e.id !== edgeId)
+      persistentEdges.value = persistentEdges.value.filter((e) => e.id !== edgeId)
+      notify({
+        title: 'خطا',
+        text: 'خطا در ذخیره ارتباط میان فیلدها',
+        type: 'error',
+      })
+      return false
     }
 
     return true
@@ -2756,13 +3416,23 @@ export const useFlowStore = defineStore('flow', () => {
             sourceField: m.sourceField,
             targetField: m.targetField,
             fieldMapping: true,
+            valueType: m.valueType || null,
             mappingId: m.id,
           },
         })
       }
     }
 
-    // اضافه کردن به edges و persistentEdges (بدون تکراری)
+    // Reconcile field-mapping (grey) edges so restoration is idempotent and
+    // deletions persist across reloads:
+    //  - drop grey edges whose underlying mapping is no longer present on the step
+    //  - add grey edges that are still missing (guarantees no duplicates)
+    const desiredIds = new Set(fieldEdges.map((fe) => fe.id))
+    const isStaleFieldEdge = (e) => e.data?.fieldMapping === true && !desiredIds.has(e.id)
+
+    edges.value = edges.value.filter((e) => !isStaleFieldEdge(e))
+    persistentEdges.value = persistentEdges.value.filter((e) => !isStaleFieldEdge(e))
+
     for (const fe of fieldEdges) {
       if (!edges.value.find(e => e.id === fe.id)) {
         edges.value.push(fe)
@@ -2773,6 +3443,9 @@ export const useFlowStore = defineStore('flow', () => {
     }
     edges.value = [...edges.value]
   }
+
+
+
 
   return {
     enableAutoSave,
@@ -2794,6 +3467,7 @@ export const useFlowStore = defineStore('flow', () => {
     connectionStepData,
     stepModalOpen,
     stepModalInitialData,
+    deleteNode2,
     loadAggregates,
     loadAggregateFlow,
     loadSingleAggregateFlow,
@@ -2835,6 +3509,8 @@ export const useFlowStore = defineStore('flow', () => {
     executionStatus,
     setNodeStatus,
     resetExecution,
+    loadSingleAggregateFlow2
   }
 
 })
+

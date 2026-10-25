@@ -307,10 +307,19 @@ const onSave = async () => {
     // Update the aggregate's firstStepId if this is the first node
     if (store.nodes.length === 0 || store.nodes.length === 1) {
       debugger
-      const aggregateRecord = await store.getAggregateByid(payload.aggregateId);
-      if (aggregateRecord.firstStepId && aggregateRecord.firstStepId != null && aggregateRecord.firstStepId != undefined) {
+      //const aggregateRecord = await store.getAggregateByid(payload.aggregateId);
+      // if (aggregateRecord.firstStepId && aggregateRecord.firstStepId != null && aggregateRecord.firstStepId != undefined) {
 
-      } else {
+      // } else {
+      //   await serviceAggregatorClient.updateAggregate({
+      //     ...aggregateRecord,
+      //     firstStepId: stepResult.id,
+      //     status: true
+      //   });
+      // }
+      const aggregateRecord = await store.getAggregateByid(payload.aggregateId);
+
+      if (!aggregateRecord.firstStepId) {
         await serviceAggregatorClient.updateAggregate({
           ...aggregateRecord,
           firstStepId: stepResult.id,
@@ -350,7 +359,11 @@ const onSave = async () => {
     } else {
       // Node not found - reload from store to ensure UI is fresh
       console.warn(`Node not found with ID ${targetId}. Store has ${store.nodes.length} nodes.`);
-      await store.loadSingleAggregateFlow(payload.aggregateId);
+      if(nodeIndex === -1){
+        await store.loadSingleAggregateFlow2(payload.aggregateId,'serviceNode');
+      }else{
+        await store.loadSingleAggregateFlow(payload.aggregateId);
+      }
     }
 
     // Force array reactivity by creating a new reference

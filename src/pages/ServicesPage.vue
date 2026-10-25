@@ -389,7 +389,7 @@
                     جدید
                   </div>
                   <div class="text-xs text-gray-500 dark:text-gray-400 text-right mb-2">
-                    Parent Service ID: <strong>{{ mapping.parentId || '—' }}</strong>
+                    Parent Field ID: <strong>{{ mapping.parentId || '—' }}</strong>
                   </div>
                   <div class="space-y-3 pr-8">
                     <!-- Name -->
@@ -500,6 +500,20 @@
                         class="w-full px-3 py-2 rounded-lg border-2 border-blue-200 dark:border-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-800 dark:text-white shadow-sm transition duration-200 text-right text-sm resize-none" />
                     </div>
 
+                    <!-- Parent Field -->
+                    <div class="space-y-1">
+                      <label class="block font-semibold text-gray-700 dark:text-gray-200 text-right text-sm">
+                        فیلد والد (Parent Field)
+                      </label>
+                      <select v-model="mapping.parentId"
+                        class="w-full px-3 py-2 rounded-lg border-2 border-blue-200 dark:border-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-800 dark:text-white shadow-sm transition duration-200 text-right text-sm font-medium">
+                        <option :value="null">بدون والد (سطح اول)</option>
+                        <option v-for="p in getParentOptions(mapping)" :key="p.id" :value="p.id">
+                          {{ p.name }} ({{ p.type }})
+                        </option>
+                      </select>
+                    </div>
+
                     <!-- Delete Button -->
                     <div class="pt-3 border-t border-blue-200 dark:border-blue-700">
                       <button @click="removeMapping(stepMappings.indexOf(mapping))"
@@ -588,6 +602,20 @@
                       </label>
                       <textarea v-model="mapping.description" rows="2"
                         class="w-full px-3 py-2 rounded-lg border-2 border-green-200 dark:border-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white dark:bg-gray-800 dark:text-white shadow-sm transition duration-200 text-right text-sm resize-none" />
+                    </div>
+
+                    <!-- Parent Field -->
+                    <div class="space-y-1">
+                      <label class="block font-semibold text-gray-700 dark:text-gray-200 text-right text-sm">
+                        فیلد والد (Parent Field)
+                      </label>
+                      <select v-model="mapping.parentId"
+                        class="w-full px-3 py-2 rounded-lg border-2 border-green-200 dark:border-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white dark:bg-gray-800 dark:text-white shadow-sm transition duration-200 text-right text-sm font-medium">
+                        <option :value="null">بدون والد (سطح اول)</option>
+                        <option v-for="p in getParentOptions(mapping)" :key="p.id" :value="p.id">
+                          {{ p.name }} ({{ p.type }})
+                        </option>
+                      </select>
                     </div>
 
                     <!-- Delete Button -->
@@ -858,18 +886,18 @@ const deleteModal = async (id) => {
 const AddStepMapping = async (id) => {
   const record = await serviceAggregatorClient.getServicesById(id);
 
+  // Keep the parentId that already exists on each mapping (from the API).
+  // Do NOT force parentId = serviceId, otherwise nested Array/Object children can't be defined.
   const allMappings = [
     ...(record.inputs || []).map(m => ({
       ...m,
       __key: m.id ?? crypto.randomUUID(),
-      serviceName: record.name,
-      parentId: record.id
+      serviceName: record.name
     })),
     ...(record.outputs || []).map(m => ({
       ...m,
       __key: m.id ?? crypto.randomUUID(),
-      serviceName: record.name,
-      parentId: record.id
+      serviceName: record.name
     }))
   ];
 
@@ -879,9 +907,9 @@ const AddStepMapping = async (id) => {
     originalMappings.value = allMappings.map(m => ({ ...m }));
   } else {
     isEditMode.value = false;
+    // New mapping starts as top-level (no parent). User can pick a parent via the dropdown.
     stepMappings.value = [{
-      ...getEmptyMapping(),
-      parentId: record.id,
+      ...getEmptyMapping(null),
       serviceName: record.name
     }];
     originalMappings.value = [];
@@ -928,7 +956,7 @@ const openEditModal = (existingMappings) => {
 }
 
 
-const getEmptyMapping = (parentId = "", serviceName = "") => ({
+const getEmptyMapping = (parentId = null, serviceName = "") => ({
   __key: new Date() + Math.random().toString(),
   name: '',
   serviceId: null,
@@ -936,14 +964,30 @@ const getEmptyMapping = (parentId = "", serviceName = "") => ({
   direction: 1,
   serviceName : serviceName,
   description: "",
-  parentId: parentId,   // 1 = input, 2 = output
+  parentId: parentId,   // parent mapping id (null = top-level)
   // ... add other fields if needed (id, status, etc.)
 })
 
+// Options for the "Parent Field" dropdown: existing mappings of the SAME service
+// whose type can act as a container (Array / Object / JSON), excluding the current one.
+const getParentOptions = (currentMapping) => {
+  return stepMappings.value
+    .filter(m =>
+      m.__key !== currentMapping.__key &&
+      m.name &&
+      ['Array', 'Object', 'JSON'].includes(m.type)
+    )
+    .map(m => ({
+      id: m.id ?? m.__key,
+      name: m.name,
+      type: m.type
+    }))
+}
+
 const addNewMapping = async () => {
-  const parentId = formData.value.id;
   const serviceName = formData.value.name;
-  stepMappings.value.push({ ...getEmptyMapping(parentId, serviceName), direction: selectedDirection.value })
+  // New mappings start as top-level (no parent). User can pick a parent via the dropdown.
+  stepMappings.value.push({ ...getEmptyMapping(null, serviceName), direction: selectedDirection.value })
   mappingUpdateKey.value++
   await nextTick()
 }
@@ -1031,11 +1075,13 @@ const isValidFn = () => {
 }
 const saveStepService = async () => {
 
-  const parentId = formData.value.id;
+  const serviceId = formData.value.id;
 
   stepMappings.value.forEach(m => {
-    if (!m.serviceId) m.serviceId = parentId;
-    if (!m.parentId) m.parentId = parentId;
+    if (!m.serviceId) m.serviceId = serviceId;
+    // parentId must come from the Parent Field dropdown (mapping id) or be null.
+    // Do NOT default to serviceId — that breaks nested Array/Object children.
+    if (m.parentId === '' || m.parentId === undefined) m.parentId = null;
   });
   
   const invalid = stepMappings.value.some(m =>

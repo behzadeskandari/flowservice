@@ -365,6 +365,7 @@ function onConfirmDelete() {
 function onCancelDelete() {
   showConfirm.value = false
 }
+
 function close() {
   store.clearSelected()
 }

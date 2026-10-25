@@ -96,7 +96,7 @@
             @dragstart="
               onDragStartStatic($event, {
                 id: null,
-                name: 'Start Node',
+                name: 'گره ورودی',
                 type: 'startNode',
               })
             "
@@ -787,27 +787,43 @@ const onDragOver = (event: DragEvent) => {
   }
 };
 
+const STATIC_NODE_TYPES = new Set([
+  "startNode",
+  "decisionNode",
+  "endNode",
+]);
+
 const onDrop = async (event: DragEvent) => {
-  console.log(draggedService.value, "draggedService");
   event.preventDefault();
 
-  if (!draggedService.value) {
-    // Try to get from dataTransfer
+  let dragged = draggedService.value;
+
+  if (!dragged) {
     try {
-      const data = event.dataTransfer?.getData("application/json");
-      if (data) {
-        draggedService.value = JSON.parse(data);
-        console.log(draggedService.value, "draggedService onDrop");
-      }
-    } catch (e) {
-      console.error("Failed to parse dropped data:", e);
+      const raw = event.dataTransfer?.getData("application/json");
+      if (raw) dragged = JSON.parse(raw);
+    } catch (error) {
+      console.error("Failed to parse dropped data:", error);
       return;
     }
   }
 
-  if (!draggedService.value) return;
+  if (!dragged) return;
 
-  const { allowed, message } = canAddNode(draggedService.value.type);
+  const nodeType = dragged.type;
+
+  if (!nodeType) {
+    notify({
+      title: "خطا",
+      text: "نوع گره مشخص نیست",
+      type: "error",
+    });
+    draggedService.value = null;
+    return;
+  }
+
+  const { allowed, message } = canAddNode(nodeType);
+
   if (!allowed) {
     notify({
       title: "خطا",
@@ -818,39 +834,95 @@ const onDrop = async (event: DragEvent) => {
     return;
   }
 
-  // Get drop position in flow coordinates
-  let dropPosition = { x: 100, y: 100 }; // Default position
-  if (event && screenToFlowCoordinate) {
-    try {
-      const flowPosition = screenToFlowCoordinate({
-        x: event.clientX,
-        y: event.clientY,
-      });
-      dropPosition = { x: flowPosition.x, y: flowPosition.y };
-    } catch (e) {
-      console.warn(
-        "Failed to convert drop position to flow coordinates, using default:",
-        e
-      );
-    }
+  let dropPosition = { x: 100, y: 100 };
+
+  if (screenToFlowCoordinate) {
+    const position = screenToFlowCoordinate({
+      x: event.clientX,
+      y: event.clientY,
+    });
+
+    dropPosition = { x: position.x, y: position.y };
   }
 
-  // Open StepModal with pre-filled service and drop position
   const aggregateId = route.params.id as string;
-  if (stepModalRef.value) {
-    stepModalRef.value.openModal("add", {
-      aggregateId: aggregateId,
-      serviceId: draggedService.value.id,
-      stepName: draggedService.value.name || "New Step",
-      positionX: dropPosition.x,
-      positionY: dropPosition.y,
-      nodeType: draggedService.value.type,
-      isDecisionNode: draggedService.value.type === "decisionNode",
-    });
-  }
+
+  stepModalRef.value?.openModal("add", {
+    aggregateId,
+    serviceId: STATIC_NODE_TYPES.has(nodeType) ? null : dragged.id,
+    stepName: dragged.name || "New Step",
+    positionX: dropPosition.x,
+    positionY: dropPosition.y,
+    nodeType,
+    isDecisionNode: nodeType === "decisionNode",
+  } as any);
 
   draggedService.value = null;
 };
+// const onDrop = async (event: DragEvent) => {
+//   console.log(draggedService.value, "draggedService");
+//   event.preventDefault();
+
+//   if (!draggedService.value) {
+//     // Try to get from dataTransfer
+//     try {
+//       const data = event.dataTransfer?.getData("application/json");
+//       if (data) {
+//         draggedService.value = JSON.parse(data);
+//         console.log(draggedService.value, "draggedService onDrop");
+//       }
+//     } catch (e) {
+//       console.error("Failed to parse dropped data:", e);
+//       return;
+//     }
+//   }
+
+//   if (!draggedService.value) return;
+
+//   const { allowed, message } = canAddNode(draggedService.value.type);
+//   if (!allowed) {
+//     notify({
+//       title: "خطا",
+//       text: message || "امکان اضافه کردن این گام وجود ندارد",
+//       type: "error",
+//     });
+//     draggedService.value = null;
+//     return;
+//   }
+
+//   // Get drop position in flow coordinates
+//   let dropPosition = { x: 100, y: 100 }; // Default position
+//   if (event && screenToFlowCoordinate) {
+//     try {
+//       const flowPosition = screenToFlowCoordinate({
+//         x: event.clientX,
+//         y: event.clientY,
+//       });
+//       dropPosition = { x: flowPosition.x, y: flowPosition.y };
+//     } catch (e) {
+//       console.warn(
+//         "Failed to convert drop position to flow coordinates, using default:",
+//         e
+//       );
+//     }
+//   }
+
+//   // Open StepModal with pre-filled service and drop position
+//   const aggregateId = route.params.id as string;
+//   if (stepModalRef.value) {
+//     stepModalRef.value.openModal("add", {
+//       aggregateId: aggregateId,
+//       serviceId: draggedService.value.id,
+//       stepName: draggedService.value.name || "New Step",
+//       positionX: dropPosition.x,
+//       positionY: dropPosition.y,
+//       nodeType: draggedService.value.type,
+//       isDecisionNode: draggedService.value.type === "decisionNode",
+//     });
+//   }
+
+//   draggedService.value = null;
+// };
 
 const onServiceDoubleClick = (service: any) => {
   const { allowed, message } = canAddNode(service.type);
@@ -874,7 +946,7 @@ const onServiceDoubleClick = (service: any) => {
       positionY: 100,
       nodeType: service.type,
       isDecisionNode: service.type === "decisionNode",
-    });
+    } as any);
   }
 };
 
@@ -886,7 +958,7 @@ const onAddStep = () => {
       aggregateId: aggregateId,
       positionX: 100,
       positionY: 100,
-    });
+    } as any);
   }
 };
 

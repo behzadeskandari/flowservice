@@ -167,8 +167,9 @@ function onContextSelect(action) {
   }
 }
 
-function onConfirmDelete() {
-  store.deleteNode(id.value)
+async function onConfirmDelete() {
+  store.deleteNode2(id.value)
+   await serviceAggregatorClient.deleteAggregateStep(id.value)
   showConfirm.value = false
 }
 

@@ -145,7 +145,7 @@ function onContextSelect(action) {
 async function onConfirmDelete() {
   const stepId = props.id.replace('node-', '')
   await serviceAggregatorClient.deleteAggregateStep(stepId)
-  store.deleteNode(props.id)
+  store.deleteNode2(props.id)
   showConfirm.value = false
 }
 

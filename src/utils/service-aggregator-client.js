@@ -64,6 +64,11 @@ class ServiceAggregatorClient {
     return response.data
   }
 
+  async deleteAggregateWithRelation(id) {
+
+    const response = await httpClient.post(`aggregate/delete-agg`, { id: id })
+    return response.data
+  }
   async getAggregates() {
     const response = await httpClient.get('/aggregate/get')
     return response.data
@@ -136,7 +141,7 @@ class ServiceAggregatorClient {
   }
 
   async deleteAggregateMapping(data) {
-    const response = await httpClient.post(`/aggregate-mapping/delete`, { id: data.id })
+    const response = await httpClient.post(`/aggregate-mapping/delete`, { id: data })
     return response.data
   }
 

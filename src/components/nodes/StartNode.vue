@@ -11,6 +11,46 @@
           <span class="spinner"></span> در حال اجرا...
         </div>
       </div>
+      <!-- داخل start-box، بعد از start-content -->
+
+      <!-- ورودی‌ها و فرزندان تو‌در‌توی آن‌ها -->
+      <div v-if="nodeInputs.length" class="node-ports node-ports--inputs">
+        <div v-for="field in nodeInputs" :key="'in-' + field.handleId" class="NodePort">
+          <!-- فیلد اصلی -->
+          <div class="port-row">
+            <Handle :id="field.handleId" type="target" position="left" class="port-handle" />
+            <span class="port-label">{{ field.name }}</span>
+            <span v-if="field.type" class="port-type">{{ field.type }}</span>
+          </div>
+
+          <!-- فرزندان فیلد -->
+          <div v-for="child in uniqueChildren(field)" :key="'in-' + child.handleId" class="port-row port-row--child">
+            <Handle :id="child.handleId" type="target" position="left" class="port-handle" />
+            <span class="port-label">{{ child.name }}</span>
+            <span v-if="child.type" class="port-type">{{ child.type }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- خروجی‌ها و فرزندان تو‌در‌توی آن‌ها -->
+      <div v-if="nodeOutputs.length" class="node-ports node-ports--outputs">
+        <div v-for="field in nodeOutputs" :key="'out-' + field.handleId" class="NodePort">
+          <!-- فیلد اصلی -->
+          <div class="port-row">
+            <span class="port-label">{{ field.name }}</span>
+            <span v-if="field.type" class="port-type">{{ field.type }}</span>
+            <Handle :id="field.handleId" type="source" position="right" class="port-handle" />
+          </div>
+
+          <!-- فرزندان فیلد -->
+          <div v-for="child in uniqueChildren(field)" :key="'out-' + child.handleId" class="port-row port-row--child">
+            <span class="port-label">{{ child.name }}</span>
+            <span v-if="child.type" class="port-type">{{ child.type }}</span>
+            <Handle :id="child.handleId" type="source" position="right" class="port-handle" />
+          </div>
+        </div>
+      </div>
+
       <Handle type="target" position="top" id="in" />
       <Handle type="source" position="bottom" id="out" />
 
@@ -26,13 +66,38 @@
     @cancel="onCancelDelete" />
 </template>
 <script setup>
-
-import { Handle } from '@vue-flow/core'
+import { Handle, useVueFlow } from '@vue-flow/core'
+import { computed, inject, onMounted, onBeforeUnmount, ref, toRefs } from 'vue'
 import { useFlowStore } from '@/stores/flowStore'
-import { computed, inject, onMounted, onBeforeUnmount, ref } from 'vue'
 import ConfirmModal from '../modals/ConfirmModal.vue'
 import serviceAggregatorClient from '@/utils/service-aggregator-client'
 
+
+const { removeEdges, removeNodes, edges } = useVueFlow()
+
+
+const nodeInputs = computed(() =>
+  store.getNodeAvailableInputs
+    ? store.getNodeAvailableInputs(id.value) || []
+    : []
+)
+
+const nodeOutputs = computed(() =>
+  store.getNodeAvailableOutputs
+    ? store.getNodeAvailableOutputs(id.value) || []
+    : []
+)
+
+function uniqueChildren(parent) {
+  const children = parent.children || []
+
+  return children.filter(child => {
+    if (child.handleId && child.handleId === parent.handleId) return false
+    if (child.name && child.name === parent.name) return false
+    if (child.id && child.id === parent.id) return false
+    return true
+  })
+}
 const store = useFlowStore()
 const showConfirm = ref(false)
 
@@ -40,6 +105,7 @@ const props = defineProps({
   id: { type: String, required: true },
   data: { type: Object, required: true },
 })
+const { id, data } = toRefs(props)
 
 onMounted(() => {
   console.log(props.data, 'datadatadatadata')
@@ -72,7 +138,7 @@ const menuRef = ref(null)
 const openContextMenuId = ref(null)
 const isContextMenuOpen = computed(() => openContextMenuId.value === props.id)
 const contextMenuStyles = computed(() => {
-   if (!menuRef.value) return {}
+  if (!menuRef.value) return {}
   const rect = menuRef.value.getBoundingClientRect()
   return {
     position: 'fixed',
@@ -149,11 +215,39 @@ function onContextSelect(action) {
   }
 }
 
+
+// async function onConfirmDelete() {
+//   debugger
+//   const stepId = props.id.replace('node-', '')
+//   await serviceAggregatorClient.deleteAggregateStep(stepId)
+//   store.deleteNode(props.id)
+//   showConfirm.value = false
+// }
+
 async function onConfirmDelete() {
-  const stepId = props.id.replace('node-', '')
-  await serviceAggregatorClient.deleteAggregateStep(stepId)
-  store.deleteNode(props.id)
-  showConfirm.value = false
+  try {
+    // Use the persisted AggregateStep ID, not the Vue Flow node ID
+    // or the underlying Service ID.
+    const stepId =
+      props.data.aggregateStepId ??
+      props.data.stepId ??
+      props.id.replace(/^node-/, '')
+
+    if (!stepId || stepId === props.id) {
+      throw new Error('A valid AggregateStep ID is required.')
+    }
+
+    // Call only the aggregate-step deletion endpoint.
+    await serviceAggregatorClient.deleteAggregateStep(stepId)
+
+    // Update the local graph only after backend deletion succeeds.
+    store.deleteNode2(props.id)
+
+    showConfirm.value = false
+  } catch (error) {
+    console.error('Failed to delete aggregate step:', error)
+    // Keep the confirmation open so the user can retry.
+  }
 }
 
 function onCancelDelete() {
@@ -165,27 +259,89 @@ function onCancelDelete() {
 <style scoped lang="scss">
 .start-node {
   position: relative;
-  width: 180px;
-  height: 80px;
+  width: max-content;
+  min-width: 180px;
+  max-width: 320px;
+  min-height: 80px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .start-box {
-  width: 160px;
-  height: 70px;
+  box-sizing: border-box;
+  width: max-content;
+  min-width: 160px;
+  max-width: 320px;
+  min-height: 70px;
+  height: auto;
+  padding: 12px 16px;
   background: #289604;
   border: 3px solid #289604;
-  border-radius: 4px;
+  border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
-  box-shadow: 0 2px 8px rgba(8, 166, 22, 0.925);
+  box-shadow: 0 2px 8px rgba(8, 166, 22, 0.5);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: width 0.2s ease, min-height 0.2s ease;
+  display: flex;
+  flex-flow: column;
 }
+
+.start-content {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  text-align: center;
+  color: #eee;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+  word-break: normal;
+  z-index: 10;
+  position: relative;
+}
+
+.start-content strong {
+  display: block;
+  margin-bottom: 4px;
+  font-weight: 600;
+  font-size: 14px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.start-content small {
+  display: block;
+  font-size: 12px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+// .start-node {
+//   position: relative;
+//   width: 180px;
+//   height: 80px;
+//   display: flex;
+//   align-items: center;
+//   justify-content: center;
+// }
+
+// .start-box {
+//   width: 160px;
+//   height: 70px;
+//   background: #289604;
+//   border: 3px solid #289604;
+//   border-radius: 4px;
+//   display: flex;
+//   align-items: center;
+//   justify-content: center;
+//   position: relative;
+//   box-shadow: 0 2px 8px rgba(8, 166, 22, 0.925);
+//   cursor: pointer;
+//   transition: all 0.2s ease;
+// }
 
 .start-box:hover {
   box-shadow: 0 4px 12px rgba(8, 166, 22, 0.925);
@@ -217,25 +373,25 @@ function onCancelDelete() {
   border-bottom: 10px solid transparent;
 }
 
-.start-content {
-  text-align: center;
-  color: #eee;
-  font-size: 14px;
-  z-index: 10;
-  position: relative;
-}
+// .start-content {
+//   text-align: center;
+//   color: #eee;
+//   font-size: 14px;
+//   z-index: 10;
+//   position: relative;
+// }
 
-.start-content strong {
-  display: block;
-  margin-bottom: 2px;
-  font-weight: 600;
-  font-size: 14px;
-}
+// .start-content strong {
+//   display: block;
+//   margin-bottom: 2px;
+//   font-weight: 600;
+//   font-size: 14px;
+// }
 
-.start-content small {
-  display: block;
-  font-size: 14px;
-}
+// .start-content small {
+//   display: block;
+//   font-size: 14px;
+// }
 
 /* Status icons */
 .status-icon {
@@ -282,6 +438,19 @@ function onCancelDelete() {
   border-color: #289604 !important;
   box-shadow: 0 2px 8px rgba(8, 166, 22, 0.925) !important;
   animation: none !important;
+}
+
+.NodePort {
+  color: white;
+}
+
+.port-row {
+  color: white;
+
+}
+
+.NodePort .port-row .port-row--child {
+  color: white;
 }
 
 .status-idle .status-icon {
@@ -360,5 +529,77 @@ function onCancelDelete() {
 .context-menu li:hover {
   background: #5b21b6;
   color: white;
+}
+
+/* ---- Field port handles (additive; does not alter existing node styles) ---- */
+.node-ports {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.node-ports__column {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.node-ports__column--outputs {
+  align-items: flex-end;
+}
+
+.port-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.port-label {
+  font-size: 9px;
+  color: #c1c4c7;
+  white-space: nowrap;
+}
+
+.port-handle {
+  width: 10px;
+  height: 10px;
+  min-width: 10px;
+  padding: 0;
+  border: 1px solid #94a3b8;
+  border-radius: 50%;
+  background: #ffffff;
+  pointer-events: auto;
+  z-index: 1;
+}
+
+.port-row--child {
+  padding-left: 12px;
+  opacity: 0.9;
+}
+
+.port-row--child .port-label {
+  font-size: 8px;
+  color: #d1d3d6;
+}
+
+.port-type {
+  font-size: 8px;
+  color: #cccfd4;
+  margin-left: 2px;
+}
+
+/* Vue Flow pins same-side handles to the node center via the global
+   .vue-flow__handle-left/.vue-flow__handle-right rules, which made every
+   input/output port overlap. Release that pinning so each handle flows inside
+   its own row. The `position` prop is retained for connection-direction metadata. */
+.port-handle.vue-flow__handle-left,
+.port-handle.vue-flow__handle-right {
+  position: relative;
+  top: auto;
+  left: auto;
+  right: auto;
+  transform: none;
 }
 </style>

@@ -4,8 +4,9 @@
       'node-executing': data.isExecuting,
       'node-completed': executionStatus === 'completed',
       'node-error': executionStatus === 'error',
-      'node-idle': executionStatus === 'idle'|| !executionStatus
-    }" @contextmenu.prevent="onRightClick" @touchstart.passive="onTouchStart" @touchend.passive="onTouchEnd" @touchmove.passive="onTouchCancel">
+      'node-idle': executionStatus === 'idle' || !executionStatus
+    }" @contextmenu.prevent="onRightClick" @touchstart.passive="onTouchStart" @touchend.passive="onTouchEnd"
+      @touchmove.passive="onTouchCancel">
       <div class="node-header" @dblclick="openEdit">
         <strong>{{ data.stepName || data.label }}</strong>
         <span v-if="data.isExecuting" class="execution-badge executing">
@@ -44,7 +45,7 @@
 
       <!-- Service field ports: inputs on the left, outputs on the right.
            Each port is its own row: Handle on the correct side + label next to it. -->
-      <div v-if="nodeInputs.length || nodeOutputs.length" class="node-ports">
+      <!-- <div v-if="nodeInputs.length || nodeOutputs.length" class="node-ports">
         <div v-if="nodeInputs.length" class="node-ports__column">
           <div
             v-for="f in nodeInputs"
@@ -57,6 +58,7 @@
               position="left"
               class="port-handle"
             />
+            <span class="port-label">{{ f.original.type }}</span>
             <span class="port-label">{{ f.name }}</span>
           </div>
         </div>
@@ -75,9 +77,57 @@
             />
           </div>
         </div>
+      </div> -->
+
+      <div v-if="nodeInputs.length" class="node-ports__column">
+        <div v-for="f in nodeInputs" :key="'in-' + f.handleId" class="NodePort">
+          <!-- سطح اول -->
+          <div class="port-row">
+            <Handle :id="f.handleId" type="target" position="left" class="port-handle" />
+            <span class="port-label">{{ f.name }}</span>
+            <span v-if="f.type" class="port-type">{{ f.type }}</span>
+          </div>
+
+          <!-- فقط فرزندان Array/Object -->
+          <div v-for="child in uniqueChildren(f)" :key="'in-' + child.handleId" class="port-row port-row--child">
+            <Handle :id="child.handleId" type="target" position="left" class="port-handle" />
+            <span class="port-label">{{ child.name }}</span>
+            <span v-if="child.type" class="port-type">{{ child.type }}</span>
+          </div>
+        </div>
       </div>
+      <div v-if="nodeOutputs.length" class="node-ports__column node-ports__column--outputs">
+        <div v-for="f in nodeOutputs" :key="'out-' + f.handleId" class="NodePort">
+          <!-- سطح اول -->
+          <div class="port-row">
+            <span class="port-label">{{ f.name }}</span>
+            <span v-if="f.type" class="port-type">{{ f.type }}</span>
+            <Handle :id="f.handleId" type="source" position="right" class="port-handle" />
+          </div>
 
+          <!-- فقط فرزندان Array/Object -->
+          <div v-for="child in uniqueChildren(f)" :key="'out-' + child.handleId" class="port-row port-row--child">
+            <span class="port-label">{{ child.name }}</span>
+            <span v-if="child.type" class="port-type">{{ child.type }}</span>
+            <Handle :id="child.handleId" type="source" position="right" class="port-handle" />
+          </div>
+        </div>
+      </div>
+      <!-- <div v-if="nodeInputs.length" class="node-ports__column">
+        <div v-for="f in nodeInputs" :key="'in-' + f.handleId" class="NodePort">
+         <div class="port-row">
+            <Handle :id="f.handleId" type="target" position="left" class="port-handle" />
+            <span class="port-label">{{ f.name }}</span>
+            <span v-if="f.type" class="port-type">{{ f.type }}</span>
+          </div>
 
+          <div v-for="child in (f.children || [])" :key="'in-' + child.handleId" class="port-row port-row--child">
+            <Handle :id="child.handleId" type="target" position="left" class="port-handle" />
+            <span class="port-label" v-if="child.name != f.name">{{ child.name }}</span>
+            <span v-if="child.type" class="port-type">{{ child.type }}</span>
+          </div>
+        </div>
+      </div> -->
       <!-- Context Menu -->
       <div v-if="isContextMenuOpen" ref="menuRef" class="context-menu" :style="contextMenuStyles">
         <ul>
@@ -98,12 +148,8 @@
         </ul>
       </div>
     </div>
-    <ConfirmModal
-  :visible="showConfirm"
-  message="آیا از پاک کردن گره مطمئن هستید؟"
-  @confirm="onConfirmDelete"
-  @cancel="onCancelDelete"
-/>
+    <ConfirmModal :visible="showConfirm" message="آیا از پاک کردن گره مطمئن هستید؟" @confirm="onConfirmDelete"
+      @cancel="onCancelDelete" />
   </div>
 </template>
 
@@ -125,25 +171,16 @@ console.log('ServiceNode props data:', props.data)
 const { id, data } = toRefs(props)
 const store = useFlowStore()
 
+console.log('data store:', data)
 // Inject execution status from parent
 const parentExecutionStatus = inject('executionStatus', ref({}))
 
 const executionStatus = computed(() => {
-  const status = parentExecutionStatus.value?.[id.value] || null
+  const status = parentExecutionStatus.value?.[id.value]
 
-  // تشخیص End Node
-  const isEndNode =
-    !data.value.serviceId ||
-    data.value.type === 'end' ||
-    data.value.nodeType === 'end' ||
-    (data.value.stepName && data.value.stepName.toLowerCase().includes('end')) ||
-    (data.value.label && data.value.label.toLowerCase().includes('end'))
-
-  if (isEndNode) {
-    return 'completed'   // همیشه موفق نشون بده
-  }
-
-  return status
+  // Only show the actual execution status.
+  // StartNode and EndNode have their own node components.
+  return status || data.value.executionStatus || 'idle'
 })
 
 const nodeRef = ref(null)
@@ -180,7 +217,7 @@ const contextMenuStyles = computed(() => {
   }
 })
 
-
+console.log('nodeInputs store:', nodeInputs)
 
 function handleClickOutside(event) {
   if (menuRef.value && !menuRef.value.contains(event.target)) {
@@ -266,8 +303,12 @@ async function onContextSelect(action) {
 
 async function onConfirmDelete() {
   try {
+    const stepId =
+      typeof id.value === 'string' && id.value.startsWith('node-')
+    ? id.value.slice('node-'.length)
+    : id.value
     // ۱. فراخوانی API حذف
-    await serviceAggregatorClient.deleteAggregateStep(id.value)
+    await serviceAggregatorClient.deleteAggregateStep(stepId)
 
     // ۲. حذف یال‌های متصل به این گره از Vue Flow
     const connectedEdges = edges.value.filter(
@@ -314,7 +355,18 @@ function onCancelDelete() {
   showConfirm.value = false
 }
 
-
+function uniqueChildren(parent) {
+  const children = parent.children || []
+  return children.filter((child) => {
+    // اگر handleId یکی باشد → تکراری، نشان نده
+    if (child.handleId && child.handleId === parent.handleId) return false
+    // اگر name یکی باشد → تکراری
+    if (child.name && child.name === parent.name) return false
+    // اگر id یکی باشد
+    if (child.id && child.id === parent.id) return false
+    return true
+  })
+}
 </script>
 
 <style scoped>
@@ -396,11 +448,13 @@ function onCancelDelete() {
 }
 
 .vue-flow__handle-target {
-  background: #10b981 !important; /* green for input */
+  background: #10b981 !important;
+  /* green for input */
 }
 
 .vue-flow__handle-source {
-  background: #f59e0b !important; /* amber for output */
+  background: #f59e0b !important;
+  /* amber for output */
 }
 
 .vue-flow__handle:hover {
@@ -452,6 +506,12 @@ function onCancelDelete() {
   color: white;
 }
 
+.NodePort {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
 .execution-error {
   padding: 4px 8px;
   background: #fee2e2;
@@ -480,7 +540,7 @@ function onCancelDelete() {
 .node-idle {
   /* Reset to default appearance */
   background: default !important;
-  border-color:  default !important;
+  border-color: default !important;
   animation: none !important;
   box-shadow: default !important;
 }
@@ -490,7 +550,9 @@ function onCancelDelete() {
 }
 
 @keyframes executing-glow {
-  0%, 100% {
+
+  0%,
+  100% {
     filter: drop-shadow(0 0 0px rgba(16, 185, 129, 0));
   }
 
@@ -510,7 +572,9 @@ function onCancelDelete() {
 }
 
 @keyframes error-shake {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translateX(0);
   }
 
@@ -524,7 +588,9 @@ function onCancelDelete() {
 }
 
 @keyframes pulse-execute {
-  0%, 100% {
+
+  0%,
+  100% {
     box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
   }
 
@@ -551,24 +617,29 @@ function onCancelDelete() {
   gap: 8px;
   margin-top: 6px;
 }
+
 .node-ports__column {
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
+
 .node-ports__column--outputs {
   align-items: flex-end;
 }
+
 .port-row {
   display: inline-flex;
   align-items: center;
   gap: 4px;
 }
+
 .port-label {
   font-size: 9px;
   color: #475569;
   white-space: nowrap;
 }
+
 .port-handle {
   width: 10px;
   height: 10px;
@@ -580,6 +651,23 @@ function onCancelDelete() {
   pointer-events: auto;
   z-index: 1;
 }
+
+.port-row--child {
+  padding-left: 12px;
+  opacity: 0.9;
+}
+
+.port-row--child .port-label {
+  font-size: 8px;
+  color: #64748b;
+}
+
+.port-type {
+  font-size: 8px;
+  color: #94a3b8;
+  margin-left: 2px;
+}
+
 /* Vue Flow pins same-side handles to the node center via the global
    .vue-flow__handle-left/.vue-flow__handle-right rules, which made every
    input/output port overlap. Release that pinning so each handle flows inside
@@ -592,5 +680,4 @@ function onCancelDelete() {
   right: auto;
   transform: none;
 }
-
 </style>
