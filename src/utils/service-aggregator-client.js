@@ -104,6 +104,31 @@ class ServiceAggregatorClient {
     })
     return response.data
   }
+  async getAggregateInput(id) {
+    const response = await httpClient.get(`/aggregate/get-input/${id}`)
+    return response.data
+  }
+
+  async getAggregateInputSchema(id) {
+    const response = await httpClient.get(`/aggregate/get-input-schema/${id}`)
+    return response.data
+  }
+
+  async updateAggregateInput(id, inputJson) {
+    const response = await httpClient.post(`/aggregate/update-input`, {
+      id,
+      inputJson,
+    })
+    return response.data
+  }
+
+  async updateAggregateInputSchema(id, inputSchema) {
+    const response = await httpClient.post(`/aggregate/update-input-schema`, {
+      id,
+      inputSchema,
+    })
+    return response.data
+  }
   //#endregion Aggregate
 
   //#region Aggregate-step
